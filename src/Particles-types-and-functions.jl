@@ -232,12 +232,20 @@ force_equilibrium([P1, P2]); force_equilibrium([P3, P4]); force_equilibrium([P1,
 #########################################################################################################
 #########################################################################################################
 
-"Compute the volume of a d-dimensional sphere of radius R (that defaults to 1)"
+"""
+    volume_d_ball(d::Int64, R::Real)
+
+Compute the volume of a d-dimensional sphere of radius R (that defaults to 1)
+"""
 function volume_d_ball(d::Int64, R::Real=1)::Float64
     ((sqrt(π)*R)^d)/gamma(1.0 + 0.5d)
 end
 volume_d_ball(2, 1.0)
 
-"Compute the volume of 'P' (i.e. a hypersphere of d dimensions and radius R=P.R."
+"""
+    volume(P::Particle)
+
+Compute the volume of 'P' (i.e. a hypersphere of d dimensions and radius R=P.R.
+"""
 volume(P::Particle) = volume_d_ball(length(P.X), P.R)
 volume(P3)
