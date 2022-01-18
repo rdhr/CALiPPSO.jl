@@ -1,3 +1,8 @@
+if !(@isdefined precompile_main_function)
+    const precompile_main_function = true
+end
+
+
 module CALiPPSO
 
 export produce_jammed_configuration # main function!!
@@ -6,7 +11,6 @@ export network_of_contacts, check_for_overlaps, PeriodicVectors, packing_fractio
 export volume_d_ball, norm # these functions are needed for generating random initial packings, in the 'random_initial_conditions.jl' script. Nevertheless, it could be the case that they're also useful when analysing results, specially 'norm'
 # export max_threads, default_solver, default_solver_attributes, default_args, default_tol_displacements, default_tol_Γ_convergence, default_tol_optimality, default_tol_zero_forces, default_tol_overlap # default parameters for convergence, optimality, identifying overlaps, etc.
 
-const precompile_main_function = false
 include("packing-type.jl")
 
 
@@ -1110,13 +1114,15 @@ function network_of_contacts(packing::MonoPacking{d, T}, normalized::Bool=true) 
 end
 
 
-if precompile_main_function
-#= =====================================================================
-=====================================================================
-        USING MAIN FUNCTIONS ON SMALL SYSTEM FOR COMPILATION/FIRST CALL PURPOSES
-=====================================================================
-===================================================================== =#
-    printstyled("\n\nNow using (*low accuracy*) ILP on a small, predefined system in order to compile the needed functions.\n
+if Main.precompile_main_function
+    #= =====================================================================
+    =====================================================================
+    USING MAIN FUNCTIONS ON SMALL SYSTEM FOR COMPILATION/FIRST CALL PURPOSES
+    =====================================================================
+    ===================================================================== =#
+    printstyled("\t The following output just refers to simple first calls for precompiling needed functions\n\n", bold=true, color=:cyan)
+
+    printstyled("\n\nUsing (*low accuracy*) ILP on a small, predefined system in order to compile the needed functions.\n
     \t\t Solver used: ", default_solver, "\n\n", color=:cyan)
     Nt=30; rt=0.52; dt=3; 
     Lt=4.0;
@@ -1173,7 +1179,8 @@ if precompile_main_function
 
     printstyled("\n\n Calling the main function once again, to compile the second method.\n\n", color=:cyan)
     produce_jammed_configuration(Xs_comp, rt, Lt; ℓ0=Lt, initial_monitor=2, monitor_step=2, verbose=false, tol_Γ_convergence=1e-3,tol_S_convergence=1e-2)
+
+    printstyled("\n________________________________________________________\n\tCompilation process finished! \t (with solver: ", default_solver, ")\n________________________________________________________\n\n\n\n\n", color=:cyan, bold=true)
 end
 
-printstyled("\n________________________________________________________\n\tCompilation process finished! \t (with solver: ", default_solver, ")\n________________________________________________________\n\n\n\n\n", color=:cyan, bold=true)
 end

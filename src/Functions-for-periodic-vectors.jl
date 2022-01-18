@@ -1,8 +1,6 @@
 using StaticArrays
 include("PeriodicNumber.jl")
 
-printstyled("\t All the following output just refers to quick first calls made during the compilation process\n\n", bold=true, color=:cyan)
-
 
 #= 
 Definition of norm of vectors whose elements are PeriodicNumbers.

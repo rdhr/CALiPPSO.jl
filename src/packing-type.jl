@@ -116,7 +116,7 @@ The constructors also asses whether force balance for each particle is satisfied
 given precision 'tol_mechanical_equilibrium' (that defaults to `default_tol_force_equilibrium=1e-12`).
  When this condition is not met, it throws a warning, but the packing is created.
 """
-function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Vector{Vector{SVector{d,T}}}, fs::Vector{Vector{T}}, neighbours::Vector{Vector{Int64}}, R::T, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium) where {d, T<:Real}
+function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Vector{Vector{SVector{d,T}}}, fs::Vector{Vector{T}}, neighbours::Vector{Vector{Int64}}, R::T, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, verbose::Bool=true) where {d, T<:Real}
     N = length(Xs) # number of particles
     # th construct the packing all the input arrays should have the same length
     if N==length(fs) && N==length(contact_vecs) && N==length(neighbours) 
@@ -132,7 +132,7 @@ function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Ve
         any(norm.(total_force.(particles)).>tol_mechanical_equilibrium) && (mech_eq=false)
 
         # if this is not the case throw a warning, but create the packing anyway
-        if !mech_eq
+        if !mech_eq && verbose
             fmismatch = maximum(norm.(total_force.(particles)))
             @warn "Force balance condition is NOT satisfied! Max force mismatch = $fmismatch ;\tCreating the packing anyway."
         end
@@ -144,8 +144,8 @@ function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Ve
     end
 end
 
-function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Vector{Matrix{T}}, fs::Vector{Vector{T}}, neighbours::Vector{Vector{Int64}}, R::T, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium) where {d, T<:Real}
-    MonoPacking(Xs, svectors.(contact_vecs, Val(d)), fs, neighbours, R, jammed; tol_mechanical_equilibrium=tol_mechanical_equilibrium)
+function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Vector{Matrix{T}}, fs::Vector{Vector{T}}, neighbours::Vector{Vector{Int64}}, R::T, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, verbose::Bool=true) where {d, T<:Real}
+    MonoPacking(Xs, svectors.(contact_vecs, Val(d)), fs, neighbours, R, jammed; tol_mechanical_equilibrium=tol_mechanical_equilibrium, verbose=verbose)
 end
 
 
@@ -160,8 +160,8 @@ st_cvec_comp = svectors.(cvec_comp, Val(d_comp))
 fs_comp = [rand(zs_comp[i]) for i in 1:N_comp]
 nghs_lists_comp = [rand(1:N_comp, zs_comp[i]) for i in 1:N_comp]
 
-packing_comp = MonoPacking(Xs_comp, st_cvec_comp, fs_comp, nghs_lists_comp, rand(), false)
-MonoPacking(Xs_comp, cvec_comp, fs_comp, nghs_lists_comp, rand(), false)
+packing_comp = MonoPacking(Xs_comp, st_cvec_comp, fs_comp, nghs_lists_comp, rand(), false; verbose=false)
+MonoPacking(Xs_comp, cvec_comp, fs_comp, nghs_lists_comp, rand(), false; verbose=false)
 force_equilibrium(packing_comp.Particles)
 
 
@@ -177,16 +177,16 @@ difference_in_packings(packing_comp, packing_comp)
 # Finish calling previously defined functions
 
 
-function MonoPacking(particles::Vector{MonoParticle{d, T}}, R::T, jammed::Bool=false;  tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium) where {d, T<:Real}
+function MonoPacking(particles::Vector{MonoParticle{d, T}}, R::T, jammed::Bool=false;  tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, verbose::Bool=true) where {d, T<:Real}
     force_balance = force_equilibrium(particles; tol_mechanical_equilibrium=tol_mechanical_equilibrium)
-    if !force_balance
+    if !force_balance && verbose
         fmismatch = maximum(norm.(total_force.(particles)))
         @warn "Force balance condition is NOT satisfied! Max force mismatch = $fmismatch ; \tCreating the packing anyway."
     end
 
     MonoPacking(particles, R, force_balance, jammed)
 end
-MonoPacking(packing_comp.Particles, rand())
+MonoPacking(packing_comp.Particles, rand(); verbose=false)
 
 
 distances_between_centers(packing::AbstractPacking) = distances_between_centers(get_positions(packing))
