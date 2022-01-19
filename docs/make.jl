@@ -11,6 +11,7 @@ makedocs(sitename="CALiPPSO",
         "Examples" => "tests.md",
         "`Structs` of CALiPPSO" => "types.md",
         "Possible problems and other issues" => "issues.md",
+        "API Reference" => "api.md",
         "To Do's"=> "todos.md"],
         format = Documenter.HTML(prettyurls = false)
     )
