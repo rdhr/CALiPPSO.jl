@@ -6,9 +6,9 @@ using Documenter
 makedocs(sitename="CALiPPSO",
     pages = [
         "Home" => "index.md",
-        "Theory" => "theory.md",
-        "Usage" => "usage.md",
-        "Tests" => "tests.md",
+        "Introduction: theory and few details" => "theory.md",
+        "Using CALiPPSO" => "usage.md",
+        "Examples" => "tests.md",
         "`Structs` of CALiPPSO" => "types.md",
         "Possible problems and other issues" => "issues.md",
         "To Do's"=> "todos.md"],

@@ -12,3 +12,5 @@
 - [X] Once the point above has been resolved, removed all the output whenever `precompile_main_function=false`. This means avoid creating the first packings that throw warnings due to the absence of force balance.
 - [ ] Finish the documentation
 - [ ] Check all links
+- [ ] Add API of main functions (remember to add it to side bar and TOC)
+- [ ] Add examples using [Literate.jl](https://fredrikekre.github.io/Literate.jl/v2/)

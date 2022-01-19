@@ -104,7 +104,7 @@ ___
 
 Our main function consists of two essentially independent parts: (1) the main ILP loop; and (2) the packing creation from the quantities obtained after using ILP. We now describe each of them.
 
-___
+---
 
 ### The main Linear Optimization loop
 
@@ -165,7 +165,7 @@ This main loop consists of the following steps:
 
 Note that steps 5 and 6, by default, are only performed during the first few iterations (10) and at given intervals (also 10). To change how often the ILP info is printed out (respectively how often overlaps checks are performed) set the keyword argument `monitor_step` (respectively `interval_overlaps_check`) to the desired value. Instead, to select in how many initial iterations to include these steps, use `initial_monitor` (for printing info) and `initial_overlaps_check` for overlaps checks. More details can be found [here](#kwargs-for-controlling-output-printing-on-terminal) and [here](#kwargs-for-controlling-precision-of-overlaps-and-force-balance-tests).
 
-__________________________
+---
 
 ### Creating the final packing
 

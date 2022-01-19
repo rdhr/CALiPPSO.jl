@@ -6,9 +6,9 @@ We have included a couple of scripts so you can test that ILP is working properl
 
 Besides, consider that the [main function](#basic-usage) is defined in the file `iLP-for-jamming.jl`, so this file should be included in any script where `produce_jammed_configuration` is called (with the usual syntax `include("iLP-for-jamming.jl")`). Now, when this script is first called through `include`, you'll see a rather long output printed out. As its first line explains, this is because a first compilation is being carried out, but you can safely ignore all of such output.
 
-### Some tests included
+### Some examples included
 
-We provide the following tests
+We provide the following examples to test our algorithm under different circumstances
 
 1. Testing ILP from a highly compressed configuration of $N=1204$ particles (obtained from the [LS protocol](#the-initial-conditions)) in $d=3, 4, 5$.
    - To execute this test, simply execute from the terminal
@@ -23,6 +23,8 @@ We provide the following tests
       julia test-monodisperse-random_init_conf.jl
       ```
    - This script does not depend on any input file as initial condition. But be sure to have the [Distributions.jl](https://github.com/JuliaStats/Distributions.jl) package already installed.
+
+### Testing different solvers
 
 3. Testing [different solvers](#changing-the-solveroptimizer) in ILP.
    - For running this test, type:  

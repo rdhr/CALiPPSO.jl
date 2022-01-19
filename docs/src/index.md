@@ -5,30 +5,21 @@ This is the accompanying code to the paper XXXX, by *Artiaco, Díaz, Parisi, and
 Essentially, our method consists on a **C**hain of **A**pproximate **Li**near **P**rogramming for **P**acking **S**pherical **O**bjects.
 The code contained here is written in pure [Julia](https://julialang.org/), and makes extensive use of  the (wonderful) optimization and modelling package [JuMP.jl](https://github.com/jump-dev/JuMP.jl). 
 
-Please feel free to use/modify/improve this code as better suits you. We only ask you to give credit to our work.
+Feel free to use/modify/improve this code as better suits you. We only ask you to give credit to our work.
 
 ```
 @article{...}
 ```
-If you already know how CALiPPSO works (or know the theory behind our paper), you can safely skip to [the usage section](#basic-usage) where we describe our code in some detail. Otherwise, the [Theory behind CALiPPSO](@ref) section provides the essentials to understand our method.
-
-```@contents
-Depth = 4
-```
+If you already know how CALiPPSO works (or know the theory behind our paper), you can safely skip to [Using CALiPPSO](@ref) section, where we describe our code in some detail. Otherwise, the [Theory behind CALiPPSO](@ref) section provides the essentials to understand our method.
 
 ## Disclaimer
 
+## Contents
 
-<!-- ## Stuff
-
-```@docs
-volume_d_ball(d::Int64, R::Real=1)
-CALiPPSO.volume(P::Particle)
-CALiPPSO.force_equilibrium
-``` -->
-
-
-## Index
-
-```@index
+```@contents
+Pages = ["theory.md", "usage.md", "tests.md", "types.md", "issues.md", "todos.md"]
+Depth = 4
 ```
+
+
+
