@@ -28,7 +28,7 @@ Naturally, this function should generate a jammed packing from an initial config
 
 The output of `produce_jammed_configuration` is the following:
 1. A jammed packing (provided convergence was attained) stored as a `MonoPacking` type (see details [below](#the-packing-type)). This object contains an array of all the particles, and for each of them, the list of contact vectors, magnitudes of contact forces, and list of neighbours.
-2. Information about the termination status of ILP, the time and amount of memory allocated during the full process, list of times of each LP optimization, etc. (see the docstring of `convergence_info` for a complete list).
+2. Information about the termination status of CALiPPSO, the time and amount of memory allocated during the full process, list of times of each LP optimization, etc. (see the docstring of `convergence_info` for a complete list).
 3. The list of values of $\sqrt{\Gamma^\star}$ obtained after each iteration.
 4. An analogous list that specifies (with boolean variables) if isostaticity holds at the corresponding iteration.
 
