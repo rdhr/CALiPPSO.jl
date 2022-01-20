@@ -74,7 +74,7 @@ In our experience, most of the problems (*e.g.* a real overlap or an optimizatio
 
 _____
 
-### Changing the solver/optimizer
+### [Changing the solver/optimizer](@id changing_the_solver)
 
 #### Solvers we tried
 Given that we have used the JuMP interface for solving each LP instance, *in principle*, you can use *any* of the [JuMP compatible solvers](https://jump.dev/JuMP.jl/stable/installation/). Of course, maybe not all of them are suitable for the type of LP optimization our algorithm requires, but there should be ample choice. Indeed, besides Gurobi, we tested the following solvers:
@@ -109,8 +109,6 @@ Just as with the other options of `produce_jammed_configuration`, choosing a sol
     - **Important**: Because of the variety of ways to pass an optimizer's arguments, in our code we had to resort to a (dirty) implementation such that, whenever `solver_args` is different to `nothing`, we use a series of `if-elseif-else` statements to properly set the optimizer of the *specific* solver. These means that if you want to use a solver not considered here and pass attributes to it when the model is created, **you'll need to specify the proper argument passing syntax**. To do so, you'll have to modify the `if-elseif-else` statements that defines `optimizer` in the definition of `solve_LP_instance` and `fine_tune_forces!`.
 
 
-
-#### Testing different solvers
 
 
 #### Setting the required precision

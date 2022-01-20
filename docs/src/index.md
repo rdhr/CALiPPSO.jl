@@ -10,7 +10,7 @@ Feel free to use/modify/improve this code as better suits you. We only ask you t
 ```
 @article{...}
 ```
-If you already know how CALiPPSO works (or know the theory behind our paper), you can safely skip to [Using CALiPPSO](@ref) section, where we describe our code in some detail. Otherwise, the [Theory behind CALiPPSO](@ref) section provides the essentials to understand our method.
+If you already know how CALiPPSO works (or know the theory behind our paper), you can safely skip to [Basic usage](@ref) section, where we describe our code in some detail. Otherwise, the [Theory behind CALiPPSO](@ref) section provides the essentials to understand our method.
 
 ## Disclaimer
 
