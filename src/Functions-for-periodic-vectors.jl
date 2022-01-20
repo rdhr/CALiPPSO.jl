@@ -7,6 +7,7 @@ Definition of norm of vectors whose elements are PeriodicNumbers.
 Note that in this way, the same function can be applied to usual 'Vector' arrays, but also to 'StaticVector' types as will be used afterwards
 =#
 import LinearAlgebra.norm
+"norm function for a vector of `PeriodicNumber` elements"
 norm(v::AbstractVector{<:PeriodicNumber}) = norm(value.(v))
 v1c = PeriodicNumber.(3.0*rand(5), 2.0)
 norm(v1c)

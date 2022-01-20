@@ -6,7 +6,7 @@ end
 module CALiPPSO
 
 export produce_jammed_configuration # main function!!
-export convergence_info, PeriodicNumber, Particle, MonoPacking, PeriodicVector, Packing # structs defined in the package
+export convergence_info, PeriodicNumber, MonoParticle, MonoPacking, PeriodicVector, Packing # structs defined in the package
 export network_of_contacts, check_for_overlaps, PeriodicVectors, packing_fraction, get_non_rattlers, get_rattlers, is_isostatic, get_coordination_number, total_force # other useful functions; mostly for packings
 export volume_d_ball, norm # these functions are needed for generating random initial packings, in the 'random_initial_conditions.jl' script. Nevertheless, it could be the case that they're also useful when analysing results, specially 'norm'
 # export max_threads, default_solver, default_solver_attributes, default_args, default_tol_displacements, default_tol_Γ_convergence, default_tol_optimality, default_tol_zero_forces, default_tol_overlap # default parameters for convergence, optimality, identifying overlaps, etc.
