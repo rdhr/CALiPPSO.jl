@@ -17,7 +17,7 @@ If you already know how CALiPPSO works (or know the theory behind our paper), yo
 ## Contents
 
 ```@contents
-Pages = ["theory.md", "usage.md", "tests.md", "types.md", "issues.md", "todos.md"]
+Pages = ["theory.md", "usage.md", "basic_usage.md", "mainfunction.md", "changing_default.md", "tests.md", "types.md", "issues.md", "todos.md", "api.md"]
 Depth = 4
 ```
 

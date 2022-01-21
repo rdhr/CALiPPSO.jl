@@ -13,8 +13,8 @@ makedocs(sitename="CALiPPSO",
         "User Guide" => Any["Before using CALiPPSO" => "usage.md", "Basic usage" =>"basic_usage.md", "How the main function works" => "mainfunction.md", "Changing the default behaviour" =>"changing_default.md"],
         "Examples" => "tests.md",
         "`Structs` of CALiPPSO" => "types.md",
-        "Possible problems and other issues" => "issues.md",
-        "API Reference" => "api.md",
-        "To Do's"=> "todos.md"],
+        "Problem solving and possible issues" => "issues.md",
+        "To Do's"=> "todos.md",
+        "API Reference" => "api.md"],
         format = Documenter.HTML(prettyurls = false)
     )

@@ -213,7 +213,7 @@ function print_non_isostatic(d::Int64, zs::Vector{Int64}, non_rattlers::Vector{I
 end
 
 
-"Print info about ILP progress and the last LP optimization."
+"Print info about CALiPPSO progress, including new values of ``|s_i|``, density and ``R``, statistics of constraints and contacts, forces, etc."
 function print_monitor_progress(max_Si, R, N::I, L, d::I, zs::Vector{I}, non_rattlers::Vector{I}, n_constr::Vector{I}, iso_cond::Bool, f_mismatch::Float64, small_fs::Vector{Float64};
      dig_R::I=9, dig_z::I = Int(ceil(log10(N*d))), dig_S::I=13, color::Symbol=:cyan) where {I<:Int}
      
@@ -277,7 +277,7 @@ function print_converged(t::I, status, sqrΓ, max_Si, R, N::I, L, d::I, n_constr
      # Statistics number of constraints
      max_constr = maximum(n_constr); avg_constr = round(mean(n_constr), digits=2); std_constr = round(std(n_constr), digits=2)
 
-    printstyled("\n\n\tiLP converged! \t \t Status of last LP optimization: ", status, "\n", bold=true, color=color)
+    printstyled("\n\n\tCALiPPSO converged! \t \t Status of last LP optimization: ", status, "\n", bold=true, color=color)
     printstyled("Steps to convergence = ", t, ",\t√Γ-1 = ", sqrΓ-1, ",\t Max displacement = ", round(max_Si, digits=dig_S), ",\t (ϕ, R) = ",  round.([ϕ, R], digits=dig_R), "\n", bold=true, color=color)
     println("\tNon_rattlers= ", Nnr, "\t% of rattlers = ", round(100*(1-Nnr/N), digits=3),  "\t(Max, mean±std) constraints per particle per d: ", [max_constr, avg_constr, std_constr])
 end

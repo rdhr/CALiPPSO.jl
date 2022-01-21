@@ -201,7 +201,7 @@ is_stable_particle(P::AbstractParticle{d, T}) where {d, T<:Real} = !is_a_rattler
 is_stable_particle(P1); is_stable_particle(P3)
 
 
-"Compute the sum of forces acting on a given particle."
+"Compute the sum of forces acting on a given particle. The output is a `StaticVector`"
 function total_force(P::AbstractParticle{d, T}) where {d, T<:Real}
     fs = P.forces
     ctc_vecs = P.contact_vecs

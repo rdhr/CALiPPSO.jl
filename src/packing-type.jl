@@ -9,12 +9,13 @@ abstract type AbstractPacking{d, T} end
 ### Functions for generic (i.e. any type of packings) packings 
 #########################################################################################################
 #########################################################################################################
+"Obtain the set of stable particles in a packing."
 function get_non_rattlers(packing::AbstractPacking)
     N = length(packing.Particles)
     return (1:N)[is_stable_particle.(packing.Particles)]
 end
 
-
+"Obtain the set of rattlers (i.e. unstable particles) in a packing."
 function get_rattlers(packing::AbstractPacking)
     N = length(packing.Particles)
     return (1:N)[is_a_rattler.(packing.Particles)]
@@ -29,6 +30,7 @@ function get_coordination_number(packing::AbstractPacking; only_stable::Bool=fal
     end
 end
 
+"Test whether a given packing is isostatic or not. The output is a boolean"
 function is_isostatic(packing::AbstractPacking{d, T}; only_stable::Bool=true)::Tuple{Bool, Int64, Int64} where {d, T<:Real}
     Nnr = length(get_non_rattlers(packing)); # amount of non-rattlers 
     N_dof = d*(Nnr-1)+1 # number of degrees of freedom
@@ -36,7 +38,7 @@ function is_isostatic(packing::AbstractPacking{d, T}; only_stable::Bool=true)::T
     return Nc==N_dof, Nc, Nnr
 end
 
-
+"Output an array of `StaticVector`s corresponding to the sum of forces acting on each particle of the packing."
 function total_force(packing::AbstractPacking{d, T})::Vector{SVector{d, T}} where {d, T<:Real}
     total_force.(packing.Particles)
 end
@@ -101,7 +103,7 @@ MonoPacking([P1, P2], rand(), false, false)
 MonoPacking(d::Int64, N::Int64=1) = MonoPacking(Vector{MonoParticle{d, Float64}}(undef, N), 0.0, false, false)
 MonoPacking(5)
 
-"""
+@doc raw"""
     MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Vector{Vector{SVector{d,T}}}, fs::Vector{Vector{T}}, neighbours::Vector{Vector{Int64}}, R::T, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium)
     MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Vector{Matrix{T}}, fs::Vector{Vector{T}}, neighbours::Vector{Vector{Int64}}, R::T, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium)
 
@@ -114,8 +116,10 @@ Then a Vector{MonoParticle{d,T}} of size N but undefined elements is constructed
 
 The constructors also asses whether force balance for each particle is satisfied, within a 
 given precision 'tol_mechanical_equilibrium' (that defaults to `default_tol_force_equilibrium=1e-12`).
- When this condition is not met, it throws a warning, but the packing is created.
+When this condition is not met, it throws a warning, but the packing is created.
 """
+MonoPacking()
+
 function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Vector{Vector{SVector{d,T}}}, fs::Vector{Vector{T}}, neighbours::Vector{Vector{Int64}}, R::T, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, verbose::Bool=true) where {d, T<:Real}
     N = length(Xs) # number of particles
     # th construct the packing all the input arrays should have the same length

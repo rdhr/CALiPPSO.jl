@@ -18,10 +18,11 @@ convergence_info
 produce_jammed_configuration
 network_of_contacts
 check_for_overlaps
+generate_random_configuration
+total_force
 packing_fraction
 is_isostatic
 get_coordination_number
-total_force
 get_non_rattlers
 get_rattlers
 ```
@@ -38,6 +39,7 @@ norm(v::AbstractVector{<:PeriodicNumber})
 
 ```@docs
 PeriodicVector
+MonoPacking()
 ```
 
 ### Secondary functions
@@ -53,6 +55,9 @@ CALiPPSO.fine_tune_forces!
 ```@docs
 CALiPPSO.print_monitor_progress
 CALiPPSO.print_converged
+CALiPPSO.print_info_convergence
+CALiPPSO.print_failed_max_iters
+CALiPPSO.print_non_isostatic
 ```
 
 ## Other functions

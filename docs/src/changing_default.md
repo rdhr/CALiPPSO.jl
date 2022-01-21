@@ -1,5 +1,3 @@
-
-
 ## Changing the default options
 
 For ease of use, several default values have been defined in our code. Some of them are specific or related to the solver we used, while others specified convergence criteria, etc. In any case, we stress that all of them have been extensively tested *only with the Gurobi solver*, and when the ILP's [initial configuration was obtained after LS compression](#the-initial-conditions). Therefore, if you want to [use a different solver](#changing-the-solveroptimizer) or initialize ILP from a different type of configuration it is likely that you'll need to make some small changes to these default parameters.
@@ -31,8 +29,8 @@ const default_solver_attributes = Dict("OutputFlag" => 0, "FeasibilityTol" => to
 
 **Remark**: The value of `tol_optimality` corresponds to the most precise one allowed by Gurobi (both for 'OptimalityTol' and 'FeasibilityTol'); go [here](https://www.gurobi.com/documentation/9.1/refman/optimalitytol.html) for more information. The value of `tol_overlap` was then chosen accordingly; that is, several times (10) larger, because the optimal value of each degree of freedom is determined with an accuracy of `tol_optimality`.
 
-____
-### Controlling `produce_jammed_configuration` with keyword arguments
+---
+### [Controlling `produce_jammed_configuration` with keyword arguments](@id kwargs-control)
 
 The full list of keyword arguments (kwargs) of `produce_jammed_configuration` can be readily accessed from the documentation. Here we provide the same list (with their default values, defined above), with a more detailed description when needed. Thus, the value of any of them can be conveniently tunned to your needs by calling `produce_jammed_configuration(Xs0, R, L; kwarg=<your chosen value>)`.
 

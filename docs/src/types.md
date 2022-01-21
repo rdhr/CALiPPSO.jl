@@ -1,6 +1,6 @@
-# Types (aka `Structs`) defined in this package
+# [Types (aka `Structs`) defined in this package](@id types)
 
-## Dependencies
+## Used packages
 
 - Static vectors from `StaticArrays`
 

@@ -1,11 +1,9 @@
-# ToDo's:
+# Some ToDo's
 
 - [ ] Add implementation for polydisperse packigns
 - [ ] Try to implement model creation with `direct_model` instead of `Model` (to avoid copying the model).
   - Currently, when `direct` model is used it throws the error `The solver does not support an objective function of type MathOptInterface.SingleVariable.` when using HiGHS (and possibly with other solvers similar errors occur). 
 - [X] Add section (or at least explanation) about rattlers
-- [ ] Add file for installing the required dependencies
-- [ ] Make a consistent use of "solver" and "optimizer"; follow JuMP's terminology.
 - [X] Remove `monitor_force_balance` from kwargs of main function
 - [X] Clarify that `precompile_main_function` can be set to `false` to avoid pre-compiling
 - [X] Add precompiling behaviour conditioned on whether `precompile_main_function` has been defined or not; use `@isdefined`.
@@ -14,3 +12,9 @@
 - [ ] Check all links
 - [ ] Add API of main functions (remember to add it to side bar and TOC)
 - [ ] Add examples using [Literate.jl](https://fredrikekre.github.io/Literate.jl/v2/)
+- [ ] Finish/correct *docstrings* in the scripts
+- [ ] Change `iLP-for-jamming.jl` to `CALiPPSO.jl` or something like that. Remember to also change the name in the documentation and relevant scripts.
+- [ ] Change "ILP" to "CALiPPSO", and "Steps" to "Iterations" in the printed output of `produce_jammed_configuration` and *in the rest of the files, __including scripts__*
+- [ ] Add `verbose` argument to `MonoPacking` function called when the final packing is constructed.
+- [ ] Add time of `fine_tune_forces!` to total time.
+- [ ] Add array of `max_si_vs_t` to the output of `produce_jammed_configuration`

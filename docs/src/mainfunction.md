@@ -5,7 +5,7 @@ Our main function consists of two essentially independent parts: (1) the main IL
 
 ---
 
-### The main Linear Optimization loop
+### [The main Linear Optimization loop](@id mainloop)
 
 
 From the initial particles' position and size (*i.e.* the input of `produce_jammed_configuration`), a `while` loop is initialized until the *convergence criteria* defined [above](#introduction-how-ilp-works-and-some-terminology) are reached. More precisely, the loop continues as long as: (1) ``\sqrt{\Gamma^\star}-1 \geq``` tol_Γ_convergence`; or (2) ``|s^\star_{i,\mu}| \geq`` `tol_S_convergence` for ``i=1, \dots, N`` and ``\mu=1,\dots, d`` (although see step 4 below); or the number of iterations (*i.e* the number of LP optimizations) does not exceed `max_iters`. The default values of these 3 quantities are [given below](#list-of-default-values) and can be easily changes as [keyword arguments](#controlling-produce_jammed_configuration-with-keyword-arguments) of `produce_jammed_configuration`.
