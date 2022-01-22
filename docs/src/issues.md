@@ -10,5 +10,19 @@
 4. The right convergence tolerance values, *i.e.* the right choice of `tol_Γ_convergence` and `tol_S_convergence` possibly depend on the solver
 5. `Tulip.jl` give an isostatic config only when the status of the optimization is `ITERATION_LIMIT`, which also entails that forces are determined with very, very low accuracy. Notably, even though this happens, the force mismatch is very small.
 
+### Setting the required precision
+
+## Overlaps occur
+
+### Due to numerical error
+
+### REAL overlaps
+
+When this occurs, it is likely that the value of `sbound` is too large with respect of the value of ``\ell`` used. So try using a larger value of `ℓ0` (if this occurred when ``\Gamma^\star`` was still relatively large).
+   -  Try using a smaller value of `sbound`.
+   -  Or try redefining the bounds with which ``\ell`` is adjusted as ILP progresses.
+   -  These three options can be set as keywords arguments of [`produce_jammed_configuration`](@ref) as explained [in this section](@ref kwargs-control). 
+   -  See the docstring of [`bounds_and_cutoff`](@ref CALiPPSO.bounds_and_cutoff) for more info.
 
 ## Convergence not attained
+

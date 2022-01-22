@@ -104,8 +104,8 @@ MonoPacking(d::Int64, N::Int64=1) = MonoPacking(Vector{MonoParticle{d, Float64}}
 MonoPacking(5)
 
 @doc raw"""
-    MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Vector{Vector{SVector{d,T}}}, fs::Vector{Vector{T}}, neighbours::Vector{Vector{Int64}}, R::T, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium)
-    MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Vector{Matrix{T}}, fs::Vector{Vector{T}}, neighbours::Vector{Vector{Int64}}, R::T, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium)
+    MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Vector{Vector{SVector{d,T}}}, fs::Vector{Vector{T}}, neighbours::Vector{Vector{Int64}}, R::T, jammed::Bool=false; <keyword arguments>)
+    MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Vector{Matrix{T}}, fs::Vector{Vector{T}}, neighbours::Vector{Vector{Int64}}, R::T, jammed::Bool=false; <keyword arguments>)
 
 Create a d-dimensional packing, where the attributes of each particles are inferred from the
  elements of the input arrays.

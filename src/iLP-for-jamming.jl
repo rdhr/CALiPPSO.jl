@@ -319,7 +319,11 @@ function print_info_convergence(final_packing::MonoPacking{d, T}, isostatic::Boo
 end
 
 
-"Check for overlaps in all the particles of a given packing, obtained after ILP converged."
+@doc raw"""
+    check_for_overlaps(packing::MonoPacking, t::Int64, possible_neighbours::Vector{Vector{Int64}}, jammed::Bool; tolerance=default_tol_overlap)
+Check for overlaps in all the particles of a given packing, obtained after ILP converged.
+"""
+check_for_overlaps(packing::MonoPacking)
 function check_for_overlaps(packing::MonoPacking, t::Int64, possible_neighbours::Vector{Vector{Int64}}, jammed::Bool; tolerance=default_tol_overlap)
     printstyled("Checking for overlaps after convergence...\n", color=:yellow, bold=false)
 
@@ -434,7 +438,7 @@ to 'i' if j>i; or to 'j' otherwise). Thus the i-th entry of the output arrays on
 constraints and indices associated to particles of index greater than 'i'.
 
 See also [`MIC_distance`](@ref), [`MIC_vector`](@ref), [`@constraint`](@ref), 
-[`solve_LP_instance`](@ref), [`fine_tune_forces`](@ref).
+[`solve_LP_instance`](@ref), [`fine_tune_forces!`](@ref).
 """
 function add_non_overlapping_constraints!(model::JuMP.Model, Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, ℓ::T, images::Vector{SVector{d, T}}) where {d, T<:Float64}
     #TODO: check if the method of distances_between_centers(centers, images) yields a more efficient function. In such case, the indices of images are also computed from the beginning
@@ -502,7 +506,7 @@ given as input.
 
 
 See also [`add_non_overlapping_constraints!`](@ref), [`@constraint`](@ref), [`@optimize!`](@ref),
-[`produce_jammed_configuration`](@ref), [`fine_tune_forces`](@ref).
+[`produce_jammed_configuration`](@ref), [`fine_tune_forces!`](@ref).
 """
 function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, sqrΓ::T, ℓ0::T, images::Vector{SVector{d, T}};
     solver::Symbol=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
@@ -634,7 +638,12 @@ function network_of_contacts(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constrai
 end
 
 
-"Construct a `MonoPacking` from the set of particles' position ('Xs'), set of all constraints defined in the LP model ('constraints'), list of *possible* neighbours ('neighbours_list'), and virtual images ('images') needed for the MIC contact vectors. "
+@doc raw"""
+    MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, R::T, images::Vector{SVector{d, T}}, jammed::Bool=false; <keyword arguments>) where {d, T<:Float64}
+
+Construct a `MonoPacking` from the set of particles' position ('Xs'), set of all constraints defined in the LP model ('constraints'), list of *possible* neighbours ('neighbours_list'), and virtual images ('images') needed for the MIC contact vectors. "
+"""
+MonoPacking(Xs::Vector, constraints::Vector, neighbours::Vector, R::Real)
 function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, R::T, images::Vector{SVector{d, T}}, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces) where {d, T<:Float64}
     # System's size 
     N = length(Xs) ; 
@@ -661,7 +670,7 @@ whether the force balance condition is satisfied in each particle, and consequen
 the `mechanical_equilibrium` field of 'Packing'.
 
 See also [`network_of_contacts`](@ref), [`MonoPacking`](@ref), [`total_force`](@ref),
-[`fine_tune_forces`](@ref).
+[`fine_tune_forces!`](@ref).
 """
 function update_packing_forces!(Packing::MonoPacking{d,T}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, images::Vector{SVector{d, T}}; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::Float64= default_tol_zero_forces) where {d, T<:Float64}
 
@@ -912,7 +921,7 @@ guaranteed to be in mechanical equilibrium, within the same precision.
 - `solver_args=default_args`: The arguments passed to `Optimizer` of the chosen solver. It should be either `nothing` or a `NamedTuple`. Choose the former if testing a solver other than Gurobi, GLPK, or Hypatia.
 
 
-See also [`solve_LP_instance`](@ref), [`fine_tune_forces`](@ref), [`print_monitor_progress`](@ref), [`print_converged`](@ref),
+See also [`solve_LP_instance`](@ref), [`fine_tune_forces!`](@ref), [`print_monitor_progress`](@ref), [`print_converged`](@ref),
 [`check_for_overlaps`](@ref), [`convergence_info`](@ref), [`MonoPacking`](@ref).
 """
 function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T;

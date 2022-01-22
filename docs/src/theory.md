@@ -19,7 +19,9 @@ Instead, if second order terms of ``|\mathbf{s}|_i`` are neglected (for instance
 ```
 where ``\mathbf{r}_{ij} = \mathbf{r}_i - \mathbf{r}_j``, and analogously for ``\mathbf{s}_{ij}``, while ``\sigma_{ij}=(\sigma_i+\sigma_j)/2`` is the sum the pair radii. Thus, we look for the optimal values of ``(\vec{\mathbf{s}}^\star, \Gamma^\star)`` ─the design variables of our problem.
 
-Once the LP optimization has been carried out, the positions and sizes are updated with these optimal values, following the rule ``(\vec{\mathbf{r}} \to \vec{\mathbf{r}} + \vec{\mathbf{s}^\star}, \sigma_i \to \sqrt{\Gamma^\star} \sigma_i)``, whence a new LP instance is created and solved. (The usage of the ``\sqrt{\Gamma}`` instead of ``\Gamma`` is a minor detail used to keep both the objective and the constraints linear in the design variables.) This process continues until ``(\vec{\mathbf{s}}^\star, \Gamma^\star) = (\vec{\mathbf{0}}, 1)``, which we term *convergence condition*. Beside, we refer to one LP optimization as *one iteration* of the CALiPPSO algorithm.
+Once the LP optimization has been carried out, the positions and sizes are updated with these optimal values, following the rule ``(\vec{\mathbf{r}} \to \vec{\mathbf{r}} + \vec{\mathbf{s}^\star}, \sigma_i \to \sqrt{\Gamma^\star} \sigma_i)``, whence a new LP instance is created and solved. (The usage of the ``\sqrt{\Gamma}`` instead of ``\Gamma`` is a minor detail used to keep both the objective and the constraints linear in the design variables.) 
+Updating a configuration using ``\Gamma^\star`` and ``\vec{\mathbf{s}}^\star`` and formulating a new LP instance leads to an iterative process that clearly approaches the jamming point, because at each step the density is increased without occurring into any overlaps.
+This process continues until ``(\vec{\mathbf{s}}^\star, \Gamma^\star) = (\vec{\mathbf{0}}, 1)``, which we term *convergence condition*. For brevity, we call **Iterative Linear Programming (ILP)** such process of transforming a configuration using the chain of optimal solutions to the LP problems. Besides, we refer to one LP optimization as *one iteration* of the CALiPPSO algorithm.
 
 
 

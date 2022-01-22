@@ -105,7 +105,7 @@ The contents are:
 
   + Line 4: The optimal value of the inflation factor, ``\Gamma^\star`` (actually ``\sqrt{\Gamma^\star}-1``), and the largest magnitude of the optimal displacements, ``\max \{ | \mathbf{s}_i^\star|\}_{i=1}^N``. 
   
-    **Note:** when computing this second quantity, *all* the particles are considered. Thus, it is very likely that the value reported correspond to ``|\mathbf{s}^\star|`` of **a rattler**.
+    **Note:** when computing this second quantity, *all* the particles are considered. Thus, it is very likely that the value reported correspond to ``|\mathbf{s}^\star|`` of **a rattler**. Because this particles are mostly unconstrained by their neighbours, specially during the first iterations, their value of ``|\mathbf{s}^\star|`` might *saturate* `s_{bound}`. Indeed, compare these two values in the example output above.
 
 + Line 5: Largest magnitude of optimal displacements, bot now *only stable particles* are considered.
 + Line 6: Values of the packing fraction, ``\varphi``, and particles' radius ``R``, updated after ``\Gamma^\star`` has been found.
@@ -182,7 +182,7 @@ TO BE ADDED
 - You can (or at least should be able to) use as input any valid hard-sphere configuration generated from your favourite method (for instance, the Lubachevsky─Stillinger (LS) compression protocol as described [before](@ref The-initial-conditions)).
 - Alternatively, you can also use the function [`generate_random_configuration`](@ref)`(d, N, ϕ)` provided here to generate a random *low-density* initial configuration of `N` particles in `d` dimensions with density `ϕ`. See however [the possible caveat](@ref The-initial-conditions) of initializing CALiPPSO with a configuration of low density (*i.e. far from jamming).
 - As CALiPPSO progresses, checks of the absence of overlaps are implemented automatically.
-- Stability and force balance checks are implemented. They are useful to track possible numerical issues after the LP optimizations are carried out; see the section on [Understanding the screen output](@ref).
+- Stability and force balance checks are implemented. They are useful to track possible numerical issues after each of the LP optimizations are carried out; the details are given [above](@ref output-process) and how to solve numerical issues is discussed [here](@ref Problem-solving).
 - The cutoff or radius of influence, ``\ell``, is automatically adjusted in such a way that only nearby pairs of particles are considered when building the set of non-overlapping constraints.
 - The behaviour and other parameters of the main function can be easily controlled through [keyword arguments](@ref kwargs-control).
 

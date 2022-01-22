@@ -1,8 +1,8 @@
-## Changing the default options
+# Changing the default options
 
 For ease of use, several default values have been defined in our code. Some of them are specific or related to the solver we used, while others specified convergence criteria, etc. In any case, we stress that all of them have been extensively tested *only with the Gurobi solver*, and when the ILP's [initial configuration was obtained after LS compression](#the-initial-conditions). Therefore, if you want to [use a different solver](#changing-the-solveroptimizer) or initialize ILP from a different type of configuration it is likely that you'll need to make some small changes to these default parameters.
 
-### List of default values
+## [List of default values](@id list-defaults)
 
 The main default values, all of them defined as *global* variables (using `const`), are the following:
 
@@ -30,11 +30,11 @@ const default_solver_attributes = Dict("OutputFlag" => 0, "FeasibilityTol" => to
 **Remark**: The value of `tol_optimality` corresponds to the most precise one allowed by Gurobi (both for 'OptimalityTol' and 'FeasibilityTol'); go [here](https://www.gurobi.com/documentation/9.1/refman/optimalitytol.html) for more information. The value of `tol_overlap` was then chosen accordingly; that is, several times (10) larger, because the optimal value of each degree of freedom is determined with an accuracy of `tol_optimality`.
 
 ---
-### [Controlling `produce_jammed_configuration` with keyword arguments](@id kwargs-control)
+## [Controlling `produce_jammed_configuration` with keyword arguments](@id kwargs-control)
 
 The full list of keyword arguments (kwargs) of `produce_jammed_configuration` can be readily accessed from the documentation. Here we provide the same list (with their default values, defined above), with a more detailed description when needed. Thus, the value of any of them can be conveniently tunned to your needs by calling `produce_jammed_configuration(Xs0, R, L; kwarg=<your chosen value>)`.
 
-#### Kwargs for controlling how constraints are assigned to `LP_model` and setting bounds on displacements
+### Kwargs for controlling how constraints are assigned to `LP_model` and setting bounds on displacements
 
 1. `ℓ0=3.4*R`: Initial value and upper-bound of the radius of influence (``\ell``) for assigning constraints. Used when calling `bounds_and_cutoff` from within `solve_LP_instance` and `fine_tune_forces!`. See item 4 below.
 2. `sqrΓ0=1.01`: Initialization value of ``\sqrt{\Gamma}``; it is used to provide a guess of the value of bound of ``|s_{i,\mu}|`` when ``\Gamma`` is relatively large. Used when calling `bounds_and_cutoff` from within `solve_LP_instance` and `fine_tune_forces!`. See item 4 below.
@@ -46,14 +46,14 @@ The full list of keyword arguments (kwargs) of `produce_jammed_configuration` ca
 
 
 
-#### Kwargs for controlling convergence and termination criteria of ILP
+### Kwargs for controlling convergence and termination criteria of ILP
 
 1. `tol_Γ_convergence=default_tol_Γ_convergence`: Determines the value below which ``\sqrt{\Gamma^\star}-1`` is considered zero (so convergence in the inflation factor has been reached).
 2. `tol_S_convergence=default_tol_displacements`: Determines the value below which ``|s_{i,\mu}^\star|`` is considered zero (so convergence in particles displacements ─restricted to rattlers─ has been reached).
 3. `max_iters=1000`: Maximum number of iterations (*i.e.* LP optimizations) allowed before stopping the main ILP loop.
 4. `non_iso_break=10`: Maximum number of preliminary configurations that can be obtained *consecutively* before the main ILP loop is terminated.
 
-#### Kwargs for controlling precision of overlaps and force balance tests
+### Kwargs for controlling precision of overlaps and force balance tests
 
 1. `tol_mechanical_equilibrium=default_tol_force_equilibrium`: When the norm of the total force acting on any particle is smaller than this quantity, said particle is considered to be in equilibrium.
 2. `zero_force=default_tol_zero_forces`: This is the threshold for determining when a force, or dual variable, is *active*. In other words, whenever `shadow_price(constraint)`, where `constraint` is a `ConstraintRef`, outputs a value larger than `zero_force`, we consider that such constraint is active, and its value is precisely `shadow_price(constraint)`. 
@@ -61,7 +61,7 @@ The full list of keyword arguments (kwargs) of `produce_jammed_configuration` ca
 4. `initial_overlaps_check=initial_monitor`: After each LP optimization `check_for_overlaps` is called, after the configuration has been updated, for these many *initial* iterations. (`initial_monitor` is described below.)
 5. `interval_overlaps_check=10`: after the configuration has been updated, `check_for_overlaps` is also called every `interval_overlaps_check` iterations.
 
-#### Kwargs for controlling output printing on terminal
+### Kwargs for controlling output printing on terminal
 
 1. `verbose=true`: turns on/off the printing of information during the main ILP loop.
 2. `monitor_step=10`: The info about the ILP process is printed out after these many steps (besides other criteria).
@@ -72,9 +72,9 @@ In our experience, most of the problems (*e.g.* a real overlap or an optimizatio
 
 _____
 
-### [Changing the solver/optimizer](@id changing_the_solver)
+## [Changing the solver/optimizer](@id changing_the_solver)
 
-#### Solvers we tried
+### Solvers we tried
 Given that we have used the JuMP interface for solving each LP instance, *in principle*, you can use *any* of the [JuMP compatible solvers](https://jump.dev/JuMP.jl/stable/installation/). Of course, maybe not all of them are suitable for the type of LP optimization our algorithm requires, but there should be ample choice. Indeed, besides Gurobi, we tested the following solvers:
 
 1. [HiGHS.jl](https://github.com/jump-dev/HiGHS.jl): the Julia wrapper of [HiGHS](https://www.maths.ed.ac.uk/hall/HiGHS/). This is also a very performant and precise solver (yet noticeably slower than Gurobi).
@@ -85,7 +85,7 @@ All these solvers produced very good results in the sense that all contacts, rat
 
 We also tested some *pure-Julia* solvers, like [Hypatia.jl](https://github.com/chriscoey/Hypatia.jl) and [COSMO.jl](https://github.com/oxfordcontrol/COSMO.jl). We were able to execute our code with both of them without any error, although in several cases the final packing was non-isostatic due to a lack of precision in identifying the contact forces. This issue is possibly related to our poor choice of the [solver parameters](#selecting-solver-and-specifying-its-attributes), but we didn't perform any additional tests. (So if you know how to improve this *please let us know*.)
 
-#### Selecting solver and specifying its attributes
+### Selecting solver and specifying its attributes
 
 Just as with the other options of `produce_jammed_configuration`, choosing a solver is conveniently done through [keyword arguments](#controlling-produce_jammed_configuration-with-keyword-arguments):
 
@@ -109,4 +109,3 @@ Just as with the other options of `produce_jammed_configuration`, choosing a sol
 
 
 
-#### Setting the required precision

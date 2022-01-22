@@ -5,7 +5,7 @@
 ```@docs
 PeriodicNumber
 MonoParticle{d,T}
-MonoPacking
+MonoPacking{d,T}
 convergence_info
 ```
 
@@ -18,6 +18,7 @@ convergence_info
 produce_jammed_configuration
 network_of_contacts
 check_for_overlaps
+check_for_overlaps(::MonoPacking)
 generate_random_configuration
 total_force
 packing_fraction
@@ -40,6 +41,7 @@ norm(v::AbstractVector{<:PeriodicNumber})
 ```@docs
 PeriodicVector
 MonoPacking()
+MonoPacking(::Vector, ::Vector, ::Vector, ::Real)
 ```
 
 ### Secondary functions
@@ -47,7 +49,12 @@ MonoPacking()
 ```@docs
 CALiPPSO.solve_LP_instance
 CALiPPSO.fine_tune_forces!
-
+CALiPPSO.update_packing_forces!
+CALiPPSO.add_non_overlapping_constraints!
+CALiPPSO.bounds_and_cutoff
+CALiPPSO.obtain_non_rattlers
+CALiPPSO.MIC_vector
+CALiPPSO.MIC_distance
 ```
 
 ### Functions for printing CALiPSSO info and progress
