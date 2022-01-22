@@ -437,7 +437,7 @@ Note that the constraint associated to the pair (i,j) is only counted once (is a
 to 'i' if j>i; or to 'j' otherwise). Thus the i-th entry of the output arrays only contains
 constraints and indices associated to particles of index greater than 'i'.
 
-See also [`MIC_distance`](@ref), [`MIC_vector`](@ref), [`@constraint`](@ref), 
+See also [`MIC_distance`](@ref), [`MIC_vector`](@ref), [`@constraint`](https://jump.dev/JuMP.jl/stable/reference/constraints/#JuMP.@constraint), 
 [`solve_LP_instance`](@ref), [`fine_tune_forces!`](@ref).
 """
 function add_non_overlapping_constraints!(model::JuMP.Model, Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, ℓ::T, images::Vector{SVector{d, T}}) where {d, T<:Float64}
@@ -505,7 +505,7 @@ given as input.
 - `verbose_LP_info::Bool=false`: a boolean to control whether or not to print info of ℓ and `sbound`
 
 
-See also [`add_non_overlapping_constraints!`](@ref), [`@constraint`](@ref), [`@optimize!`](@ref),
+See also [`add_non_overlapping_constraints!`](@ref), [`@constraint`](https://jump.dev/JuMP.jl/stable/reference/constraints/#JuMP.@constraint), [`optimize!`](https://jump.dev/JuMP.jl/stable/reference/solutions/#JuMP.optimize!),
 [`produce_jammed_configuration`](@ref), [`fine_tune_forces!`](@ref).
 """
 function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, sqrΓ::T, ℓ0::T, images::Vector{SVector{d, T}};
@@ -568,7 +568,7 @@ end
 
 
 """
-    function network_of_contacts(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, images::Vector{SVector{d, T}}) where {d, T<:Float64}
+    network_of_contacts(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, images::Vector{SVector{d, T}}) where {d, T<:Float64}
 
 Construct the set of contact vectors, forces magnitudes and list of interacting particles of the full configuration.
 
@@ -589,7 +589,7 @@ we assume i>j.
 - `forces_dual`: A Vector{Vector{Float64}} containing the forces magnitudes acting on each particle. So its i-th element is the list of the magnitude of the forces acting on particle i.
 - `particles_dual_contact`: A Vector{Vector{Int64}} containing the indices of particles in contact with each particle. So its i-th element is the list of indices of particles in contact with the i-th particle.
 
-See also [`add_non_overlapping_constraints!`](@ref), [`@constraint`](@ref), [`@optimize!`](@ref), [`solve_LP_instance`](@ref).
+See also [`add_non_overlapping_constraints!`](@ref), [`@constraint`](https://jump.dev/JuMP.jl/stable/reference/constraints/#JuMP.@constraint), [`optimize!`](https://jump.dev/JuMP.jl/stable/reference/solutions/#JuMP.optimize!), [`solve_LP_instance`](@ref).
 """
 function network_of_contacts(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, images::Vector{SVector{d, T}}; zero_force::T=default_tol_zero_forces) where {d, T<:Float64}
     
@@ -726,7 +726,7 @@ Besides updating the `forces` of each particle in 'Packing', this function produ
 - `tol_mechanical_equilibrium=default_tol_force_equilibrium`: The tolerance to determine whether force balance is fulfilled in each particle.
 
 
-See also [`add_non_overlapping_constraints!`](@ref), [`@optimize!`](@ref),
+See also [`add_non_overlapping_constraints!`](@ref), [`optimize!`](https://jump.dev/JuMP.jl/stable/reference/solutions/#JuMP.optimize!),
 [`produce_jammed_configuration`](@ref), [`solve_LP_instance`](@ref).
 """
 function fine_tune_forces!(Packing::MonoPacking{d, T}, force_mismatch::T, sqrΓ::T, ℓ0::T, images::Vector{SVector{d, T}};      
@@ -860,69 +860,88 @@ end
 
 ##########################################################################
 ##########################################################################
-## Finally, we define the main function to use ILP to produce a jammed configuration of hard-spheres
+## Finally, we define the main function to use CALiPPSO to produce a jammed configuration of hard-spheres
 ##########################################################################
 ##########################################################################
-"""
-    produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T; <keyword arguments>) where {d, T<:Float64}
-    produce_jammed_configuration(Xs::Matrix{T}, R::T, L::T=1.0; <keyword arguments>)
+@doc raw"""
+    produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T; <keyword arguments>) where {d, T<:Float64, I<:Int64}
+    produce_jammed_configuration(Xs::Matrix{T}, R::T, L::T=1.0; <keyword arguments>) where {T<:Float64, I<:Int64}
 
-Use ILP to generate a jammed packing from a configuration of hard-spheres with positions 'Xs' and radius 'R'.
+Use CALiPPSO to generate a jammed packing from a configuration of hard-spheres with positions 'Xs' and radius 'R'.
 
-Because only hard-spheres are considered, clearly the initial configuration must be such that 
+Because this function is meant to work only with hard-spheres, clearly the initial configuration must be such that 
 no overlaps are present.
 The dimensionality of the system, 'd', is automatically inferred from the size of the 
-`SVector`'s forming the positions vector. Besides, the periodic boundary conditions are 
-taken into account given that each `SVector` contains elements of type `PeriodicNumber`. (If 
-the input is of type `Matrix{T}`, it is converted to `Vector{SVector{d,T}}` before ILP begins.)
+`SVector`s forming the positions vector. Besides, the periodic boundary conditions are 
+taken into account given that each `SVector` contains elements of type [`PeriodicNumber`](@ref). (If 
+the input is of type `Matrix{T}`, it is converted to `Vector{SVector{d,T}}` before CALiPPSO begins.)
 
-The core of this function is a loop, whose main step consists in using `solve_LP_instance` 
-to obtain the maximal inflation factor (Γ) and set of particles' displacements 
-(S⃗ or sᵢ, ∀ i=1,...,N) from a given configuration. The particles' size and 
-position are updated, and a new LP instance is created and solved. (Each of these LP 
-optimizations is considered a single iteration of ILP.) 
-As explained in the paper, convergence is said to be achieved when *both*, the packing 
-fraction cannot be further increased (i.e. √Γ=1), and (non-rattler) particles cannot be 
-further displaced (|sᵢ|=0). In practice, a small error should be allowed in both quantities, 
+The core of this function is the so called [ILP loop](@ref mainloop), whose essential step consists in using [`solve_LP_instance`](@ref)
+to obtain the maximal inflation factor (``\Gamma``) and set of optimal particles' displacements 
+(``\vec{\mathbf{s}}^\star = \{\mathbf{s}_i^\star\}_{i=1}^N`` --denoted as S⃗ in our scripts.) 
+from a given configuration. The particles' size and position are updated, and a new LP instance is 
+created and solved. (Each of these LP optimizations is considered a single iteration of CALiPPSO.) 
+As explained in our paper, convergence is said to be achieved when *both*, the packing 
+fraction cannot be further increased (i.e. ``\Gamma^\star=1``), and (non-rattler) particles cannot be 
+further displaced (``\vec{\mathbf{s}}^\star = 0``). 
+In practice, a tolerance should be allowed in both quantities, 
 and this is controlled by `tol_Γ_convergence` and `tol_S_conv` as described below.
-Another reason why the ILP loop might be terminated is that the maximal number of iterations 
+Another reason why the main loop might be terminated is that the maximal number of iterations 
 has been exceeded (see below).
 
 In case the packing thus obtained does not satisfy force balance (within a given 
-precision), `fine_tune_forces!` is called on such packing. In this way, the final packing is 
+precision), [`fine_tune_forces!`](@ref) is called on such packing. In this way, the final packing is 
 guaranteed to be in mechanical equilibrium, within the same precision.
 
 
 # Output
-1. `final_packing`: A `MonoPacking{d,T}` corresponding to a jammed state (unless `max_iters` exceeded).
-2. `conv_info`: A `convergence_info` `struct` storing the termination status of ILP and other useful info; see [`convergence_info`](@ref).
-3. `Γs_vs_t`: An array containing the optimal values of √Γ obtained after each LP optimization.
+1. `final_packing`: A [`MonoPacking{d,T}`](@ref) corresponding to a jammed state (unless `max_iters` exceeded).
+2. `conv_info`: A `convergence_info`](@ref) `struct` storing the termination status of CALiPPSO and other useful information.
+3. `Γs_vs_t`: An array containing the optimal values of `\sqrt{\Gamma}` obtained after each LP optimization.
 4. `iso_vs_t`: A boolean vector whose elements indicate whether the preliminary configurations were isostatic or not.
 
-# Keyword arguments (we're assuming `where {I<:Int64}`)
-- `ℓ0::T=3.4*R`: Upper bound for the radius of influence (for calling `bounds_and_cutoff`).
-- `sqrΓ0::Real=1.01`: Initialization value of √Γ (for calling `bounds_and_cutoff`).
+
+# Keyword arguments
+
+## Arguments needed for calling [`bounds_and_cutoff`](@ref)
+- `ℓ0::T=3.4*R`: Upper bound for the radius of influence.
+- `sqrΓ0::Real=1.01`: Initialization value of ``\sqrt{\Gamma}``.
 - `thresholds_bounds::Tuple{T, T}=(5e-4, 1e-5)`: Thresholds that determine the different behaviour of `bounds_and_cutoff`.
 - `sbound::T=0.01`: Fraction of 'R' used for very small inflation factor; see `bounds_and_cutoff`.
-- `max_iters::I=1000`: Maximum number iterations within ILP; that is maximum number of LP optimizations allowed.
-- `tol_Γ_convergence::T=eps()`: determines the convergence criterion of the packing fraction as `√Γ-1 <= tol_Γ_convergence`. It defaults to `eps()=2.220446049250313e-16`.
-- `tol_S_convergence::T=1e-10`: determines the convergence criterion for the displacements as |sᵢ|`<=tol_S_conv` ∀ i=1,..., N.
-- `tol_mechanical_equilibrium::Float64=1e-12`: tolerance to test whether a packing satisfies the force balance condition.
-- `zero_force::T=1e-10`: threshold for identifying a force as non-zero.
-- `tol_overlap::T=default_tol_overlap:`: tolerance with which overlaps are identified. That is, if particles are overlapping, but are doing so by a quantity smaller than the `const` `default_tol_overlap` (default 1e-8), no error is thrown. This rather loose tolerance is related to the maximal precision available with Gurobi.
-- `non_iso_break::I=10`: When this amount of non-isostatic configurations have been produced *consecutively* the algorithm terminates because it is very likely that the final configuration will also be non-isostatic (specially if beginning from a highly compressed state). Note however that every time an isostatic configuration is obtained, this counter resets to 0.
-- `verbose::Bool=true`: Control whether some info about the ILP progress and the final packing is printed out or not.
-- `monitor_step::I=10`: How often info about the ILP progress should be printed out; will only take effect if `verbose=true`.
-- `initial_monitor::I=monitor_step`: print info about the ILP progress during this amount of initial LP optimizations; will only take effect if `verbose=true`.
+
+## Arguments that determine `produce_jammed_configuration` termination criteria
+The list of default values is specified in [this part](@ref list-defaults) of the documentation.
+- `max_iters::I=1000`: Maximum number iterations of the ILP loop; that is, the maximum number of LP optimizations allowed.
+- `tol_Γ_convergence::T=default_tol_Γ_convergence`: determines the convergence criterion of the packing fraction as ``\sqrt{\Gamma^\star}-1 \leq `` `tol_Γ_convergence`. 
+- `tol_S_convergence::T=default_tol_displacements`: determines the convergence criterion for the displacements as ``\max |\mathbf{s}_{i,\mu}^\star|_{i=1,\dots,N}^{\mu=1,\dots, d} \leq `` `<=tol_S_conv`.
+- `non_iso_break::I=10`: Number of *consecutive* non-isostatic solutions allowed before `produce_jammed_configuration` terminates. The reason is that it is very likely that the final configuration will also be non-isostatic (specially if beginning from a highly compressed state). Note however that every time an isostatic configuration is obtained, this counter resets to 0.
+
+## Arguments for controlling the behaviour of the solver/optimizer
+
+- `solver::Symbol=default_solver`: The solver (*i.e.* the package or library) employed used by JuMP to solve each LP instance. By default it is `:Gurobi`.
+- `solver_attributes::Dict=default_solver_attributes`: The attributes used by the solver. It's used to control some of its features, such as precision, iteration limits, etc. But it depend on which solver is used.
+- `solver_args=default_args`: Arguments passed to the `solver.Optimizer` function. It is also used to control the parameters of the optimizer.
+
+More detailed information is available [in this part](@ref changing_the_solver) of the documentation.
+
+
+## Arguments to control the tolerance of mechanical equilibrium, overlaps identification, etc.
+The list of default values is specified in [this part](@ref list-defaults) of the documentation.
+
+- `tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium`: tolerance to test whether a packing satisfies the force balance condition.
+- `zero_force::T=default_tol_zero_forces`: threshold for identifying a force as non-zero.
+- `tol_overlap::T=default_tol_overlap:`: tolerance with which overlaps are identified. That is, if particles are overlapping, but are doing so by a quantity smaller than `default_tol_overlap` (default 1e-8), no error is thrown. This rather loose tolerance is related to the maximal precision available with Gurobi.
+
+## Arguments controlling the screen printed output
+- `verbose::Bool=true`: Control whether some info about the progress of CALiPPSO and the final packing is printed out or not.
+- `monitor_step::I=10`: How often info about the progress in the main ILP loop should be printed out; will only take effect if `verbose=true`. See [`print_monitor_progress`](@ref) for more information.
+- `initial_monitor::I=monitor_step`: print info about the ILP loop progress during this amount of initial LP optimizations; will only take effect if `verbose=true`.
+
+## Arguments controlling the implementation of overlaps checks
+See [`check_for_overlaps`](@ref) for more information
 - `interval_overlaps_check::I=10`: interval of LP optimizations at which it is verified that no overlaps are present in the system.
-- `initial_overlaps_check::I=initial_monitor`: number of LP optimizations at which it is verified that no overlaps are present; given that for low density initial configurations, ILP might produce rather large displacements, it is always convenient to keep track of the overlaps in such initial stage.
-- `solver::Symbol=:Gurobi`: the solver used to solve each LP instance; see `solve_LP_instance` for more info.
-- `solver_attributes::Dict=default_solver_attributes`: The attributes (i.e. parameters) passed to the solver after creating model, using `set_optimizer_attributes`.
-- `solver_args=default_args`: The arguments passed to `Optimizer` of the chosen solver. It should be either `nothing` or a `NamedTuple`. Choose the former if testing a solver other than Gurobi, GLPK, or Hypatia.
+- `initial_overlaps_check::I=initial_monitor`: number of initial LP optimizations at which it is verified that no overlaps are present; given that for low density initial configurations, CALiPPSO might produce rather large displacements, it is always convenient to keep track of the overlaps in such initial stage.
 
-
-See also [`solve_LP_instance`](@ref), [`fine_tune_forces!`](@ref), [`print_monitor_progress`](@ref), [`print_converged`](@ref),
-[`check_for_overlaps`](@ref), [`convergence_info`](@ref), [`MonoPacking`](@ref).
 """
 function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T;
         ℓ0::T=3.4*R, sqrΓ0::Real=1.01, thresholds_bounds::Tuple{T, T}=(5e-4, 1e-5), sbound::T=0.01,
@@ -1026,7 +1045,7 @@ function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}},
         # Check for overlaps during initial iterations, which might be the ones causing some troubles, or after a given interval
         # Note that these are temporary configurations.
         if iter%interval_overlaps_check==0 || iter<=initial_overlaps_check
-            check_for_overlaps(Xs, R, S⃗, iter, possible_neighs; tol_overlap=default_tol_overlap)
+            check_for_overlaps(Xs, R, S⃗, iter, possible_neighs; tol_overlap=tol_overlap)
         end
         
     end 
@@ -1065,7 +1084,7 @@ function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}},
     verbose && print_info_convergence(final_packing, isostatic, t_exec, memory)
 
     # check for overlaps in the FINAL packing
-    check_for_overlaps(final_packing, iter, possible_neighs, jammed; tolerance=default_tol_overlap)
+    check_for_overlaps(final_packing, iter, possible_neighs, jammed; tolerance=tol_overlap)
 
     return final_packing, conv_info, Γs_vs_t[1:iter], iso_vs_t[1:iter]
 end

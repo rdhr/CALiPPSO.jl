@@ -55,6 +55,7 @@ CALiPPSO.bounds_and_cutoff
 CALiPPSO.obtain_non_rattlers
 CALiPPSO.MIC_vector
 CALiPPSO.MIC_distance
+CALiPPSO.volume
 ```
 
 ### Functions for printing CALiPSSO info and progress
