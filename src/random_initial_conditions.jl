@@ -1,9 +1,13 @@
-
-module RandomIC
-    export generate_random_configuration
+# module RandomIC
+#     export generate_random_configuration
 
     using Distributions, StaticArrays
-    include("packing-type.jl")
+    # include("packing-type.jl")
+    # const precompile_main_function = false
+    if !(@isdefined produce_jammed_configuration)
+        include("iLP-for-jamming.jl")
+    end
+    using .CALiPPSO
     
     #################################################
     # Functions to obtain particle radii from packing fraction and other simple geometric properties
@@ -69,4 +73,4 @@ module RandomIC
         return r, centers
     end
     generate_random_configuration(3, 10, 0.2)
-end
+# end

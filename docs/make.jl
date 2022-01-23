@@ -2,11 +2,11 @@ const precompile_main_function = false
 include("../src/iLP-for-jamming.jl")
 using .CALiPPSO
 include("../src/random_initial_conditions.jl")
-using .RandomIC
+# using .RandomIC
 using Documenter
 
 makedocs(sitename="CALiPPSO",
-    modules = [CALiPPSO, RandomIC],
+    # modules = [CALiPPSO, RandomIC],
     pages = [
         "Home" => "index.md",
         "Introduction: theory and few details" => "theory.md",
