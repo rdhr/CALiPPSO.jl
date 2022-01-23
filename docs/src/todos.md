@@ -18,3 +18,4 @@
 - [ ] Add `verbose` argument to `MonoPacking` function called when the final packing is constructed.
 - [ ] Add time of `fine_tune_forces!` to total time.
 - [ ] Add array of `max_si_vs_t` to the output of `produce_jammed_configuration`
+- [ ] Improve the `show` method for `MonoParticle` and `MonoPacking`

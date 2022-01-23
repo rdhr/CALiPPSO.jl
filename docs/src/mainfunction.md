@@ -1,7 +1,7 @@
 # [How `produce_jammed_configuration` works](@id main_function)
 
 
-Our main function consists of two essentially independent parts: (1) the main Iterative Linera Programming [(ILP) loop](@ref Theory-behind-CALiPPSO); and (2) the packing creation from the quantities obtained after using ILP. We now describe each of them.
+Our main function consists of two essentially independent parts: (1) the main Iterative Linear Programming [(ILP) loop](@ref Theory-behind-CALiPPSO); and (2) the packing creation from the quantities obtained after using ILP. We now describe each of them.
 
 ---
 
@@ -46,8 +46,6 @@ This main loop consists of the following steps:
    -  Note also that a *real* overlap can also occur (*i.e*. once in which a pair of particles is overlapping by an amount much larger than the accuracy with which a solver fulfills the constraints). If this happens, try some of the solutions [mentioned here](@ref REAL-overlaps)
       
 7. Check if convergence criteria are fulfilled. If this is the case, the ILP loop terminates. Otherwise, go back to step 1.
-
-
 
 
 

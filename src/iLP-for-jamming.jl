@@ -937,7 +937,7 @@ The list of default values is specified in [this part](@ref list-defaults) of th
 - `monitor_step::I=10`: How often info about the progress in the main ILP loop should be printed out; will only take effect if `verbose=true`. See [`print_monitor_progress`](@ref) for more information.
 - `initial_monitor::I=monitor_step`: print info about the ILP loop progress during this amount of initial LP optimizations; will only take effect if `verbose=true`.
 
-## Arguments controlling the implementation of overlaps checks
+## Arguments for performing overlaps checks
 See [`check_for_overlaps`](@ref) for more information
 - `interval_overlaps_check::I=10`: interval of LP optimizations at which it is verified that no overlaps are present in the system.
 - `initial_overlaps_check::I=initial_monitor`: number of initial LP optimizations at which it is verified that no overlaps are present; given that for low density initial configurations, CALiPPSO might produce rather large displacements, it is always convenient to keep track of the overlaps in such initial stage.
