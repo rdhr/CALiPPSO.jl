@@ -278,7 +278,7 @@ function print_converged(t::I, status, sqrΓ, max_Si, R, N::I, L, d::I, n_constr
      max_constr = maximum(n_constr); avg_constr = round(mean(n_constr), digits=2); std_constr = round(std(n_constr), digits=2)
 
     printstyled("\n\n\tCALiPPSO converged! \t \t Status of last LP optimization: ", status, "\n", bold=true, color=color)
-    printstyled("Steps to convergence = ", t, ",\t√Γ-1 = ", sqrΓ-1, ",\t Max displacement = ", round(max_Si, digits=dig_S), ",\t (ϕ, R) = ",  round.([ϕ, R], digits=dig_R), "\n", bold=true, color=color)
+    printstyled("Iterations to convergence = ", t, ",\t√Γ-1 = ", sqrΓ-1, ",\t Max displacement = ", round(max_Si, digits=dig_S), ",\t (ϕ, R) = ",  round.([ϕ, R], digits=dig_R), "\n", bold=true, color=color)
     println("\tNon_rattlers= ", Nnr, "\t% of rattlers = ", round(100*(1-Nnr/N), digits=3),  "\t(Max, mean±std) constraints per particle per d: ", [max_constr, avg_constr, std_constr])
 end
 
@@ -348,7 +348,7 @@ end
 
 # struct for saving information about the convergence time, resources, etc. of the ILP algorithm
 "
-Struct to save convergence information of an ILP solution. For more info, see docs of its fields: `converged`, `iterations`, `time`, `memory`, `time_LP_steps`."
+Struct to save convergence information of an ILP solution. For more info, see docs of its fields: `converged`, `iterations`, `time`, `memory`, `times_LP_optim`."
 struct convergence_info
     "Whether or not the convergence criteria were met."
     converged::Bool # whether or not the ILP algorithm converged (possibly to a jammed packing)
@@ -359,7 +359,7 @@ struct convergence_info
     "Memory allocated while running ILP."
     memory::Float64 # allocated memory, as measured by 'time' (in GB)
     "Array of the times needed to optimize each LP instance."
-    time_LP_steps::Vector{Float64} # list of solving times of each LP optimization step
+    times_LP_optim::Vector{Float64} # list of solving times of each LP optimization step
 end
 convergence_info(false, 0, 0.0, 0.0, zeros(2))
 
@@ -966,7 +966,7 @@ function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}},
     # **** Here ILP begins, in order to obtain the jammed configuration ****
     # We're timing ('t_exec') the full process and also storing the allocated memory ('bytes'). The rest of the l.h.s variables are irrelevant
     #######################################################################################
-    val, t_exec, bytes, gctime, memallocs = @timed while (sqrΓ-1>tol_Γ_convergence || max_Si>tol_S_convergence)
+    exec_stats = @timed while (sqrΓ-1>tol_Γ_convergence || max_Si>tol_S_convergence)
 
         iter+=1
         if iter>max_iters 
@@ -1037,7 +1037,7 @@ function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}},
         
 
         if non_iso_count>=non_iso_break
-            printstyled("Aborting the jamming process because too many steps (=$non_iso_break) yield NON-isostatic configurations!!\n", color=:red, bold=true)
+            printstyled("Aborting the jamming process because too many iterations (=$non_iso_break) yield NON-isostatic configurations!!\n", color=:red, bold=true)
             converged = false
             break
         end
@@ -1052,6 +1052,8 @@ function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}},
     ###################
     # THIS ENDS THE MAIN LOOP OF ILP 
     ###################
+    t_exec = exec_stats.time # running time of the main loop
+    bytes = exec_stats.bytes # memory allocated in the main loop
 
     # The rest of the function analyses and stores the output of the ILP process, construct the final packing, and performs some last checks.
     if non_iso_count<non_iso_break && iter<=max_iters # Check whether the final configuration corresponds to a jammed stated (i.e. convergence was achieved)
@@ -1070,11 +1072,16 @@ function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}},
 
     ## if there is a (relatively) large force mismatch, perform a last LP optimizations so the force balance condition is met more accurately
     if force_mismatch>tol_mechanical_equilibrium 
-        iter+=1
-        
-        t_solve, isostatic, Nc, Nnr, status = fine_tune_forces!(final_packing, force_mismatch, sqrΓ, ℓ0, config_images; thresholds=thresholds_bounds, tol_mechanical_equilibrium=tol_mechanical_equilibrium, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, zero_force=zero_force)
+        fine_tune_stats = @timed begin
 
-        solve_ts[iter] = t_solve; Γs_vs_t[iter] = 1.0; iso_vs_t[iter] = isostatic # store time, √Γ, and if isostatic of this last iteration.
+            iter+=1
+            
+            t_solve, isostatic, Nc, Nnr, status = fine_tune_forces!(final_packing, force_mismatch, sqrΓ, ℓ0, config_images; thresholds=thresholds_bounds, tol_mechanical_equilibrium=tol_mechanical_equilibrium, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, zero_force=zero_force)
+
+            solve_ts[iter] = t_solve; Γs_vs_t[iter] = 1.0; iso_vs_t[iter] = isostatic # store time, √Γ, and if isostatic of this last iteration.
+        end
+        t_exec += fine_tune_stats.time
+        bytes += fine_tune_stats.bytes
     end
 
     memory = bytes/(1024^3); # allocated memory in GB

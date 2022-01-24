@@ -1,6 +1,6 @@
 # Some ToDo's
 
-- [ ] Add implementation for polydisperse packigns
+- [ ] Add implementation for polydisperse packings
 - [ ] Try to implement model creation with `direct_model` instead of `Model` (to avoid copying the model).
   - Currently, when `direct` model is used it throws the error `The solver does not support an objective function of type MathOptInterface.SingleVariable.` when using HiGHS (and possibly with other solvers similar errors occur). 
 - [X] Add section (or at least explanation) about rattlers
@@ -16,6 +16,7 @@
 - [ ] Change `iLP-for-jamming.jl` to `CALiPPSO.jl` or something like that. Remember to also change the name in the documentation and relevant scripts.
 - [ ] Change "ILP" to "CALiPPSO", and "Steps" to "Iterations" in the printed output of `produce_jammed_configuration` and *in the rest of the files, __including scripts__*
 - [ ] Add `verbose` argument to `MonoPacking` function called when the final packing is constructed.
-- [ ] Add time of `fine_tune_forces!` to total time.
+- [X] Add time of `fine_tune_forces!` to total time.
 - [ ] Add array of `max_si_vs_t` to the output of `produce_jammed_configuration`
 - [ ] Improve the `show` method for `MonoParticle` and `MonoPacking`
+- [ ] Remove unneeded calls and precompilations ... maybe
