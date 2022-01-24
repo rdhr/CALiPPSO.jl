@@ -898,7 +898,8 @@ guaranteed to be in mechanical equilibrium, within the same precision.
 1. `final_packing`: A [`MonoPacking{d,T}`](@ref) corresponding to a jammed state (unless `max_iters` exceeded).
 2. `conv_info`: A `convergence_info`](@ref) `struct` storing the termination status of CALiPPSO and other useful information.
 3. `Γs_vs_t`: An array containing the optimal values of `\sqrt{\Gamma}` obtained after each LP optimization.
-4. `iso_vs_t`: A boolean vector whose elements indicate whether the preliminary configurations were isostatic or not.
+4. `smax_vs_t`: An analogous array of the largest displacement (in absolute value) of *stable* particles.
+5. `iso_vs_t`: A boolean vector whose elements indicate whether the preliminary configurations were isostatic or not.
 
 
 # Keyword arguments
@@ -960,7 +961,7 @@ function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}},
     Nnr_iter = 0;
     #Arrays to store the output
     constraints = Vector{Vector{ConstraintRef}}(undef, N-1); possible_neighs = Vector{Vector{Int64}}(undef, N-1)
-    Γs_vs_t = zeros(max_iters+1); iso_vs_t = falses(max_iters+1); solve_ts = similar(Γs_vs_t); # +1 because it could be that an additional LP step might be needed after convergence to guarantee force balance
+    Γs_vs_t = zeros(max_iters+1); smax_vs_t = L*ones(max_iters+1); iso_vs_t = falses(max_iters+1); solve_ts = similar(Γs_vs_t); # +1 because it could be that an additional LP step might be needed after convergence to guarantee force balance
    
     #######################################################################################
     # **** Here ILP begins, in order to obtain the jammed configuration ****
@@ -1008,7 +1009,7 @@ function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}},
         
         # obtain non-rattlers (important so only the displacements of these particles are considered)
         non_rattlers_iter, Nnr_iter, zs_iter = obtain_non_rattlers(constraints, possible_neighs, d; zero_force=zero_force)
-        (Nnr_iter>0) && (max_Si = maximum(abs.(S⃗[:, non_rattlers_iter])) ); # update value of maximum displacement (max_Si) 
+        (Nnr_iter>0) && (max_Si = maximum(abs.(S⃗[:, non_rattlers_iter])); smax_vs_t[iter] = max_Si ); # update and store value of maximum displacement (max_Si) 
 
         # What follows are just checks for overlaps, verifying isostaticity, printing some output at given steps, etc.
         iso_cond = 0.5*sum(zs_iter[non_rattlers_iter]) == (d*(Nnr_iter-1)+1) # test whether the configuration is isostatic 
@@ -1078,7 +1079,7 @@ function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}},
             
             t_solve, isostatic, Nc, Nnr, status = fine_tune_forces!(final_packing, force_mismatch, sqrΓ, ℓ0, config_images; thresholds=thresholds_bounds, tol_mechanical_equilibrium=tol_mechanical_equilibrium, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, zero_force=zero_force)
 
-            solve_ts[iter] = t_solve; Γs_vs_t[iter] = 1.0; iso_vs_t[iter] = isostatic # store time, √Γ, and if isostatic of this last iteration.
+            solve_ts[iter] = t_solve; Γs_vs_t[iter] = 1.0; smax_vs_t[iter] = 0.0; iso_vs_t[iter] = isostatic # store time, √Γ, and if isostatic of this last iteration.
         end
         t_exec += fine_tune_stats.time
         bytes += fine_tune_stats.bytes
@@ -1093,7 +1094,7 @@ function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}},
     # check for overlaps in the FINAL packing
     check_for_overlaps(final_packing, iter, possible_neighs, jammed; tolerance=tol_overlap)
 
-    return final_packing, conv_info, Γs_vs_t[1:iter], iso_vs_t[1:iter]
+    return final_packing, conv_info, Γs_vs_t[1:iter], smax_vs_t[1:iter], iso_vs_t[1:iter]
 end
 
 
@@ -1207,7 +1208,7 @@ if Main.precompile_main_function
 
     MonoPacking(cen_comp, cons_comp, neighs_comp, rt, images_comp)
 
-    Jpack_comp, conv_info_comp, Γs_comp, isos_comp =  produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, initial_monitor=10, tol_Γ_convergence= 1e-3, tol_S_convergence=1e-2 );
+    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, initial_monitor=10, tol_Γ_convergence= 1e-3, tol_S_convergence=1e-2 );
 
     fine_tune_forces!(Jpack_comp, 0.0, 1.0, Lt, images_comp)
     network_of_contacts(Jpack_comp)

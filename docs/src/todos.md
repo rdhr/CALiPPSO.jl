@@ -17,6 +17,6 @@
 - [ ] Change "ILP" to "CALiPPSO", and "Steps" to "Iterations" in the printed output of `produce_jammed_configuration` and *in the rest of the files, __including scripts__*
 - [ ] Add `verbose` argument to `MonoPacking` function called when the final packing is constructed.
 - [X] Add time of `fine_tune_forces!` to total time.
-- [ ] Add array of `max_si_vs_t` to the output of `produce_jammed_configuration`
+- [X] Add array of `max_si_vs_t` to the output of `produce_jammed_configuration`
 - [ ] Improve the `show` method for `MonoParticle` and `MonoPacking`
 - [ ] Remove unneeded calls and precompilations ... maybe
