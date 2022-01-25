@@ -139,16 +139,16 @@ end
 Base.:-(x2::Real, PN1::PeriodicNumber)::PeriodicNumber = PN1-x2
 
 #Simple first calls for compilation purposes
-pn1=PeriodicNumber(0.1, 3.0); pn2=PeriodicNumber(2.5, 3.0);
-pn1+pn2; pn1-pn2; pn1+2.0; pn2-2.0
-rand()*pn1; pn2*rand()
+PeriodicNumber(0.1, 3.0)+ PeriodicNumber(2.5, 3.0); PeriodicNumber(2.5, 3.0) - PeriodicNumber(0.1, 3.0)
+PeriodicNumber(0.1, 3.0) +2.0; PeriodicNumber(0.1, 3.0) - 2.0
+rand()*PeriodicNumber(2.5, 3.0); PeriodicNumber(2.5, 3.0)*rand()
 
 
 # Define other useful methods for computing absolute values, norm, etc.
 value(PN::PeriodicNumber{<:Real}) = PN.value
 abs(PN::PeriodicNumber{<:Real}) = Base.abs(value(PN))
 abs2(PN::PeriodicNumber{<:Real}) = Base.abs2(value(PN))
-value(pn1); abs(pn1); abs2(pn2) # call for compilation
+# value(pn1); abs(pn1); abs2(pn2) # call for compilation
 
 # Define a 'distance' function to work with numbers with periodic BC
 """
@@ -161,4 +161,4 @@ Since such method always returns a non-negative value and is commutative, this f
 is a well defined distance.
 """
 periodic_distance(P1::PeriodicNumber, P2::PeriodicNumber)::Float64=(P1-P2).value
-periodic_distance(pn1, pn2) # call for compilation
+periodic_distance(PeriodicNumber(0.1, 3.0), PeriodicNumber(2.5, 3.0)) # call for compilation

@@ -55,8 +55,7 @@ function svectors(M::Matrix{T}, ::Val{d}) where {T,d}
     isbitstype(T) || error("use for bitstypes only")
     copy(reinterpret(SVector{d,T}, vec(M)))
 end
-M=reshape(collect(1:6), (2,3))
-svectors(M, Val(2))
+svectors(reshape(collect(1:6), (2,3)), Val(2))
 
 
 function MonoParticle(X::SVector{d, PeriodicNumber{T}}, contact_vecs::Matrix{T}, fs::Vector{T}, neighbours::Vector{Int64}) where {d, T<:Real}
@@ -70,8 +69,8 @@ function MonoParticle(X::SVector{d, PeriodicNumber{T}}, contact_vecs::Matrix{T},
         error("Number of contacts mismatch! There are: ", z, " contact vectors \t", length(fs), " forces and \t ", length(neighbours), " contacts indices")
     end
 end
-Xc = PeriodicNumber.(rand(3), 0.5)
-MonoParticle(SVector{3}(Xc), rand(3,10), rand(10), rand(1:100,10))
+# Xc = 
+MonoParticle(SVector{3}(PeriodicNumber.(rand(3), 0.5)), rand(3,10), rand(10), rand(1:100,10))
 
 # The following two methods are useful if one's being forgetful (or a bit lazy) about defining 'X' as a SVector of 'PeriodicNumber' elements
 
@@ -79,14 +78,13 @@ function MonoParticle(X::Vector{PeriodicNumber{T}}, contact_vecs::Matrix{T}, fs:
     d = length(X)
     MonoParticle(SVector{d}(X), contact_vecs, fs, neighbours)
 end
-Xc = PeriodicNumber.(rand(3), 0.5)
-MonoParticle(Xc, rand(3,10), rand(10), rand(1:100,10))
+MonoParticle(PeriodicNumber.(rand(3), 0.5), rand(3,10), rand(10), rand(1:100,10))
 
 
 MonoParticle(X::Vector{T}, L::T, contact_vecs::Matrix{T}, fs::Vector{T}, neighbours::Vector{Int64}) where {T<:Real} = MonoParticle(PeriodicNumber.(X,L), contact_vecs, fs, neighbours)
 
-P1=MonoParticle(rand(3), 0.4, rand(3,10), rand(10), rand(1:100, 10))
-P2=MonoParticle(rand(3), 0.5, rand(3,10), rand(10), rand(1:100, 10))
+# P1=MonoParticle(rand(3), 0.4, rand(3,10), rand(10), rand(1:100, 10))
+# P2=MonoParticle(rand(3), 0.5, rand(3,10), rand(10), rand(1:100, 10))
 
 
 #########################################################################################################
@@ -151,16 +149,14 @@ function Particle(X::Vector{PeriodicNumber{T}}, R::T, contact_vecs::Matrix{T}, f
         error("Number of contacts mismatch! There are: ", z, " contact vectors \t", length(fs), " forces and \t ", length(neighbours), " contacts indices")
     end
 end
-
-Xc = PeriodicNumber.(rand(3), 0.5); Rc = rand()
-Particle(Xc, Rc, rand(3,10), rand(10), rand(1:100,10))
+Particle(PeriodicNumber.(rand(3), 0.5), rand(), rand(3,10), rand(10), rand(1:100,10))
 
 
 
 Particle(X::Vector{T}, R::T, L::T, contact_vecs::Matrix{T}, fs::Vector{T}, neighbours::Vector{Int64}) where {T<:Real} = Particle(PeriodicNumber.(X,L), R, contact_vecs, fs, neighbours)
 
-P3=Particle(rand(3), rand(), 0.4, rand(3,10), rand(10), rand(1:100, 10))
-P4=Particle(rand(3), rand(), 0.5, rand(3,10), rand(10), rand(1:100, 10))
+# P3=Particle(rand(3), rand(), 0.4, rand(3,10), rand(10), rand(1:100, 10))
+# P4=Particle(rand(3), rand(), 0.5, rand(3,10), rand(10), rand(1:100, 10))
 
 
 #########################################################################################################
@@ -171,11 +167,11 @@ P4=Particle(rand(3), rand(), 0.5, rand(3,10), rand(10), rand(1:100, 10))
 
 "Return the coordination number (z) of 'P'."
 get_coordination_number(P::AbstractParticle) = length(P.neighbours)
-get_coordination_number(P1); get_coordination_number(P3); 
+# get_coordination_number(P1); get_coordination_number(P3); 
 
 "Return the norm of each of the contact vectors of 'P'."
 norm_contact_vectors(P::AbstractParticle) = norm.(P.contact_vecs)
-norm_contact_vectors(P1); norm_contact_vectors(P3);
+# norm_contact_vectors(P1); norm_contact_vectors(P3);
 
 """
 Return whether 'P' is a rattler or not; that is, if it has less than d+1 contacts.
@@ -190,7 +186,7 @@ function is_a_rattler(P::AbstractParticle{d, T}) where {d, T<:Real}
         return false
     end
 end
-is_a_rattler(P1); is_a_rattler(P3)
+# is_a_rattler(P1); is_a_rattler(P3)
 
 """
 Return whether 'P' is a stable particle or not; that is, if it has more than d contacts.
@@ -198,7 +194,7 @@ Return whether 'P' is a stable particle or not; that is, if it has more than d c
 See also: [`is_a_rattler`](@ref).
 """
 is_stable_particle(P::AbstractParticle{d, T}) where {d, T<:Real} = !is_a_rattler(P)
-is_stable_particle(P1); is_stable_particle(P3)
+is_stable_particle(Particle(rand(3), rand(), 0.4, rand(3,3), rand(3), collect(1:3))); 
 
 
 "Compute the sum of forces acting on a given particle. The output is a `StaticVector`"
@@ -212,7 +208,7 @@ function total_force(P::AbstractParticle{d, T}) where {d, T<:Real}
     end
     return tot_f
 end
-total_force(P1); total_force(P3)
+# total_force(P1); total_force(P3)
 
 
 """
@@ -223,7 +219,7 @@ By default such tolerance is `default_tol_force_equilibrium` (a `const`) and equ
 function force_equilibrium(particles::Vector{<:AbstractParticle} ; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium)
     all(x-> x <= tol_mechanical_equilibrium, norm.(total_force.(particles)))
 end
-force_equilibrium([P1, P2]); force_equilibrium([P3, P4]); force_equilibrium([P1, P2, P3, P4])
+# force_equilibrium([P1, P2]); force_equilibrium([P3, P4]); force_equilibrium([P1, P2, P3, P4])
 
 
 #########################################################################################################
@@ -248,4 +244,4 @@ volume_d_ball(2, 1.0)
 Compute the volume of 'P' (i.e. a hypersphere of d dimensions and radius R=P.R.
 """
 volume(P::Particle) = volume_d_ball(length(P.X), P.R)
-volume(P3)
+volume(Particle(rand(3), rand(), 0.4, rand(3,10), rand(10), collect(1:10)))
