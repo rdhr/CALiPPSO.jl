@@ -548,9 +548,9 @@ function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, sqr�
     constraints, possible_neighs  = add_non_overlapping_constraints!(LP_model, Xs, R, ℓ, images) 
     
     @objective(LP_model, Max, inflation_factor) # define the objective of the model (i.e. maximize the inflation factor)
-
-    t_solve = @elapsed optimize!(LP_model) # optimize the model and store the required time
-
+    optimize!(LP_model) # solve the LP instance, i.e. find the optimal solution (consistent with the constraints imposed above)
+    t_solve = solve_time(LP_model) #store the  time required for the optimization
+    
     Γ = JuMP.value(inflation_factor)
     status = termination_status(LP_model)
     S⃗ = JuMP.value.(S)

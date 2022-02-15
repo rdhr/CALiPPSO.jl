@@ -1,6 +1,6 @@
 # CALiPPSO: A Julia implementation of the ILP algorithm for jamming hard-spheres packing
 
-This package is a pure [Julia](https://julialang.org/) implemantation of the CALiPPSO algorithm for generating jammed packings of hard spheres. This algorithm was developed in **XXXXXX** by *Artiaco, Díaz, Parisi, and Ricci-Tersenghi*. As explained there, our method consists on a **C**hain of **A**pproximate **Li**near **P**rogramming for **P**acking **S**pherical **O**bjects.
+This package is a pure [Julia](https://julialang.org/) implementation of the CALiPPSO algorithm for generating jammed packings of hard spheres. This algorithm was developed in **XXXXXX** by *Artiaco, Díaz, Parisi, and Ricci-Tersenghi*. As explained there, our method consists on a **C**hain of **A**pproximate **Li**near **P**rogramming for **P**acking **S**pherical **O**bjects.
 
 Please feel free to use/modify/improve this code as better suits you. We only ask you to give credit to our work.
 
@@ -25,11 +25,11 @@ We tried to make this package as easy to use as possible and, indeed, it consist
 include("src/iLP-for-jamming.jl")
 using .CALiPPSO  
 ```
-(Beware of the dot (`.`) when calling the `CALiPPSO` module, beacuse it was loaded through the file in `include`.) 
+(Beware of the dot (`.`) when calling the `CALiPPSO` module, because it was loaded through the file in `include`.) 
 
 Once `CALiPPSO` has been loaded, you just need to call
 ```julia
-packing, info, Γ_vs_t, isostatic_vs_t = produce_jammed_configuration(Xs, R, L)
+packing, info, Γ_vs_t, Smax_vs_t, isostatic_vs_t = produce_jammed_configuration(Xs, R, L)
 ```
 Naturally, this function should generate a jammed packing from an initial configuration of particles with initial positions `Xs`, same radius `R`, and contained in a *periodic* (hyper-) cube of size `L` (if this argument is left unspecified, it's assumed its value is 1). `Xs` should be a $d\times N$ matrix specifying the position of each particle (*i.e.* each of the $N$ columns is the $d$-dimensional position vector of a particle).
 
@@ -45,11 +45,13 @@ The output of `produce_jammed_configuration` is the following:
 
 ### Advanced usage
 
-For more advanced usage and more detailes of how `produce_jammed_configuration` please refer to the [documentation](XXXXXX).
+For more advanced usage and more details of how `produce_jammed_configuration` please refer to the [documentation](XXXXXX).
 
 ## Disclaimer
 
+## ToDo's
 
+1. Write implementation of the analogous functions for polydisperse packings.
 
 
 
