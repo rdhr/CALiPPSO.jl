@@ -1,6 +1,6 @@
 docs/build
-*dat
 *txt
 *log
-Examples/*dat
+Examples/*txt
 *json
+.vscode
