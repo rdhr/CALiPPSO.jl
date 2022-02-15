@@ -43,9 +43,9 @@ PeriodicNumber(x::T, L::T=1.0) where {T<:Real} = PeriodicNumber{T}(x, L)
 function Base.show(io::IO, PN::PeriodicNumber)
     L = PN.L
     if L==1.0
-        print(io, "PN($(PN.value))")
+        print(io, "PN(", PN.value, ")" )
     else
-        print(io, "PN($(PN.value), L=$L)")
+        print(io, "PN(", PN.value, " L=", L, ")" )
     end
 end
 PeriodicNumber(1.2)

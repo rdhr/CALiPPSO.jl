@@ -94,6 +94,17 @@ mutable struct MonoPacking{d,T} <: AbstractPacking{d, T}
 end
 MonoPacking([MonoParticle(rand(3), rand(), rand(3,3), rand(3), collect(1:3)), MonoParticle(rand(3), rand(), rand(3,3), rand(3), collect(1:3))], rand(), false, false)
 
+#### Format how a `MonoPacking` is shown in IO
+function Base.show(io::IO, packing::MonoPacking{d,T}) where {d, T<:Real}
+    N = length(packing)
+    iso, Nc, Nnr = is_isostatic(packing)
+    fr = (N-Nnr)/Nnr
+    println(io, d, "d Monodisperse packing\t of N= ", N, " particles \t of radius R= ", packing.R)
+    println(io, Nnr, " stable particles; \t fraction of rattlers = ", round(fr, digits=3))
+    println(io, "jammed: ", packing.jammed, "\t isostatic: ", iso ,"\t and in mechanical equilibrium: ", packing.mechanical_equilibrium)
+end
+
+
 #####################
 # Now we define some useful constructors
 #####################
@@ -167,6 +178,7 @@ end
 # packing_comp = MonoPacking(Xs_comp, st_cvec_comp, fs_comp, nghs_lists_comp, rand(), false; verbose=false)
 # MonoPacking(Xs_comp, cvec_comp, fs_comp, nghs_lists_comp, rand(), false; verbose=false)
 # force_equilibrium(packing_comp.Particles)
+# println(packing_comp)
 
 
 # get_coordination_number(packing_comp)

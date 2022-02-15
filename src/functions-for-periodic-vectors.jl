@@ -48,6 +48,7 @@ The periodicity of the numbers, 'L', is given as second argument and defaults to
 """
 function PeriodicVectors(mat::Matrix{T}, L::T=1.0) where {T<:Real}
     dim, N = size(mat)
+    @assert dim<N "d>N. N should be larger than the dimensionality of vectors"
     [PeriodicVector(mat[:,i], L) for i in 1:N]
 end
 PeriodicVectors(rand(4, 10), 2.0)

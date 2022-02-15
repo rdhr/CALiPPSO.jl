@@ -45,6 +45,16 @@ mutable struct MonoParticle{d, T}  <: AbstractParticle{d, T} # a struct defining
     neighbours::Vector{Int64}  # list of the indices, corresponding to particles in contact
 end
 
+#### Format how a `MonoParticle` is shown in IO
+function Base.show(io::IO, particle::MonoParticle{d,T}) where {d, T<:Real}
+    x = value.(particle.X)
+    neighs = particle.neighbours
+    forces = particle.forces
+
+    println(io, d, "d MonoParticle\t centred at:  ", x)
+    println(io, "neighbours: ", neighs)
+    println(io, "contact forces: ", forces)
+end
 
 ### Now we define some convenient constructors (and related functions) for 'MonoParticle'
 
@@ -69,7 +79,6 @@ function MonoParticle(X::SVector{d, PeriodicNumber{T}}, contact_vecs::Matrix{T},
         error("Number of contacts mismatch! There are: ", z, " contact vectors \t", length(fs), " forces and \t ", length(neighbours), " contacts indices")
     end
 end
-# Xc = 
 MonoParticle(SVector{3}(PeriodicNumber.(rand(3), 0.5)), rand(3,10), rand(10), rand(1:100,10))
 
 # The following two methods are useful if one's being forgetful (or a bit lazy) about defining 'X' as a SVector of 'PeriodicNumber' elements
@@ -111,6 +120,19 @@ mutable struct Particle{d, T}  <: AbstractParticle{d, T} # a struct defining a p
     forces::Vector{T}  # list of forces magnitudes
     neighbours::Vector{Int64}  # list of the indices, corresponding to particles in contact
 end
+
+#### Format how a `Particle` is shown in IO
+function Base.show(io::IO, particle::Particle{d,T}) where {d, T<:Real}
+    x = value.(particle.X)
+    neighs = particle.neighbours
+    forces = particle.forces
+
+    println(io, d, "d Particle\t centred at:  ", x, " \t and radius R = ", particle.R)
+    println(io, "neighbours: ", neighs)
+    println(io, "contact forces: ", forces)
+end
+
+
 
 function Particle(X::SVector{d, PeriodicNumber{T}}, R::T, contact_vecs::Matrix{T}, fs::Vector{T}, neighbours::Vector{Int64}) where {d, T<:Real}
 
