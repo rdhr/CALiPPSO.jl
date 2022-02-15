@@ -19,4 +19,9 @@
 - [X] Add time of `fine_tune_forces!` to total time.
 - [X] Add array of `max_si_vs_t` to the output of `produce_jammed_configuration`
 - [ ] Improve the `show` method for `MonoParticle` and `MonoPacking`
-- [ ] Remove unneeded calls and precompilations ... maybe
+- [X] Remove unneeded calls and precompilations ... maybe
+- [ ] Check the correct default tolerance values are defined in scripts and documentation
+- [ ] Add support for Mosek solver
+- [ ] Add functions to analyse packings (e.g. compute gaps, extract forces, etc.)
+- [ ] Improve how different solvers can be used simultaneously (that is, within the same scope.)
+  - I tried somthing like `CALiPPSO.Solver = :HiGHS`, in the main scope, but didn't work.

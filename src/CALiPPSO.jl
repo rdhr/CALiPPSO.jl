@@ -141,16 +141,19 @@ direct_model(eval(default_solver).Optimizer(default_args))
 # Model(()->eval(default_solver).Optimizer(;default_args...))
 # direct_model(eval(default_solver).Optimizer(;default_args...))
 
-
+#=
+UNcomment the next lint line only if you wan to access many solvers in the same scope.
+for instance, when running the `testing-different-solvers.jl` script.
+=#
+using HiGHS, Clp, GLPK, Hypatia, COSMO
 
 ##############################################################################
 ##############################################################################
 ## Here we begin defining all the required functions and remaining constants
 ##############################################################################
 ##############################################################################
-
-const default_tol_Γ_convergence = eps() # default value for determining the convergence of √Γ-1. NB: this value is only recommended if you're using Gurobi; for different solvers this might be too low so you'll have to change it accordingly
-const default_tol_displacements = 1e-10 # default value for determining the convergence of |sᵢ|
+const default_tol_Γ_convergence = 1e-12 # default value for determining the convergence of √Γ-1. NB: this value is only recommended if you're using Gurobi; for different solvers this might be too low so you'll have to change it accordingly
+const default_tol_displacements = 1e-9 # default value for determining the convergence of |sᵢ|
 const default_tol_zero_forces = 0.1*default_tol_optimality # any dual variable smaller than this value is considered a 0. Note that this is actually a loose threshold
 # const default_tol_zero_forces = 1e-5 # any dual variable smaller than this value is considered a 0. Value recommended for COSMO, Tulip, and Hypatia
 # const default_tol_zero_forces = eps() # NB: when using Gurobi, this can actually be set as 0.0 without affecting the accuracy with which the *real* active dual variables are found
@@ -531,7 +534,7 @@ function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, sqr�
         elseif solver==:GLPK || solver==:Hypatia # for these solvers, some parameters are fixed as keyword args of Optimizer
             optimizer = eval(solver).Optimizer(;solver_args...)
         else # for any other solver, no argument passing has been implemented, so they should be called with 'solver_args=nothing'a
-            error("Passing arguments to the Optimizer of : ", solver, " is not defined!\n Try using 'solver_args=nothing' when calling `solve_LP_instance`.")
+            error("Passing arguments to the Optimizer of : ", solver, " is not defined!\n Try using 'solver_args=nothing' when calling `solve_LP_instance` or `produce_jammed_configuration`.")
         end
     end
     #### Once the optimizer has been chosen, the model is finally created
@@ -758,7 +761,7 @@ function fine_tune_forces!(Packing::MonoPacking{d, T}, force_mismatch::T, sqrΓ:
         elseif solver==:GLPK || solver==:Hypatia # for these solvers, some parameters are fixed as keyword args of Optimizer
             optimizer = eval(solver).Optimizer(;solver_args...)
         else # for any other solver, no argument passing has been implemented, so they should be called with 'solver_args=nothing'a
-            error("Passing arguments to the Optimizer of : ", solver, " is not defined!\n Try using 'solver_args=nothing' when calling `fine_tune_forces!`.")
+            error("Passing arguments to the Optimizer of : ", solver, " is not defined!\n Try using 'solver_args=nothing' when calling `fine_tune_forces!` or `produce_jammed_configuration`.")
         end
     end
     #### Once the optimizer has been chosen, the model is finally created
@@ -952,7 +955,7 @@ function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}},
         verbose::Bool=true, monitor_step::I=10, initial_monitor::I=monitor_step, interval_overlaps_check::I=10, initial_overlaps_check::I=initial_monitor) where {d, T<:Float64, I<:Int}
     
     N = length(Xs)
-    L = Xs[1][1].L
+    L = Xs[1][1].L 
 
     verbose && printstyled("\n Producing a jammed configuration of $N particles inside a $d-dimensional box of size $L:\n\n", bold=true)
     config_images = generate_system_images(d, L)
@@ -1138,7 +1141,7 @@ function network_of_contacts(packing::MonoPacking{d, T}, normalized::Bool=true) 
     end
 
     #=  Note that given that forces are obtained as the dual variables, in general, mechanical equilibrium is *only guaranteed if using the UNORMALIZED contact vectors*.
-    However, by rescaling the magnitudes and vectors consistently the condition should hold, even for polydisperse packings and *away* from jamming. Although we haven't checked this explicitly
+    However, by rescaling the magnitudes and vectors consistently the condition should hold, even for polydisperse packings and *away* from jamming.
     =#
     if normalized
         norm_cvecs = norm.(contact_vectors)
@@ -1208,7 +1211,7 @@ if Main.precompile_main_function
 
     MonoPacking(cen_comp, cons_comp, neighs_comp, rt, images_comp)
 
-    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, initial_monitor=10, tol_Γ_convergence= 1e-3, tol_S_convergence=1e-2 );
+    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, initial_monitor=10, tol_Γ_convergence= 1e-3, tol_S_convergence=1e-2, verbose=false );
 
     fine_tune_forces!(Jpack_comp, 0.0, 1.0, Lt, images_comp)
     network_of_contacts(Jpack_comp)
