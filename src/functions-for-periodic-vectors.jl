@@ -309,7 +309,7 @@ function check_for_overlaps(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, tol
     overlap=false; message = "No overlap is present"; particles = (0, 0)
     for i in 1:N, j in i+1:N
         if distances[i,j]-σ < -tolerance
-            gap = distances[i,j]-σ
+            gap = σ - distances[i,j]
             Xi = value.(Xs[i])
             Xj = value.(Xs[j])
             message = "Overlap between particles $i and $j;\n Centers at: $Xi; \t $Xj. \n\t\tradius:  $R; \t Overlap = $gap ."

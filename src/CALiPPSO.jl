@@ -955,8 +955,12 @@ function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}},
         verbose::Bool=true, monitor_step::I=10, initial_monitor::I=monitor_step, interval_overlaps_check::I=10, initial_overlaps_check::I=initial_monitor) where {d, T<:Float64, I<:Int}
     
     N = length(Xs)
-    L = Xs[1][1].L 
+    L = Xs[1][1].L
 
+    #Sanity check that no overlaps are present in the initial configuration
+    overlap, message, particles = check_for_overlaps(Xs, R, tol_overlap)
+    overlap && error("Overlap found in the initial configuration!!\n"*message) 
+    
     verbose && printstyled("\n Producing a jammed configuration of $N particles inside a $d-dimensional box of size $L:\n\n", bold=true)
     config_images = generate_system_images(d, L)
     #Initialization values
