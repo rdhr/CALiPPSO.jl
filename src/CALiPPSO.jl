@@ -11,7 +11,7 @@ export network_of_contacts, check_for_overlaps, PeriodicVectors, packing_fractio
 export volume_d_ball, norm # these functions are needed for generating random initial packings, in the 'random_initial_conditions.jl' script. Nevertheless, it could be the case that they're also useful when analysing results, specially 'norm'
 # export max_threads, default_solver, default_solver_attributes, default_args, default_tol_displacements, default_tol_Γ_convergence, default_tol_optimality, default_tol_zero_forces, default_tol_overlap # default parameters for convergence, optimality, identifying overlaps, etc.
 
-include("packing-type.jl")
+include("Packing.jl")
 
 
 using JuMP # Library for using high level interface for optimization and model creation/manipulation 

@@ -5,7 +5,7 @@
     # include("packing-type.jl")
     # const precompile_main_function = false
     if !(@isdefined produce_jammed_configuration)
-        include("iLP-for-jamming.jl")
+        include("CALiPPSO.jl")
     end
     using .CALiPPSO
     

@@ -5,7 +5,7 @@
 We tried to make this package as easy to use as possible and, indeed, it consists of *a single* main function: [`produce_jammed_configuration`](@ref). (But before using it, be sure to have installed all the [dependencies](@ref Dependencies).) This function is defined in the `CALiPPSO` module, contained in the `iLP-for-jamming.jl` file. This means that this file should be loaded (through the `include` function) in any script making use of such function. In other words, to include `produce_jammed_configuration` in your scope or Julia script, you need to add the following lines to your script, REPL, Jupyter Notebook, etc.:
 
 ```julia
-include("src/iLP-for-jamming.jl")
+include("src/CALiPPSO.jl")
 using .CALiPPSO  
 ```
 (Beware of the dot (.) when [importing](https://docs.julialang.org/en/v1/manual/code-loading/) the `CALiPPSO` module.) 

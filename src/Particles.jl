@@ -1,4 +1,4 @@
-include("Functions-for-periodic-vectors.jl")
+include("functions-for-periodic-vectors.jl")
 using LinearAlgebra, Statistics, SpecialFunctions
 
 const default_tol_force_equilibrium = 1e-12

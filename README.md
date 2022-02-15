@@ -22,7 +22,7 @@ We are working on making this library available through the standard Julia's pac
 We tried to make this package as easy to use as possible and, indeed, it consists of *a single* main function: `produce_jammed_configuration(Xs, R, L=1.0)`. (But before using it, be sure to have all the required dependencies already installed.) This function is defined in the `iLP-for-jamming.jl` file, which should be loaded (through the `include` function) whenever you want to make use of it. In other words, to include this function in your scope or Julia script, you only need to add the following lines:
 
 ```julia
-include("src/iLP-for-jamming.jl")
+include("src/CALiPPSO.jl")
 using .CALiPPSO  
 ```
 (Beware of the dot (`.`) when calling the `CALiPPSO` module, because it was loaded through the file in `include`.) 

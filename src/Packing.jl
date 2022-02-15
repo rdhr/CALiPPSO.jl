@@ -1,4 +1,4 @@
-include("Particles-types-and-functions.jl")
+include("Particles.jl")
 import Base: length, size
 
 "Abstract struct for all the type of packings to be used."
