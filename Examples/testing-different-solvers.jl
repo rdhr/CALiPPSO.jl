@@ -17,11 +17,9 @@ const default_tol_displacements = CALiPPSO.default_tol_displacements
 const tol_optimality = CALiPPSO.default_tol_optimality
 const max_threads = CALiPPSO.max_threads
 
-# The package of each of these solver is loaded in 'iLP-for-jamming.jl' file, but be sure to have uncommented the line
+# The package of each of these solver is loaded in 'CALiPPSO.jl' file, but be sure to have uncommented the corresponding line (approx line #30)
 const solvers = [:Gurobi, :HiGHS, :Clp, :GLPK, :Hypatia, :COSMO] # array of solver's names (or symbols)
 
-#= Before this line is executed, you need to be sure that all these solvers have been called
-within the CALiPPSO module. To do so, uncommented the relevant line in the `CALiPPSO.jl` script (approx. line #148)=#
 const Gurobi, HiGHS, Clp, GLPK, Hypatia, COSMO = CALiPPSO.Gurobi, CALiPPSO.HiGHS, CALiPPSO.Clp, CALiPPSO.GLPK, CALiPPSO.Hypatia, CALiPPSO.COSMO
 
 println("This script will test the following solvers: ",  map(x->x*", ", string.(solvers))...)

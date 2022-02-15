@@ -9,15 +9,15 @@ The main default values, all of them defined as *global* variables (using `const
 
 | Variable      | default value |  Role  | defined in file |
 | :------------ | :-----------: |:--- | :--------------------- |
-| `default_tol_overlap` | 1e-8          | Tolerance for identifying overlaps (*e.g.* in functions like `check_for_overlaps`) |`iLP-for-jamming.jl` |
-| `default_tol_optimality` | 1e-9       | General precision of optimal solutions  |`iLP-for-jamming.jl` |
-| `default_tol_Γ_convergence` | `eps()` (*i.e.* `2.22e-16`)|  Tolerance for testing convergence of ``\sqrt{\Gamma^*}-1`` |`iLP-for-jamming.jl` |
-| `default_tol_displacements` | 1e-10 | Tolerance for testing convergence of ``s_{i,\mu}^\star``   | `iLP-for-jamming.jl` |
-| `default_tol_zero_forces` | 1e-10   | Tolerance for considering a force different from 0 | `iLP-for-jamming.jl` |
+| `default_tol_overlap` | 1e-8          | Tolerance for identifying overlaps (*e.g.* in functions like `check_for_overlaps`) |`CALiPPSO.jl` |
+| `default_tol_optimality` | 1e-9       | General precision of optimal solutions  |`CALiPPSO.jl` |
+| `default_tol_Γ_convergence` | `eps()` (*i.e.* `2.22e-16`)|  Tolerance for testing convergence of ``\sqrt{\Gamma^*}-1`` |`CALiPPSO.jl` |
+| `default_tol_displacements` | 1e-10 | Tolerance for testing convergence of ``s_{i,\mu}^\star``   | `CALiPPSO.jl` |
+| `default_tol_zero_forces` | 1e-10   | Tolerance for considering a force different from 0 | `CALiPPSO.jl` |
 | `default_tol_force_equilibrium` | 1e-12 | Tolerance for testing force balance (per particle) | `Particles-types-and-functions.jl` |
-| `max_threads` | `Int(round(Sys.CPU_THREADS/2))` (*i.e.* half of the max threads available) | Number of threads to be used by solvers that allow parallelization | `iLP-for-jamming.jl` |
+| `max_threads` | `Int(round(Sys.CPU_THREADS/2))` (*i.e.* half of the max threads available) | Number of threads to be used by solvers that allow parallelization | `CALiPPSO.jl` |
 
-On the other hand, to use Gurobi as the default solver, the following lines are included in the `iLP-for-jamming.jl` file. They define the attributes and other options passed to the solver when a model is created, modified, or optimized. Analogous lines are also included (but have been commented out) for [other solvers](@ref changing_the_solver).
+On the other hand, to use Gurobi as the default solver, the following lines are included in the `CALiPPSO.jl` file. They define the attributes and other options passed to the solver when a model is created, modified, or optimized. Analogous lines are also included (but have been commented out) for [other solvers](@ref changing_the_solver).
 
 ```julia
 const default_solver = :Gurobi
@@ -59,12 +59,12 @@ As explained in our paper, the constraints a particle is subject to are assigned
 
 
 
-### Kwargs for controlling convergence and termination criteria of [ILP loop](@ref mainloop)
+### Kwargs for controlling convergence and termination criteria of [the main loop](@ref mainloop)
 
 1. `tol_Γ_convergence=default_tol_Γ_convergence`: Determines the value below which ``\sqrt{\Gamma^\star}-1`` is considered zero (so convergence in the inflation factor has been reached).
 2. `tol_S_convergence=default_tol_displacements`: Determines the value below which ``|s_{i,\mu}^\star|`` is considered zero (so convergence in particles displacements ─restricted to *non*-rattlers─ has been reached).
-3. `max_iters=1000`: Maximum number of iterations (*i.e.* LP optimizations) allowed before stopping the main ILP loop.
-4. `non_iso_break=10`: Maximum number of non-isostatic configurations that can be obtained *consecutively* before the main ILP loop is terminated.
+3. `max_iters=1000`: Maximum number of iterations (*i.e.* LP optimizations) allowed before stopping the main CALiPPSO's loop.
+4. `non_iso_break=10`: Maximum number of non-isostatic configurations that can be obtained *consecutively* before the main CALiPPSO's loop is terminated.
 
 ### Kwargs for controlling precision of overlaps and force balance tests
 
@@ -76,7 +76,7 @@ As explained in our paper, the constraints a particle is subject to are assigned
 
 ### Kwargs for controlling output printing on terminal
 
-1. `verbose=true`: turns on/off the printing of information during the main ILP loop.
+1. `verbose=true`: turns on/off the printing of information during the main CALiPPSO's loop.
 2. `monitor_step=10`: The info about the progress of CALiPPSO is printed out after these many steps (besides other criteria).
 3. `initial_monitor=monitor_step`: `verbose` is set to true for these many *initial* iterations.
 
@@ -103,12 +103,12 @@ We also tested some *pure-Julia* solvers, like [Hypatia.jl](https://github.com/c
 Just as with the other options of [`produce_jammed_configuration`](@ref), choosing a solver is conveniently done through [keyword arguments](@ref kwargs-control):
 
 1. `solver::Symbol=default_solver`: This kwarg must correspond to the name of the solver that you want to use, as *a Symbol*. For example, as [mentioned above](@ref list-defaults), we defined `default_solver = :Gurobi`; or if you want to use, *e.g.* the HiGHS solver, you should pass `solver=:HiGHS` as argument. (Note the **colon** (`:`) before the name of the solver; this is what makes it of `Symbol` type, and it is very important that is included). Thus, other possible values of the `solver` kwarg are: `:GLP`, `:Clp`, `:Hypatia`, etc.
-   - If you want to use a different solver, be sure to load the corresponding package *inside* the `CALiPPSO` module (see line `23` of `iLP-for-jamming.jl`). 
+   - If you want to use a different solver, be sure to load the corresponding package *inside* the `CALiPPSO` module (see line `23` of `CALiPPSO.jl`). 
    - Note that `solver` is not used by the main function itself, but instead is passed, also as a kwarg, to the function where an actual optimization is performed, *i.e.* [`solve_LP_instance`](@ref CALiPPSO.solve_LP_instance) and [`fine_tune_forces!`](@ref CALiPPSO.fine_tune_forces!). 
    - In such functions, the optimizer of the given `solver` is obtained by evaluating `eval(solver).Optimizer()`. Thus, `solver` should be a symbol that yields a valid optimizer for a JuMP `Model`. For instance, if `solver=:GLPK`, `Model(eval(solver).Optimizer)` is equivalent to `Model(GLPK.Optimizer)` (note there's *no* colon before "GLPK" in the last expression). [Here](https://docs.julialang.org/en/v1/manual/metaprogramming/) you can find more information on how symbols are parsed into expression in Julia, and [here](https://jump.dev/JuMP.jl/stable/manual/models/) and [here](https://jump.dev/JuMP.jl/stable/reference/models/) you can consult the relevant docs for model creation with different optimizers in JuMP.
 2. `solver_attributes::Dict=default_solver_attributes`: These are the set of options or parameters that control the behaviour of your solver. It should be passed as a `Dict` type (see [the example above](@ref list-defaults) for the default one). The idea is that this `Dict` should contain any of the parameters or options that can be set using the function [`set_optimizer_attributes`](https://jump.dev/JuMP.jl/stable/reference/models/#JuMP.set_optimizer_attributes) or other similar functions, as [explained here](https://jump.dev/JuMP.jl/stable/reference/models/#Working-with-attributes).
    - Thus, for instance, with these parameters you can specify the accuracy of the solver, the method to use, iterations limit, etc.
-   - In the first lines of the file `iLP-for-jamming.jl` we have included some possible choices for each of [the solvers we tried](@ref Solvers-we-tried).
+   - In the first lines of the file `CALiPPSO.jl` we have included some possible choices for each of [the solvers we tried](@ref Solvers-we-tried).
 3. `solver_args=default_args`: These are supposed to be *arguments* (and *not* attributes) that are passed as arguments to [`Optimizer()`](https://jump.dev/JuMP.jl/stable/moi/tutorials/implementing/#The-Optimizer-object) of the chosen solver. Note that the behaviour of *each solver* is different. Thus, **if you are testing a different solver to the ones we mention here, we suggest you first set** `solver_args=nothing` to be sure the function will execute properly. In fact, if `solver_args===nothing` results in `false` and you're using a solver that has not been preconfigured, an error will be thrown. Of course, you can modify this, as explained at the end.
    - Creating a model with arguments in JuMP has a rather strange syntax: `Model(()-> eval(solver).Optimizer(solver_args))`
 

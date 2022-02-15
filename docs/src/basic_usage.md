@@ -2,7 +2,7 @@
 
 ## The main function: `produce_jammed_configuration`
 
-We tried to make this package as easy to use as possible and, indeed, it consists of *a single* main function: [`produce_jammed_configuration`](@ref). (But before using it, be sure to have installed all the [dependencies](@ref Dependencies).) This function is defined in the `CALiPPSO` module, contained in the `iLP-for-jamming.jl` file. This means that this file should be loaded (through the `include` function) in any script making use of such function. In other words, to include `produce_jammed_configuration` in your scope or Julia script, you need to add the following lines to your script, REPL, Jupyter Notebook, etc.:
+We tried to make this package as easy to use as possible and, indeed, it consists of *a single* main function: [`produce_jammed_configuration`](@ref). (But before using it, be sure to have installed all the [dependencies](@ref Dependencies).) This function is defined in the `CALiPPSO` module, contained in the `CALiPPSO.jl` file. This means that this file should be loaded (through the `include` function) in any script making use of such function. In other words, to include `produce_jammed_configuration` in your scope or Julia script, you need to add the following lines to your script, REPL, Jupyter Notebook, etc.:
 
 ```julia
 include("src/CALiPPSO.jl")
@@ -26,13 +26,13 @@ packing, info, Γ_vs_t, isostatic_vs_t = produce_jammed_configuration(Xs, R)
 Note that here we are making use of the (fantastic) [method dispatch feature](https://docs.julialang.org/en/v1/manual/methods/#Methods) of Julia.
 
 !!! note "Precompilation"
-    Note that executing `include("src/iLP-for-jamming.jl")` also *pre-compiles* `produce_jammed_configuration` by calling it using a small, predefined system. This causes that whenever this file is included, several things will be printed in screen. You can safely ignore all of them. It also makes loading `CALiPPSO` somewhat time consuming.
+    Note that executing `include("src/CALiPPSO.jl")` also *pre-compiles* `produce_jammed_configuration` by calling it using a small, predefined system. This causes that whenever this file is included, several things will be printed in screen. You can safely ignore all of them. It also makes loading `CALiPPSO` somewhat time consuming.
     
     In any case, precompilation can be avoided (hence making loading `CALiPPSO` much faster) by including a line 
     ```julia
     const precompile_main_function=false
     ``` 
-    *__before__* loading the `iLP-for-jamming.jl` file. Nevertheless, **keep in mind** that if you do *not* define `precompile_main_function`, all the functions are precompiled by default.
+    *__before__* loading the `CALiPPSO.jl` file. Nevertheless, **keep in mind** that if you do *not* define `precompile_main_function`, all the functions are precompiled by default.
     
     Avoiding precompilation is discouraged if you actually want to use such function because model creation and optimization in JuMP suffers from a ["time-to-first-solve" issue](https://jump.dev/JuMP.jl/stable/tutorials/getting_started/performance_tips/#The-%22time-to-first-solve%22-issue), which is an analogous version of the "time-to-first-plot" one. Essentially, when a function is first called, it needs to be compiled. (This is actually the general behaviour of Julia, not only of JuMP.) Thus, by calling `produce_jammed_configuration` in a small system, the function gets pre-compiled and ready to be used in much larger systems. If `precompile_main_function` is set to `false` and then you call `produce_jammed_configuration` directly into the (presumably large) configuration you want to jam it could take much longer.
 
@@ -133,7 +133,7 @@ L1:	    CALiPPSO converged!
 L2: Iterations to convergence = 61,	√Γ-1 = -2.4424906541753444e-15,	 Max displacement = 4.5795e-11,	 (ϕ, R) = [0.64414472, 0.02109397]
 L3: 	Non_rattlers= 16000	% of rattlers = 2.344	(Max, mean±std) constraints per particle per d: [15.0, 6.26, 3.94]
 L4: ┌ Warning: Force balance condition is NOT satisfied! Max force mismatch = 3.714346582469644e-12 ; 	Creating the packing anyway.
-L5: └ @ Main /media/storage/Dropbox/Work/Roma-PostDoc/iLP-for-HS-jamming/Scripts/iLP/packing-type.jl:185
+L5: └ @ Main <path-to-CALiPPSO-source-folder>/Packing.jl:185
 L6:
 L7: Force balance condition not met yet; max force mismatch = 3.714346582469644e-12
 L8: Performing a last LP optimization to improve force balance.

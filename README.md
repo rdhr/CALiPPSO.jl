@@ -1,4 +1,4 @@
-# CALiPPSO: A Julia implementation of the ILP algorithm for jamming hard-spheres packing
+# CALiPPSO: An Iterative Linear Programming Method for Jamming Hard Spheres
 
 This package is a pure [Julia](https://julialang.org/) implementation of the CALiPPSO algorithm for generating jammed packings of hard spheres. This algorithm was developed in **XXXXXX** by *Artiaco, Díaz, Parisi, and Ricci-Tersenghi*. As explained there, our method consists on a **C**hain of **A**pproximate **Li**near **P**rogramming for **P**acking **S**pherical **O**bjects.
 
@@ -17,9 +17,11 @@ You can read the full documentation of our code [here](XXXXXXXXXXXXXXX)
 
 We are working on making this library available through the standard Julia's package manager. But until then, you'll need to import the CALiPSSO's module as explained next.
 
+Naturally, the first step is to clone this git repo into your computer so you have all the necessary scripts. Once you've done that, you can go to the next steps.
+
 ### Loading the main module
 
-We tried to make this package as easy to use as possible and, indeed, it consists of *a single* main function: `produce_jammed_configuration(Xs, R, L=1.0)`. (But before using it, be sure to have all the required dependencies already installed.) This function is defined in the `iLP-for-jamming.jl` file, which should be loaded (through the `include` function) whenever you want to make use of it. In other words, to include this function in your scope or Julia script, you only need to add the following lines:
+We tried to make this package as easy to use as possible and, indeed, it consists of *a single* main function: `produce_jammed_configuration(Xs, R, L=1.0)`. (But before using it, be sure to have all the required dependencies already installed.) This function is defined in the `CALiPPSO.jl` file, which should be loaded (through the `include` function) whenever you want to make use of it. In other words, to include this function in your scope or Julia script, you only need to add the following lines:
 
 ```julia
 include("src/CALiPPSO.jl")

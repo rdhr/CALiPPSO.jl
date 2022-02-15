@@ -23,8 +23,11 @@ const max_threads = Int(round(Sys.CPU_THREADS/2)) # max number of processes to b
 ##############################################################################
 ##############################################################################
 
-##### If you want to run the test with the different solvers we tried, you must UNcomment this line
-# using Gurobi, HiGHS, Clp, GLPK, Hypatia, COSMO 
+#=
+UNcomment the next lint line only if you wan to access many solvers in the same scope.
+for instance, when running the `testing-different-solvers.jl` script.
+=#
+# using Gurobi, HiGHS, Clp, GLPK, Hypatia, COSMO
 
 ################################################
 ## By default, Gurobi is used; so Comment the following lines if you want to use another solver
@@ -141,12 +144,6 @@ direct_model(eval(default_solver).Optimizer(default_args))
 # Model(()->eval(default_solver).Optimizer(;default_args...))
 # direct_model(eval(default_solver).Optimizer(;default_args...))
 
-#=
-UNcomment the next lint line only if you wan to access many solvers in the same scope.
-for instance, when running the `testing-different-solvers.jl` script.
-=#
-# using HiGHS, Clp, GLPK, Hypatia, COSMO
-
 ##############################################################################
 ##############################################################################
 ## Here we begin defining all the required functions and remaining constants
@@ -159,14 +156,14 @@ const default_tol_zero_forces = 0.1*default_tol_optimality # any dual variable s
 # const default_tol_zero_forces = eps() # NB: when using Gurobi, this can actually be set as 0.0 without affecting the accuracy with which the *real* active dual variables are found
 
 #########################################################################################
-### Some functions to print output and monitor the progress and termination status of ILP
+### Some functions to print output and monitor the progress and termination status of CALiPPSO
 #########################################################################################
 
 #Memory usage in GB
 memory_usage() = round(parse(Int, split(read(`ps -p $(getpid()) -o rss`, String))[2]) / 1024^2, digits=3) 
 memory_usage()
 
-"Print the state of ILP maximum displacement and inflation factor when maximum number of iterations is exceeded"
+"Print the state of CALiPPSO maximum displacement and inflation factor when maximum number of iterations is exceeded"
 function print_failed_max_iters(max_iters::Int64, sqrΓ, tol_conv_Γ, max_Si, tol_S_conv; color::Symbol=:red)
     printstyled("Maximum number of iterations (=$max_iters) reached and failed to produce a jammed packing!!\n", bold=true, color=color)
     println("Convergence criterion for √Γ-1: ", tol_conv_Γ, "\t and for max s_i: ", tol_S_conv)
@@ -174,7 +171,7 @@ function print_failed_max_iters(max_iters::Int64, sqrΓ, tol_conv_Γ, max_Si, to
 end
 
 
-"Print information about ILP progress and current status of the system whenever a non-isostatic configuration is created."
+"Print information about CALiPPSO progress and current status of the system whenever a non-isostatic configuration is created."
 function print_non_isostatic(d::Int64, zs::Vector{Int64}, non_rattlers::Vector{Int64}, t::Int64, max_Si::Float64, bound_s::Float64, f_mismatch::Float64, small_fs::Vector{Float64})
     
     println("Iteration: ", t)
@@ -273,7 +270,7 @@ end
 
 
 
-"Print that ILP has converged, and some basic info (final ϕ, number of non rattlers, etc.)."
+"Print that CALiPPSO has converged, and some basic info (final ϕ, number of non rattlers, etc.)."
 function print_converged(t::I, status, sqrΓ, max_Si, R, N::I, L, d::I, n_constr::Vector{I}, Nnr::I; dig_R::I=8, dig_S::I=15, color::Symbol=:green) where {I<:Int}
     ϕ = packing_fraction(d, R, N, L)
 
@@ -289,7 +286,7 @@ end
 """
     print_info_convergence(final_packing::MonoPacking, isostatic::Bool, time, memory; digs::Int64=2)
 
-Print extra details about the configuration obtained once ILP converges.
+Print extra details about the configuration obtained once CALiPPSO converges.
 
 The maximum mismatch in the force balance condition is computed (and printed), and also the 
 isostaticity of the packing is assessed. Besides, some information about performance 
@@ -324,7 +321,7 @@ end
 
 @doc raw"""
     check_for_overlaps(packing::MonoPacking, t::Int64, possible_neighbours::Vector{Vector{Int64}}, jammed::Bool; tolerance=default_tol_overlap)
-Check for overlaps in all the particles of a given packing, obtained after ILP converged.
+Check for overlaps in all the particles of a given packing, obtained after CALiPPSO converged.
 """
 check_for_overlaps(packing::MonoPacking)
 function check_for_overlaps(packing::MonoPacking, t::Int64, possible_neighbours::Vector{Vector{Int64}}, jammed::Bool; tolerance=default_tol_overlap)
@@ -349,24 +346,24 @@ end
 #########################################################################################################
 #########################################################################################################
 
-# struct for saving information about the convergence time, resources, etc. of the ILP algorithm
+# struct for saving information about the convergence time, resources, etc. of the CALiPPSO algorithm
 "
-Struct to save convergence information of an ILP solution. For more info, see docs of its fields: `converged`, `iterations`, `time`, `memory`, `times_LP_optim`."
+Struct to save convergence information of an CALiPPSO solution. For more info, see docs of its fields: `converged`, `iterations`, `time`, `memory`, `times_LP_optim`."
 struct convergence_info
     "Whether or not the convergence criteria were met."
-    converged::Bool # whether or not the ILP algorithm converged (possibly to a jammed packing)
+    converged::Bool # whether or not the CALiPPSO algorithm converged (possibly to a jammed packing)
     "Number of iterations to reach convergence (or stopping if exceeded `max_iters`"
     iterations::Int64  # number of iterations needed for convergence
-    "Total execution time of the ILP algorithm."
-    time::Float64 # total time of the ILP algorithm (since the while loop begins), as measured by 'time' (in seconds)
-    "Memory allocated while running ILP."
+    "Total execution time of the CALiPPSO algorithm."
+    time::Float64 # total time of the CALiPPSO algorithm (since the while loop begins), as measured by 'time' (in seconds)
+    "Memory allocated while running CALiPPSO."
     memory::Float64 # allocated memory, as measured by 'time' (in GB)
-    "Array of the times needed to optimize each LP instance."
+    "Times needed to optimize each LP instance."
     times_LP_optim::Vector{Float64} # list of solving times of each LP optimization step
 end
 convergence_info(false, 0, 0.0, 0.0, zeros(2))
 
-#This function is no longer used, but might be useful for analysing the ILP behaviour
+#This function is no longer used, but might be useful for analysing the CALiPPSO behaviour
 "Compute the norm of each of the displacement vectors."
 function norm_displacements(S::Matrix{Float64})::Vector{Float64} 
     d, N = size(S)
@@ -379,7 +376,7 @@ norm_displacements(rand(4,50))
 
 #########################################################################################################
 #########################################################################################################
-### Functions to generate and solve ILP instances of monodisperse systems
+### Functions to generate and solve CALiPPSO instances of monodisperse systems
 #########################################################################################################
 #########################################################################################################
 
@@ -647,7 +644,7 @@ end
 Construct a `MonoPacking` from the set of particles' position ('Xs'), set of all constraints defined in the LP model ('constraints'), list of *possible* neighbours ('neighbours_list'), and virtual images ('images') needed for the MIC contact vectors. "
 """
 MonoPacking(Xs::Vector, constraints::Vector, neighbours::Vector, R::Real)
-function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, R::T, images::Vector{SVector{d, T}}, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces) where {d, T<:Float64}
+function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, R::T, images::Vector{SVector{d, T}}, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces, verbose::Bool=true) where {d, T<:Float64}
     # System's size 
     N = length(Xs) ; 
 
@@ -658,7 +655,7 @@ function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vec
         particles[i] = MonoParticle(Xs[i], all_contacts[i], forces_dual[i], particles_dual_contact[i])
     end
 
-    return MonoPacking(particles, R, jammed; tol_mechanical_equilibrium=tol_mechanical_equilibrium)
+    return MonoPacking(particles, R, jammed; tol_mechanical_equilibrium=tol_mechanical_equilibrium, verbose=verbose)
 end
 
 
@@ -703,7 +700,7 @@ end
 
 Update the forces of all particles in 'Packing' so the global force balance condition is more closely satisfied.
 
-This function is needed because when ILP has converged (or terminated due to reaching 
+This function is needed because when CALiPPSO has converged (or terminated due to reaching 
 maximum iterations) it might happen that mechanical equilibrium is rather inaccurate. This 
 is caused by the displacements in the last LP optimization. So the total force on particles 
 whose position was updated is about as large as the convergence tolerance on the displacements. 
@@ -711,7 +708,7 @@ Thus, to produce a packing that satisfies force balance much more precisely an e
 optimization is done (so the dual variables are recalculated with the final positions), but 
 the particles' position and radius are *NOT* updated.
 Also importantly, to avoid the introduction of extra constraints that might ruin force balance 
-(mainly when ILP terminated without producing a jammed packing), the optimization performed 
+(mainly when CALiPPSO terminated without producing a jammed packing), the optimization performed 
 here is done *without* bounding the displacements.
 
 # Output
@@ -801,7 +798,7 @@ function fine_tune_forces!(Packing::MonoPacking{d, T}, force_mismatch::T, sqrΓ:
     return t_solve, isostatic, Nc, Nnr, status
 end
 
-## This function is required when the force balance condition is monitored throughout the ILP process.
+## This function is required when the force balance condition is monitored throughout the CALiPPSO process.
 "Compute the sum of forces on each particle from the full set of contact vectors and magnitudes of contact forces."
 function total_force(all_contact_vectors::Vector{Vector{SVector{d,T}}}, all_forces::Vector{Vector{T}}) where {d, T<:Float64}
     N=length(all_forces)
@@ -820,7 +817,7 @@ end
 
 
 #= 
-This function is called, *mainly*, to monitor the process of ILP.
+This function is called, *mainly*, to monitor the process of CALiPPSO.
 But identifying the rattlers is very important because since they can move a lot, even *at* jamming, the convergence criterion of 
 a very small displacements should only be applied to stable particles (i.e. to non-rattlers).
 =#
@@ -879,7 +876,7 @@ The dimensionality of the system, 'd', is automatically inferred from the size o
 taken into account given that each `SVector` contains elements of type [`PeriodicNumber`](@ref). (If 
 the input is of type `Matrix{T}`, it is converted to `Vector{SVector{d,T}}` before CALiPPSO begins.)
 
-The core of this function is the so called [ILP loop](@ref mainloop), whose essential step consists in using [`solve_LP_instance`](@ref)
+The core of this function is the so called [main loop](@ref mainloop), whose essential step consists in using [`solve_LP_instance`](@ref)
 to obtain the maximal inflation factor (``\Gamma``) and set of optimal particles' displacements 
 (``\vec{\mathbf{s}}^\star = \{\mathbf{s}_i^\star\}_{i=1}^N`` --denoted as S⃗ in our scripts.) 
 from a given configuration. The particles' size and position are updated, and a new LP instance is 
@@ -915,7 +912,7 @@ guaranteed to be in mechanical equilibrium, within the same precision.
 
 ## Arguments that determine `produce_jammed_configuration` termination criteria
 The list of default values is specified in [this part](@ref list-defaults) of the documentation.
-- `max_iters::I=1000`: Maximum number iterations of the ILP loop; that is, the maximum number of LP optimizations allowed.
+- `max_iters::I=1000`: Maximum number iterations of the main loop; that is, the maximum number of LP optimizations allowed.
 - `tol_Γ_convergence::T=default_tol_Γ_convergence`: determines the convergence criterion of the packing fraction as ``\sqrt{\Gamma^\star}-1 \leq `` `tol_Γ_convergence`. 
 - `tol_S_convergence::T=default_tol_displacements`: determines the convergence criterion for the displacements as ``\max |\mathbf{s}_{i,\mu}^\star|_{i=1,\dots,N}^{\mu=1,\dots, d} \leq `` `<=tol_S_conv`.
 - `non_iso_break::I=10`: Number of *consecutive* non-isostatic solutions allowed before `produce_jammed_configuration` terminates. The reason is that it is very likely that the final configuration will also be non-isostatic (specially if beginning from a highly compressed state). Note however that every time an isostatic configuration is obtained, this counter resets to 0.
@@ -938,8 +935,8 @@ The list of default values is specified in [this part](@ref list-defaults) of th
 
 ## Arguments controlling the screen printed output
 - `verbose::Bool=true`: Control whether some info about the progress of CALiPPSO and the final packing is printed out or not.
-- `monitor_step::I=10`: How often info about the progress in the main ILP loop should be printed out; will only take effect if `verbose=true`. See [`print_monitor_progress`](@ref) for more information.
-- `initial_monitor::I=monitor_step`: print info about the ILP loop progress during this amount of initial LP optimizations; will only take effect if `verbose=true`.
+- `monitor_step::I=10`: How often info about the progress in the main main loop should be printed out; will only take effect if `verbose=true`. See [`print_monitor_progress`](@ref) for more information.
+- `initial_monitor::I=monitor_step`: print info about the main loop progress during this amount of initial LP optimizations; will only take effect if `verbose=true`.
 
 ## Arguments for performing overlaps checks
 See [`check_for_overlaps`](@ref) for more information
@@ -971,7 +968,7 @@ function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}},
     Γs_vs_t = zeros(max_iters+1); smax_vs_t = L*ones(max_iters+1); iso_vs_t = falses(max_iters+1); solve_ts = similar(Γs_vs_t); # +1 because it could be that an additional LP step might be needed after convergence to guarantee force balance
    
     #######################################################################################
-    # **** Here ILP begins, in order to obtain the jammed configuration ****
+    # **** Here CALiPPSO begins, in order to obtain the jammed configuration ****
     # We're timing ('t_exec') the full process and also storing the allocated memory ('bytes'). The rest of the l.h.s variables are irrelevant
     #######################################################################################
     exec_stats = @timed while (sqrΓ-1>tol_Γ_convergence || max_Si>tol_S_convergence)
@@ -980,13 +977,13 @@ function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}},
         if iter>max_iters 
             #=if the maximal number of iterations has been reached, print the current status of inflation factor (sqrΓ)
                 and maximum displacement (max_Si).
-                Then terminate the main ILP loop. No errors are thrown. =#
+                Then terminate the main loop. No errors are thrown. =#
             print_failed_max_iters(max_iters, sqrΓ, tol_Γ_convergence, max_Si, tol_S_convergence)
             converged = false
             break
         end
 
-        # when to show info about the current LP instance, solution, and other variables to monitor the progress of ILP
+        # when to show info about the current LP instance, solution, and other variables to monitor the progress of CALiPPSO
         if verbose && any([iter<=initial_monitor,  iter%monitor_step==0, iter%interval_overlaps_check==0, iter<=initial_overlaps_check])
             verbose_LP_info = true
             println("Iteration: ", iter)
@@ -1058,22 +1055,22 @@ function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}},
         
     end 
     ###################
-    # THIS ENDS THE MAIN LOOP OF ILP 
+    # THIS ENDS THE MAIN LOOP OF CALiPPSO
     ###################
     t_exec = exec_stats.time # running time of the main loop
     bytes = exec_stats.bytes # memory allocated in the main loop
 
-    # The rest of the function analyses and stores the output of the ILP process, construct the final packing, and performs some last checks.
+    # The rest of the function analyses and stores the output of the CALiPPSO process, construct the final packing, and performs some last checks.
     if non_iso_count<non_iso_break && iter<=max_iters # Check whether the final configuration corresponds to a jammed stated (i.e. convergence was achieved)
         jammed = true
         print_converged(iter, status, sqrΓ, max_Si, R, N, L, d, length.(constraints), Nnr_iter)
-    else # or ILP was terminated because 'max_iters' was reached, or too many consecutive non-isostatic solutions were obtained.
+    else # or CALiPPSO was terminated because 'max_iters' was reached, or too many consecutive non-isostatic solutions were obtained.
         iter-=1
         jammed = false
     end
     
     # CONSTRUCT THE FINAL PACKING
-    final_packing = MonoPacking(Xs, constraints, possible_neighs, R, config_images, jammed, tol_mechanical_equilibrium = tol_mechanical_equilibrium) 
+    final_packing = MonoPacking(Xs, constraints, possible_neighs, R, config_images, jammed, tol_mechanical_equilibrium = tol_mechanical_equilibrium, verbose=verbose) 
 
     isostatic, Nc, Nnr = is_isostatic(final_packing) # test whether such final packing is isostatic
     force_mismatch = maximum(norm.(total_force(final_packing))) # test whether such final packing is in mechanical equilibrium
@@ -1093,7 +1090,7 @@ function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}},
     end
 
     memory = bytes/(1024^3); # allocated memory in GB
-    conv_info = convergence_info(converged, iter, t_exec, memory, solve_ts[1:iter]) # store info about the ILP process and termination status
+    conv_info = convergence_info(converged, iter, t_exec, memory, solve_ts[1:iter]) # store info about the CALiPPSO process and termination status
 
     # when verbose output is on, print some extra info about the final packing.
     verbose && print_info_convergence(final_packing, isostatic, t_exec, memory)
@@ -1114,7 +1111,7 @@ end
 
 Obtain the list of contact indices (as ordered pairs, i.e. [i, j] with j>i), the corresponding contact vectors, and magnitudes of contact forces, from a given 'packing'.
 
-This function is not used in the main ILP function (i.e. `produce_jammed_configuration`), but 
+This function is not used in the main CALiPPSO function (i.e. `produce_jammed_configuration`), but 
 might be useful for analysing afterwards the jammed packings generated.
 """
 function network_of_contacts(packing::MonoPacking{d, T}, normalized::Bool=true) where {d, T<:Float64}
@@ -1165,7 +1162,7 @@ if Main.precompile_main_function
     ===================================================================== =#
     printstyled("\t The following output just refers to simple first calls for precompiling needed functions\n\n", bold=true, color=:cyan)
 
-    printstyled("\n\nUsing (*low accuracy*) ILP on a small, predefined system in order to compile the needed functions.\n
+    printstyled("\n\nUsing CALiPPSO (with *low accuracy*) on a small, predefined system in order to compile the needed functions.\n
     \t\t Solver used: ", default_solver, "\n\n", color=:cyan)
     Nt=30; rt=0.52; dt=3; 
     Lt=4.0;

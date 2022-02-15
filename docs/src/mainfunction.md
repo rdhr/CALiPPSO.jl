@@ -1,11 +1,11 @@
 # [How `produce_jammed_configuration` works](@id main_function)
 
 
-Our main function consists of two essentially independent parts: (1) the main Iterative Linear Programming [(ILP) loop](@ref Theory-behind-CALiPPSO); and (2) the packing creation from the quantities obtained after using ILP. We now describe each of them.
+Our main function consists of two essentially independent parts: (1) the [main CALiPPSO loop](@ref Theory-behind-CALiPPSO); and (2) the packing creation from the quantities obtained after the main loop converged. We now describe each of them.
 
 ---
 
-## [The main ILP loop](@id mainloop)
+## [The main CALiPPSO's loop (a.k.a. ILP)](@id mainloop)
 
 
 From the initial particles' position and size (*i.e.* the input of [`produce_jammed_configuration`](@ref)), a `while` loop is initialized until the *convergence criteria* defined [before](@ref Theory-behind-CALiPPSO) are reached. More precisely, the loop continues until: (1) ``\sqrt{\Gamma^\star}-1 <``` tol_Γ_convergence` **and** (2) ``|s^\star_{i,\mu}| <`` `tol_S_convergence` for ``i=1, \dots, N`` and ``\mu=1,\dots, d`` (although see step 4 below); **or** the number of iterations (*i.e* the number of LP optimizations) exceeds `max_iters`. The default values of these 3 quantities are [specified later](@ref list-defaults) and can be easily changed through [keyword arguments](@ref kwargs-control) of [`produce_jammed_configuration`](@ref).
@@ -29,14 +29,14 @@ This main loop consists of the following steps:
     - **Note that** this check should be performed **before** the configuration is updated, otherwise the *wrong* contact vectors would be used.
 
 3. The configuration is updated: ``\mathbf{r}_i \to \mathbf{r}_i + \mathbf{s}_i^\star`` and ``\sigma_i \to \sqrt{\Gamma^\star}\sigma_i`` for ``i=1,\dots, N``. 
-   - These updated values will be used to formulate the next LP instance in the next iteration of the ILP loop. 
+   - These updated values will be used to formulate the next LP instance in the next iteration of the main loop. 
 
 4. A set of *preliminary* stable particles is obtained using [`obtain_non_rattlers`](@ref CALiPPSO.obtain_non_rattlers). Rattlers are also obtained as the complement of such set.
    - This step is important in order to check if the configuration is isostatic or not. In the latter case, the isostaticity gap (*i.e.* the difference of the number of contacts, ``N_c``, and the number of degrees of freedom, ``N_{dof}``) may provide insight about numerical issues when determining the contact forces. Thus, even though this step is (apparently) not strictly required in order for CALiPPSO to work, it usually provides very useful information.
    - Besides, rattlers should be (almost always) excluded when testing convergence related to the magnitude of ``|s^\star_{i,\mu}|``. That is, because rattlers are not blocked by their neighbours, their associated optimal displacements are notably larger than those of the stable particles, and therefore we don't consider them for checking when the main loop should terminate. For instance, compare the value of `max |sᵢ|` of *all* particles with `s_{bound}` in the [example output](@ref output-process) of before.
    - So, this step is needed *in practice* for the correct functioning of CALiPPSO. Otherwise the convergence criterion of ``|s^\star_{i,\mu}| <`` `tol_S_convergence` would never be met due to the presence of rattlers.
 
-5. If the `verbose` option is set to `true`, some information about the progress of ILP is printed out. This is explained in detail in [the dedicated section](@ref output-process).
+5. If the `verbose` option is set to `true`, some information about the progress of CALiPPSO is printed out. This is explained in detail in [the dedicated section](@ref output-process).
 
 6. Call the [`check_for_overlaps`](@ref) function to check if there are any overlaps once the configuration has been updated.
    - Of course, **there shouldn't be!**
@@ -45,11 +45,11 @@ This main loop consists of the following steps:
    -  If you think that the problem is the related to [numerical issues](@ref Possible-issues), be sure to understand [how the precision of `produce_jammed_configuration` is determined](@ref Setting-the-required-precision).
    -  Note also that a *real* overlap can also occur (*i.e*. once in which a pair of particles is overlapping by an amount much larger than the accuracy with which a solver fulfills the constraints). If this happens, try some of the solutions [mentioned here](@ref REAL-overlaps)
       
-7. Check if convergence criteria are fulfilled. If this is the case, the ILP loop terminates. Otherwise, go back to step 1.
+7. Check if convergence criteria are fulfilled. If this is the case, the main loop terminates. Otherwise, go back to step 1.
 
 
 
-Note that steps 5 and 6, by default, are only performed during the first few iterations (10) and at given intervals (also 10). To change how often the ILP info is printed out (respectively how often overlaps checks are performed) set the keyword argument `monitor_step` (respectively `interval_overlaps_check`) to the desired value. Instead, to select in how many initial iterations to include these steps, use `initial_monitor` (for printing info) and `initial_overlaps_check` for overlaps checks. More details can be found [here](@ref kwargs-control) and in the docstring of [`produce_jammed_configuration`](@ref).
+Note that steps 5 and 6, by default, are only performed during the first few iterations (10) and at given intervals (also 10). To change how often information about the main loop progress is printed out (respectively how often overlaps checks are performed) set the keyword argument `monitor_step` (respectively `interval_overlaps_check`) to the desired value. Instead, to select in how many initial iterations to include these steps, use `initial_monitor` (for printing info) and `initial_overlaps_check` for overlaps checks. More details can be found [here](@ref kwargs-control) and in the docstring of [`produce_jammed_configuration`](@ref).
 
 ---
 
@@ -62,9 +62,9 @@ Clearly, a lot of data is contained in a single packing, like the set of all par
   
 Instead, the information about convergence time, number of LP iterations, etc. are stored in a [`convergence_info`](@ref) object.
 
-Now, once the main ILP loop has finished (possibly producing a jammed packing), the following steps are carried out:
+Now, once the main CALiPPSO's loop has finished (possibly producing a jammed packing), the following steps are carried out:
 
-1. It is assessed whether, 1. the ILP process converged (in which case we create a flag `jammed=true`); or 2. if the loop ended because `max_iters` was exceeded or too many non-isostatic solutions were obtained consecutively (in which case `jammed=false`).
+1. It is assessed whether, 1. the process of the main loop converged (in which case we create a flag `jammed=true`); or 2. if the loop ended because `max_iters` was exceeded or too many non-isostatic solutions were obtained consecutively (in which case `jammed=false`).
 
 2. Using the values of `Xs` and the particles' size after the last LP optimization, as well as the relevant constraints, `final_packing` is created.
    - Clearly, this is an essential step. It is done by calling the *constructor* [`MonoPacking`](@ref MonoPacking(::Vector, ::Vector, ::Vector, ::Real)).

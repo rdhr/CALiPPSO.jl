@@ -22,7 +22,7 @@
     radius_from_phi(3, 0.64, 1000)
 
     #################################################
-    # Functions to generate a random configuration that is NOT jammed, but can be used as initial condition for iLP
+    # Functions to generate a random configuration that is NOT jammed, but can be used as initial condition for CALiPPSO
     ################################################
 
     "Asses whether two particles of radius 'r' and centers 'X1' and 'X2' are overlapping. "
