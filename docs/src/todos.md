@@ -22,6 +22,7 @@
 - [X] Remove unneeded calls and precompilations ... maybe
 - [ ] Check the correct default tolerance values are defined in scripts and documentation
 - [ ] Add support for Mosek solver
-- [ ] Add functions to analyse packings (e.g. compute gaps, extract forces, etc.)
+- [ ] Add functions to analyse packings (e.g. compute gaps, extract forcess --distinguishing bucklers--, etc.)
+- [ ] Run the `testing-different-solver.jl` scritp until the end to verify that everything works.
 - [ ] Improve how different solvers can be used simultaneously (that is, within the same scope.)
   - I tried somthing like `CALiPPSO.Solver = :HiGHS`, in the main scope, but didn't work.

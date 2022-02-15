@@ -145,7 +145,7 @@ direct_model(eval(default_solver).Optimizer(default_args))
 UNcomment the next lint line only if you wan to access many solvers in the same scope.
 for instance, when running the `testing-different-solvers.jl` script.
 =#
-using HiGHS, Clp, GLPK, Hypatia, COSMO
+# using HiGHS, Clp, GLPK, Hypatia, COSMO
 
 ##############################################################################
 ##############################################################################
