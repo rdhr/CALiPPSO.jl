@@ -17,10 +17,9 @@ const default_tol_displacements = CALiPPSO.default_tol_displacements
 const tol_optimality = CALiPPSO.default_tol_optimality
 const max_threads = CALiPPSO.max_threads
 
-# The package of each of these solver is loaded in 'CALiPPSO.jl' file, but be sure to have uncommented the corresponding line (approx line #30)
 const solvers = [:Gurobi, :HiGHS, :Clp, :GLPK, :Hypatia, :COSMO] # array of solver's names (or symbols)
+using Gurobi, HiGHS, Clp, GLPK, Hypatia, COSMO
 
-const Gurobi, HiGHS, Clp, GLPK, Hypatia, COSMO = CALiPPSO.Gurobi, CALiPPSO.HiGHS, CALiPPSO.Clp, CALiPPSO.GLPK, CALiPPSO.Hypatia, CALiPPSO.COSMO
 
 println("This script will test the following solvers: ",  map(x->x*", ", string.(solvers))...)
 println("But before the test is executed, `produce_jammed_configuration` will be compiled with each of them.\n\n")
@@ -39,11 +38,12 @@ const grb_attributes = Dict("OutputFlag" => 0, "FeasibilityTol" => tol_optimalit
 const highs_args = nothing
 const highs_attributes = Dict("small_matrix_value"=>0.1*tol_optimality, "primal_feasibility_tolerance" => tol_optimality, "dual_feasibility_tolerance" => tol_optimality, "solver" => "ipm", "ipm_optimality_tolerance"=>tol_optimality,  "highs_max_threads" => max_threads, "parallel"=>"on", "output_flag"=>false)
 cen_comp = PeriodicVectors(Xs_comp, Lt)
+produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=Gurobi)
 printstyled("\n______________________________________________________________________________________\n", color=:yellow)
 printstyled("Performing first call (of a single iteration) of main function on compilation system using HiGHS solver\n", color=:yellow)
-produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=:HiGHS, solver_attributes=highs_attributes, solver_args=highs_args);
+produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=HiGHS, solver_attributes=highs_attributes, solver_args=highs_args);
 
-produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=:Gurobi)
+
 
 # Clp
 const clp_args = nothing
@@ -51,7 +51,7 @@ const clp_attributes = Dict("PrimalTolerance"=>tol_optimality, "DualTolerance" =
 cen_comp = PeriodicVectors(Xs_comp, Lt)
 printstyled("\n______________________________________________________________________________________\n", color=:yellow)
 printstyled("Performing first call (of a single iteration) of main function on compilation system using Clp solver\n", color=:yellow)
-produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=:Clp, solver_attributes=clp_attributes, solver_args=clp_args);
+produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=Clp, solver_attributes=clp_attributes, solver_args=clp_args);
 
 
 # GLPK
@@ -60,7 +60,7 @@ const glpk_attributes = Dict("msg_lev"=>GLPK.GLP_MSG_OFF, "tol_bnd"=>tol_optimal
 cen_comp = PeriodicVectors(Xs_comp, Lt)
 printstyled("\n______________________________________________________________________________________\n", color=:yellow)
 printstyled("Performing first call (of a single iteration) of main function on compilation system using GLPK solver\n", color=:yellow)
-produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=:GLPK, solver_attributes=glpk_attributes, solver_args=glpk_args);
+produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=GLPK, solver_attributes=glpk_attributes, solver_args=glpk_args);
 
 
 # Hypatia
@@ -69,7 +69,7 @@ const hypa_attributes = Dict()
 cen_comp = PeriodicVectors(Xs_comp, Lt)
 printstyled("\n______________________________________________________________________________________\n", color=:yellow)
 printstyled("Performing first call (of a single iteration) of main function on compilation system using Hypatia solver\n", color=:yellow)
-produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=:Hypatia, solver_attributes=hypa_attributes, solver_args=hypa_args);
+produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=Hypatia, solver_attributes=hypa_attributes, solver_args=hypa_args);
 
 
 # COSMO
@@ -78,7 +78,7 @@ const cosmo_attributes = Dict("verbose"=>false, "max_iter"=>30000, "eps_abs"=>1e
 cen_comp = PeriodicVectors(Xs_comp, Lt)
 printstyled("\n______________________________________________________________________________________\n", color=:yellow)
 printstyled("Performing first call (of a single iteration) of main function on compilation system using COSMO solver\n", color=:yellow)
-produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=:COSMO, solver_attributes=cosmo_attributes, solver_args=cosmo_args);
+produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=COSMO, solver_attributes=cosmo_attributes, solver_args=cosmo_args);
 
 
 # # Tulip
@@ -112,13 +112,13 @@ printstyled("O --- O --- O --- O --- O --- O --- O --- O --- O --- O --- O --- O
 for (ns, solver) in enumerate(solvers)
     Xs0 = 1.0.*Xs_common; r0=1*r0_common
     
-    if  solver==:COSMO 
+    if  Symbol(solver)==:COSMO 
         # continue
         overlap_tolerance = 1e3*tol_overlap
         zero_force = 1e-5
         # S_conv = 1e-9
         Γ_conv = tol_Γ_convergence
-    elseif solver==:Hypatia
+    elseif Symbol(solver)==:Hypatia
         # continue
         overlap_tolerance = tol_overlap
         zero_force = 1e-5
@@ -134,14 +134,14 @@ for (ns, solver) in enumerate(solvers)
     S_conv = default_tol_displacements
 
     printstyled("\n\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n", color=:magenta, bold=true)
-    printstyled("\t\t\tUSING SOLVER: ", solver, "\n", bold=:true, color=:magenta)
+    printstyled("\t\t\tUSING SOLVER: ", Symbol(solver), "\n", bold=:true, color=:magenta)
     println("\tConvergence criteria: tolerance √Γ-1 = ",Γ_conv, "\t tolerance |sᵢ| = ", S_conv)
     printstyled("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n", color=:magenta, bold=true)
 
     solver_args = solvers_args[ns]; solver_attrs = solvers_attributes[ns]
 
     @time jammed_packing, info_convergence, Γs_vs_t, smax_vs_t, iso_vs_t = produce_jammed_configuration(Xs0, r0; verbose=true, 
-    solver=solver, solver_args=solver_args, solver_attributes=solver_attrs, tol_Γ_convergence=Γ_conv, tol_S_convergence = S_conv,
+    solver=eval(solver), solver_args=solver_args, solver_attributes=solver_attrs, tol_Γ_convergence=Γ_conv, tol_S_convergence = S_conv,
     tol_overlap=overlap_tolerance, initial_monitor=30, zero_force=zero_force, max_iters=50) 
 
     println("_______________________________________________________________________________________\n\n")

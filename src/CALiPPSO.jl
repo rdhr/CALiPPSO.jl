@@ -22,12 +22,6 @@ const max_threads = Int(round(Sys.CPU_THREADS/2)) # max number of processes to b
 ##############################################################################
 ##############################################################################
 
-#=
-UNcomment the next lint line only if you wan to access many solvers within the same scope.
-For instance, when running the `testing-different-solvers.jl` script.
-=#
-# using Gurobi, HiGHS, Clp, GLPK, Hypatia, COSMO
-
 ################################################
 ## By default, Gurobi is used; so Comment the following lines if you want to use another solver
 ################################################
