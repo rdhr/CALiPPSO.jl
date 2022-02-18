@@ -10,7 +10,7 @@ makedocs(sitename="CALiPPSO",
     pages = [
         "Home" => "index.md",
         "Introduction: theory and few details" => "theory.md",
-        "User Guide" => Any["Before using CALiPPSO" => "usage.md", "Basic usage" =>"basic_usage.md", "How the main function works" => "mainfunction.md", "Changing the default behaviour" =>"changing_default.md"],
+        "User Guide" => Any["Installation" => "installation.md", "Basic usage" =>"basic_usage.md", "How the main function works" => "mainfunction.md", "Changing the default behaviour" =>"changing_default.md"],
         "Examples" => "tests.md",
         "`Structs` of CALiPPSO" => "types.md",
         "Problem solving and possible issues" => "issues.md",
