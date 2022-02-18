@@ -1,4 +1,10 @@
-# Before using CALiPPSO
+# Installation
+
+The first step is to download the scripts of [the CALiPPSO repo](https://github.com/rdhr/CALiPPSO). But before being able to use it, you'll need to have all the [Dependencies](@ref) installed. The installation should be fairly simple, specially if you can use the Gurobi solver from Julia. In any case, below we provide mode details about how to include all the needed Julia's packages. 
+
+If you have everything set up, you can jump to the [Basic usage](@ref) section.
+
+## Before using CALiPPSO
 
 In the next sections we describe in some detail our implementation of the CALiPPSO algorithm. But before reading how our code works we suggest that if you're new to [Julia](https://julialang.org/) it might be useful to have [its documentation](https://docs.julialang.org/en/v1/) at hand, specially for understanding some terminology (although we tried to keep it to a minimum).
 Besides, several of the functions we define rely on [JuMP](https://jump.dev/)'s functionality, so if you are unfamiliar with this package consider skimming through [its documentation](https://jump.dev/JuMP.jl/stable/) (specially the parts on [creating a model](https://jump.dev/JuMP.jl/stable/manual/models/#Create-a-model) and defining/accessing [constraints](https://jump.dev/JuMP.jl/stable/manual/constraints/)). 
