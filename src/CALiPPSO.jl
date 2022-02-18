@@ -36,7 +36,7 @@ For instance, when running the `testing-different-solvers.jl` script.
 using Gurobi
 const default_tol_overlap=1e-8 # tolerance for identifying an Overlap. Given that Gurobi's precision is 10^-9, a larger value is needed.
 const default_tol_optimality = 1e-9; # optimality tolerances. This is the most precise value allowed by Gurobi
-const default_solver = :Gurobi
+const default_solver = Gurobi
 const default_args = Gurobi.Env() # to avoid printing license info every time a model is created or optimized 
 #= 
 We are omitting all the standard output of Gurobi by setting the 'OutputFlag' to 0.
@@ -47,8 +47,7 @@ More info can be found here: https://www.gurobi.com/resource/parallelism-linear-
 const default_solver_attributes = Dict("OutputFlag" => 0, "FeasibilityTol" => default_tol_optimality, "OptimalityTol" => default_tol_optimality, "Method" => 3, "Threads" => max_threads)
 
 ### First calls for compilation of model creation
-Model(()->eval(default_solver).Optimizer(default_args))
-direct_model(eval(default_solver).Optimizer(default_args))
+Model(()->default_solver.Optimizer(default_args))
 
 
 
@@ -66,7 +65,6 @@ direct_model(eval(default_solver).Optimizer(default_args))
 
 # # ### First calls for compilation of model creation
 # Model(()->eval(default_solver).Optimizer())
-# direct_model(eval(default_solver).Optimizer())
 
 
 
@@ -84,7 +82,6 @@ direct_model(eval(default_solver).Optimizer(default_args))
 
 # # ### First calls for compilation of model creation
 # Model(()->eval(default_solver).Optimizer())
-# direct_model(eval(default_solver).Optimizer())
 
 
 ################################################
@@ -101,7 +98,6 @@ direct_model(eval(default_solver).Optimizer(default_args))
 
 # ### First calls for compilation of model creation
 # Model(()->eval(default_solver).Optimizer(;default_args...))
-# direct_model(eval(default_solver).Optimizer(;default_args...))
 
 
 
@@ -121,7 +117,6 @@ direct_model(eval(default_solver).Optimizer(default_args))
 
 # ### First calls for compilation of model creation
 # Model(()->eval(default_solver).Optimizer())
-# direct_model(eval(default_solver).Optimizer())
 
 
 
@@ -141,7 +136,6 @@ direct_model(eval(default_solver).Optimizer(default_args))
 
 # ### First calls for compilation of model creation
 # Model(()->eval(default_solver).Optimizer(;default_args...))
-# direct_model(eval(default_solver).Optimizer(;default_args...))
 
 ##############################################################################
 ##############################################################################
@@ -508,7 +502,7 @@ See also [`add_non_overlapping_constraints!`](@ref), [`@constraint`](https://jum
 [`produce_jammed_configuration`](@ref), [`fine_tune_forces!`](@ref).
 """
 function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, sqrΓ::T, ℓ0::T, images::Vector{SVector{d, T}};
-    solver::Symbol=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
+    solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
     thresholds::Tuple{T, T}=(5e-4, 1e-5), sbound::T=0.01, verbose_LP_info::Bool=false, dig_S::Int=13) where {d, T<:Float64}
         
     N = length(Xs); # number of particles
@@ -523,14 +517,14 @@ function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, sqr�
      *** Note that you'll might need to add/modify the instance of the solver of your choice ***
      (and recall to do the same in `fine_tune_forces!`) =#
     if solver_args === nothing
-        optimizer = eval(solver).Optimizer()
+        optimizer = solver.Optimizer()
     else
-        if solver == :Gurobi # calling the solver with Gurobi.Env() to avoid that the license is retrieved every time a model is created
-            optimizer = eval(solver).Optimizer(solver_args)
-        elseif solver==:GLPK || solver==:Hypatia # for these solvers, some parameters are fixed as keyword args of Optimizer
-            optimizer = eval(solver).Optimizer(;solver_args...)
+        if Symbol(solver) == :Gurobi # calling the solver with Gurobi.Env() to avoid that the license is retrieved every time a model is created
+            optimizer = solver.Optimizer(solver_args)
+        elseif Symbol(solver)==:GLPK || Symbol(solver)==:Hypatia # for these solvers, some parameters are fixed as keyword args of Optimizer
+            optimizer = solver.Optimizer(;solver_args...)
         else # for any other solver, no argument passing has been implemented, so they should be called with 'solver_args=nothing'a
-            error("Passing arguments to the Optimizer of : ", solver, " is not defined!\n Try using 'solver_args=nothing' when calling `solve_LP_instance` or `produce_jammed_configuration`.")
+            error("Passing arguments to the Optimizer of : ", Symbol(solver), " is not defined!\n Try using 'solver_args=nothing' when calling `solve_LP_instance` or `produce_jammed_configuration`.")
         end
     end
     #### Once the optimizer has been chosen, the model is finally created
@@ -728,7 +722,7 @@ See also [`add_non_overlapping_constraints!`](@ref), [`optimize!`](https://jump.
 [`produce_jammed_configuration`](@ref), [`solve_LP_instance`](@ref).
 """
 function fine_tune_forces!(Packing::MonoPacking{d, T}, force_mismatch::T, sqrΓ::T, ℓ0::T, images::Vector{SVector{d, T}};      
-    solver::Symbol=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
+    solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
     thresholds::Tuple{T,T}=(5e-4, 1e-5), tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T = default_tol_zero_forces) where {d, T<:Float64}
     
     Xs = get_positions(Packing) ; N = length(Xs)        
@@ -749,14 +743,14 @@ function fine_tune_forces!(Packing::MonoPacking{d, T}, force_mismatch::T, sqrΓ:
      *** Note that you'll might need to add/modify the instance of the solver of your choice ***
      (and recall to do the same in `solve_LP_instance`) =#
     if solver_args === nothing
-        optimizer = eval(solver).Optimizer()
+        optimizer = solver.Optimizer()
     else
-        if solver == :Gurobi # calling the solver with Gurobi.Env() to avoid that the license is retrieved every time a model is created
-            optimizer = eval(solver).Optimizer(solver_args)
-        elseif solver==:GLPK || solver==:Hypatia # for these solvers, some parameters are fixed as keyword args of Optimizer
-            optimizer = eval(solver).Optimizer(;solver_args...)
+        if Symbol(solver) == :Gurobi # calling the solver with Gurobi.Env() to avoid that the license is retrieved every time a model is created
+            optimizer = solver.Optimizer(solver_args)
+        elseif Symbol(solver)==:GLPK || Symbol(solver)==:Hypatia # for these solvers, some parameters are fixed as keyword args of Optimizer
+            optimizer = solver.Optimizer(;solver_args...)
         else # for any other solver, no argument passing has been implemented, so they should be called with 'solver_args=nothing'a
-            error("Passing arguments to the Optimizer of : ", solver, " is not defined!\n Try using 'solver_args=nothing' when calling `fine_tune_forces!` or `produce_jammed_configuration`.")
+            error("Passing arguments to the Optimizer of : ", Symbol(solver), " is not defined!\n Try using 'solver_args=nothing' when calling `fine_tune_forces!` or `produce_jammed_configuration`.")
         end
     end
     #### Once the optimizer has been chosen, the model is finally created
@@ -944,7 +938,7 @@ See [`check_for_overlaps`](@ref) for more information
 """
 function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T;
         ℓ0::T=3.4*R, sqrΓ0::Real=1.01, thresholds_bounds::Tuple{T, T}=(5e-4, 1e-5), sbound::T=0.01,
-        solver::Symbol=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
+        solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
         max_iters::I=1000, tol_Γ_convergence::T=default_tol_Γ_convergence, tol_S_convergence::T=default_tol_displacements, tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces,
         tol_overlap::T=default_tol_overlap, non_iso_break::I=10, 
         verbose::Bool=true, monitor_step::I=10, initial_monitor::I=monitor_step, interval_overlaps_check::I=10, initial_overlaps_check::I=initial_monitor) where {d, T<:Float64, I<:Int}
@@ -1161,7 +1155,7 @@ if Main.precompile_main_function
     printstyled("\t The following output just refers to simple first calls for precompiling needed functions\n\n", bold=true, color=:cyan)
 
     printstyled("\n\nUsing CALiPPSO (with *low accuracy*) on a small, predefined system in order to compile the needed functions.\n
-    \t\t Solver used: ", default_solver, "\n\n", color=:cyan)
+    \t\t Solver used: ", Symbol(default_solver), "\n\n", color=:cyan)
     Nt=30; rt=0.52; dt=3; 
     Lt=4.0;
     images_comp = generate_system_images(dt, Lt)
@@ -1218,7 +1212,7 @@ if Main.precompile_main_function
     printstyled("\n\n Calling the main function once again, to compile the second method.\n\n", color=:cyan)
     produce_jammed_configuration(Xs_comp, rt, Lt; ℓ0=Lt, initial_monitor=2, monitor_step=2, verbose=false, tol_Γ_convergence=1e-3,tol_S_convergence=1e-2)
 
-    printstyled("\n________________________________________________________\n\tCompilation process finished! \t (with solver: ", default_solver, ")\n________________________________________________________\n\n\n\n\n", color=:cyan, bold=true)
+    printstyled("\n________________________________________________________\n\tCompilation process finished! \t (with solver: ", Symbol(default_solver), ")\n________________________________________________________\n\n\n\n\n", color=:cyan, bold=true)
 end
 
 end
