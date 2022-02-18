@@ -92,9 +92,6 @@ MonoParticle(PeriodicNumber.(rand(3), 0.5), rand(3,10), rand(10), rand(1:100,10)
 
 MonoParticle(X::Vector{T}, L::T, contact_vecs::Matrix{T}, fs::Vector{T}, neighbours::Vector{Int64}) where {T<:Real} = MonoParticle(PeriodicNumber.(X,L), contact_vecs, fs, neighbours)
 
-# P1=MonoParticle(rand(3), 0.4, rand(3,10), rand(10), rand(1:100, 10))
-# P2=MonoParticle(rand(3), 0.5, rand(3,10), rand(10), rand(1:100, 10))
-
 
 #########################################################################################################
 #########################################################################################################
@@ -149,8 +146,6 @@ function Particle(X::SVector{d, PeriodicNumber{T}}, R::T, contact_vecs::Matrix{T
         error("Number of contacts mismatch! There are: ", z, " contact vectors \t", length(fs), " forces and \t ", length(neighbours), " contacts indices")
     end
 end
-Xc = PeriodicNumber.(rand(3), 0.5);  Rc = rand()
-Particle(SVector{3}(Xc), Rc, rand(3,10), rand(10), rand(1:100,10))
 
 
 # The following two methods are useful if one's being forgetful (or a bit lazy) about defining 'X' as a SVector of 'PeriodicNumber' elements
@@ -174,11 +169,7 @@ end
 Particle(PeriodicNumber.(rand(3), 0.5), rand(), rand(3,10), rand(10), rand(1:100,10))
 
 
-
 Particle(X::Vector{T}, R::T, L::T, contact_vecs::Matrix{T}, fs::Vector{T}, neighbours::Vector{Int64}) where {T<:Real} = Particle(PeriodicNumber.(X,L), R, contact_vecs, fs, neighbours)
-
-# P3=Particle(rand(3), rand(), 0.4, rand(3,10), rand(10), rand(1:100, 10))
-# P4=Particle(rand(3), rand(), 0.5, rand(3,10), rand(10), rand(1:100, 10))
 
 
 #########################################################################################################
@@ -208,7 +199,7 @@ function is_a_rattler(P::AbstractParticle{d, T}) where {d, T<:Real}
         return false
     end
 end
-# is_a_rattler(P1); is_a_rattler(P3)
+
 
 """
 Return whether 'P' is a stable particle or not; that is, if it has more than d contacts.
@@ -230,7 +221,7 @@ function total_force(P::AbstractParticle{d, T}) where {d, T<:Real}
     end
     return tot_f
 end
-# total_force(P1); total_force(P3)
+
 
 
 """
@@ -241,7 +232,7 @@ By default such tolerance is `default_tol_force_equilibrium` (a `const`) and equ
 function force_equilibrium(particles::Vector{<:AbstractParticle} ; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium)
     all(x-> x <= tol_mechanical_equilibrium, norm.(total_force.(particles)))
 end
-# force_equilibrium([P1, P2]); force_equilibrium([P3, P4]); force_equilibrium([P1, P2, P3, P4])
+
 
 
 #########################################################################################################
@@ -258,7 +249,7 @@ Compute the volume of a d-dimensional sphere of radius R (that defaults to 1)
 function volume_d_ball(d::Int64, R::Real=1)::Float64
     ((sqrt(π)*R)^d)/gamma(1.0 + 0.5d)
 end
-volume_d_ball(2, 1.0)
+
 
 """
     volume(P::Particle)
@@ -266,4 +257,3 @@ volume_d_ball(2, 1.0)
 Compute the volume of 'P' (i.e. a hypersphere of d dimensions and radius R=P.R.
 """
 volume(P::Particle) = volume_d_ball(length(P.X), P.R)
-volume(Particle(rand(3), rand(), 0.4, rand(3,10), rand(10), collect(1:10)))

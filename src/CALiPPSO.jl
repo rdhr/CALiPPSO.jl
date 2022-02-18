@@ -6,16 +6,15 @@ end
 module CALiPPSO
 
 export produce_jammed_configuration # main function!!
-export convergence_info, PeriodicNumber, MonoParticle, MonoPacking, PeriodicVector, Packing # structs defined in the package
+export convergence_info, PeriodicNumber, MonoParticle, MonoPacking, PeriodicVector, Packing # `struct`s defined in the package
 export network_of_contacts, check_for_overlaps, PeriodicVectors, packing_fraction, get_non_rattlers, get_rattlers, is_isostatic, get_coordination_number, total_force # other useful functions; mostly for packings
 export volume_d_ball, norm # these functions are needed for generating random initial packings, in the 'random_initial_conditions.jl' script. Nevertheless, it could be the case that they're also useful when analysing results, specially 'norm'
-# export max_threads, default_solver, default_solver_attributes, default_args, default_tol_displacements, default_tol_Γ_convergence, default_tol_optimality, default_tol_zero_forces, default_tol_overlap # default parameters for convergence, optimality, identifying overlaps, etc.
 
 include("Packing.jl")
 
 
 using JuMP # Library for using high level interface for optimization and model creation/manipulation 
-const max_threads = Int(round(Sys.CPU_THREADS/2)) # max number of processes to be used by any optimizer
+const max_threads = Int(round(Sys.CPU_THREADS/2)) # max number of processes to be used by any optimizer. By default, half the number of threads available in a computer
 
 ##############################################################################
 ##############################################################################
@@ -24,8 +23,8 @@ const max_threads = Int(round(Sys.CPU_THREADS/2)) # max number of processes to b
 ##############################################################################
 
 #=
-UNcomment the next lint line only if you wan to access many solvers in the same scope.
-for instance, when running the `testing-different-solvers.jl` script.
+UNcomment the next lint line only if you wan to access many solvers within the same scope.
+For instance, when running the `testing-different-solvers.jl` script.
 =#
 # using Gurobi, HiGHS, Clp, GLPK, Hypatia, COSMO
 
@@ -456,7 +455,7 @@ function add_non_overlapping_constraints!(model::JuMP.Model, Xs::Vector{SVector{
     # We will only consider nearby particles --i.e. particles inside a neighbourhood of size 'ℓ' around-- as possible neighbours
     # And hence, the non-overlapping constraint will only be applied to this smaller set of particles
     for i in 1:N-1::Int
-        #NB. We DO reduce the number of constraints, by considering neighbours with index >i.
+        #NB. We reduce the number of constraints, by considering neighbours with index >i.
         neigh_parts = collect(i+1:N)[distances[i+1:N, i] .<= ℓ]  # indices of particles whose distance to i is smaller than ℓ
         Nn = length(neigh_parts) # number of particles nearby i
         nearby_particles_list[i] = neigh_parts; # store the list of nearby particles
@@ -645,9 +644,8 @@ Construct a `MonoPacking` from the set of particles' position ('Xs'), set of all
 """
 MonoPacking(Xs::Vector, constraints::Vector, neighbours::Vector, R::Real)
 function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, R::T, images::Vector{SVector{d, T}}, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces, verbose::Bool=true) where {d, T<:Float64}
-    # System's size 
-    N = length(Xs) ; 
-
+    
+    N = length(Xs); # System's size 
     all_contacts, forces_dual, particles_dual_contact = network_of_contacts(Xs, constraints, neighbours_list, images, zero_force=zero_force)
 
     particles = Vector{MonoParticle{d,Float64}}(undef, N)
@@ -798,7 +796,7 @@ function fine_tune_forces!(Packing::MonoPacking{d, T}, force_mismatch::T, sqrΓ:
     return t_solve, isostatic, Nc, Nnr, status
 end
 
-## This function is required when the force balance condition is monitored throughout the CALiPPSO process.
+## This function is required because the force balance condition is monitored throughout the CALiPPSO process.
 "Compute the sum of forces on each particle from the full set of contact vectors and magnitudes of contact forces."
 function total_force(all_contact_vectors::Vector{Vector{SVector{d,T}}}, all_forces::Vector{Vector{T}}) where {d, T<:Float64}
     N=length(all_forces)
@@ -969,7 +967,7 @@ function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}},
    
     #######################################################################################
     # **** Here CALiPPSO begins, in order to obtain the jammed configuration ****
-    # We're timing ('t_exec') the full process and also storing the allocated memory ('bytes'). The rest of the l.h.s variables are irrelevant
+    # We're timing the full mainloop process and also storing the allocated memory using '@timed'.
     #######################################################################################
     exec_stats = @timed while (sqrΓ-1>tol_Γ_convergence || max_Si>tol_S_convergence)
 
@@ -1029,7 +1027,7 @@ function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}},
         else
             non_iso_count +=1
             
-            if !verbose || !(iter<=initial_monitor || iter%monitor_step==0) # in case the non-isostatic package was obtained in an iteration for which 'verbose' is false
+            if !verbose || !(iter<=initial_monitor || iter%monitor_step==0) # in case the non-isostatic package was obtained in an iteration for which no printed output was expected
                 f_mismatch, small_fs = monitor_force_balance(Xs, constraints, possible_neighs, config_images; zero_force=zero_force)
                 bound_si = bounds_and_cutoff(sqrΓ, R, ℓ0, d; thresholds=thresholds_bounds, sbound=sbound)[2]
 
@@ -1130,9 +1128,9 @@ function network_of_contacts(packing::MonoPacking{d, T}, normalized::Bool=true) 
     contact_count = 0
     for i in non_rattlers
         P = particles[i]
-        neighs = P.neighbours[P.neighbours .>i]
-        forces = P.forces[P.neighbours .>i]
-        cvecs = P.contact_vecs[P.neighbours .>i]
+        neighs = P.neighbours[P.neighbours .>i] # list of neighbours of particle i, whose index is larger than i
+        forces = P.forces[P.neighbours .>i] # corresponding list of forces magnitudes 
+        cvecs = P.contact_vecs[P.neighbours .>i] # list of corresponding contact vectors
         for (index, j) in enumerate(neighs)
             contact_count +=1
             contact_indices[:, contact_count] = [i, j]

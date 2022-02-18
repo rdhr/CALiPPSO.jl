@@ -32,7 +32,7 @@ end
 
 "Test whether a given packing is isostatic or not. The output is a boolean"
 function is_isostatic(packing::AbstractPacking{d, T}; only_stable::Bool=true)::Tuple{Bool, Int64, Int64} where {d, T<:Real}
-    Nnr = length(get_non_rattlers(packing)); # amount of non-rattlers 
+    Nnr = length(get_non_rattlers(packing)); # amount of non-rattlers (i.e. stable particles)
     N_dof = d*(Nnr-1)+1 # number of degrees of freedom
     Nc = 0.5*sum(get_coordination_number(packing; only_stable=only_stable)) # number of contacts; if 'only_stable=true' only non-rattlers are considered
     return Nc==N_dof, Nc, Nnr
@@ -164,35 +164,6 @@ function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Ve
 end
 
 
-# Some quantities for calling previously defined functions for the first time and compile them.
-# N_comp=10; d_comp=2;
-# Xs_comp = PeriodicVectors(rand(d_comp, N_comp))
-# zs_comp = 2*rand(1:4, N_comp)
-
-# cvec_comp = [rand(d_comp, zs_comp[i]) for i in 1:N_comp]
-# st_cvec_comp = svectors.(cvec_comp, Val(d_comp))
-
-# fs_comp = [rand(zs_comp[i]) for i in 1:N_comp]
-# nghs_lists_comp = [rand(1:N_comp, zs_comp[i]) for i in 1:N_comp]
-
-# packing_comp = MonoPacking(Xs_comp, st_cvec_comp, fs_comp, nghs_lists_comp, rand(), false; verbose=false)
-# MonoPacking(Xs_comp, cvec_comp, fs_comp, nghs_lists_comp, rand(), false; verbose=false)
-# force_equilibrium(packing_comp.Particles)
-# println(packing_comp)
-
-
-# get_coordination_number(packing_comp)
-# get_non_rattlers(packing_comp)
-# get_rattlers(packing_comp)
-# is_isostatic(packing_comp)
-# total_force(packing_comp)
-# get_positions(packing_comp) == Xs_comp
-# length(packing_comp); size(packing_comp)
-# difference_in_packings(packing_comp, packing_comp)
-
-# Finish calling previously defined functions
-
-
 function MonoPacking(particles::Vector{MonoParticle{d, T}}, R::T, jammed::Bool=false;  tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, verbose::Bool=true) where {d, T<:Real}
     force_balance = force_equilibrium(particles; tol_mechanical_equilibrium=tol_mechanical_equilibrium)
     if !force_balance && verbose
@@ -202,11 +173,9 @@ function MonoPacking(particles::Vector{MonoParticle{d, T}}, R::T, jammed::Bool=f
 
     MonoPacking(particles, R, force_balance, jammed)
 end
-# MonoPacking(packing_comp.Particles, rand(); verbose=false)
 
 
 distances_between_centers(packing::AbstractPacking) = distances_between_centers(get_positions(packing))
-# distances_between_centers(packing_comp)
 
 
 """
@@ -223,7 +192,6 @@ See also [`distances_between_centers`](@ref)
 function distances_between_particles(packing::MonoPacking)
     distances_between_centers(packing) .- (2*packing.R)
 end
-# distances_between_particles(packing_comp)
 
 """
     check_for_overlaps(packing::MonoPacking, tolerance::Float64)
@@ -235,7 +203,7 @@ function check_for_overlaps(packing::MonoPacking, tolerance::Float64)
     Xs = get_positions(packing)
     check_for_overlaps(Xs, R, tolerance)
 end
-# check_comp = check_for_overlaps(packing_comp, 1e-8)
+
 #################################################
 # Other useful functions
 ################################################
@@ -266,5 +234,3 @@ function packing_fraction(packing::MonoPacking{d, T})::Float64 where {d, T}
     L = packing.Particles[1].X[1].L
     packing_fraction(d, R, N, L)
 end
-# packing_fraction(packing_comp)
-

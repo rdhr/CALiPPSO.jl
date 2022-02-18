@@ -148,7 +148,6 @@ rand()*PeriodicNumber(2.5, 3.0); PeriodicNumber(2.5, 3.0)*rand()
 value(PN::PeriodicNumber{<:Real}) = PN.value
 abs(PN::PeriodicNumber{<:Real}) = Base.abs(value(PN))
 abs2(PN::PeriodicNumber{<:Real}) = Base.abs2(value(PN))
-# value(pn1); abs(pn1); abs2(pn2) # call for compilation
 
 # Define a 'distance' function to work with numbers with periodic BC
 """
@@ -161,4 +160,3 @@ Since such method always returns a non-negative value and is commutative, this f
 is a well defined distance.
 """
 periodic_distance(P1::PeriodicNumber, P2::PeriodicNumber)::Float64=(P1-P2).value
-periodic_distance(PeriodicNumber(0.1, 3.0), PeriodicNumber(2.5, 3.0)) # call for compilation

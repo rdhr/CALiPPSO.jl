@@ -47,13 +47,14 @@ The output of `produce_jammed_configuration` is the following:
 
 ### Advanced usage
 
-For more advanced usage and more details of how `produce_jammed_configuration` please refer to the [documentation](XXXXXX).
+For more advanced usage and more details of how `produce_jammed_configuration` works please refer to the [documentation](XXXXXX).
 
 ## Disclaimer
 
 ## ToDo's
 
 1. Write implementation of the analogous functions for polydisperse packings.
+2. Check that ToDo's of **ALL** lists have been addressed and upload version to GitHub
 
 
 

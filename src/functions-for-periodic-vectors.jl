@@ -65,9 +65,6 @@ function Base.show(io::IO, PV::SVector{d, <:PeriodicNumber}) where {d}
     end
 end
 
-# vt1 = PeriodicVector(rand(4), 0.5)
-# vt2 = PeriodicVector(rand(4), 0.5)
-
 #########################################################################################################
 #########################################################################################################
 ### Functions to compute the distance between two vectors with 'PeriodicNumber' components
@@ -139,7 +136,6 @@ function generate_system_images(d::Int64, L::Float64=1.0)
     images
 end
 generate_system_images(2, 5.0)
-# imgst = generate_system_images(4, 0.5)
 
 
 
@@ -223,9 +219,6 @@ MIC_vector(PeriodicVector(rand(4), 0.5), PeriodicVector(rand(4), 0.5), generate_
 ### Functions to check distances between set of vectors
 #########################################################################################################
 #########################################################################################################
-# Temporary values and arrays to perform first, simple calls on the following functions
-# dt= 4; Lt=1.2
-# Xst = PeriodicVectors(5 .*rand(dt, 20) .- 2, 1.2)
 
 """
     distances_between_centers(Xs::Vector{SVector{d, PeriodicNumber{T}}})
@@ -247,7 +240,6 @@ function distances_between_centers(Xs::Vector{SVector{d, PeriodicNumber{T}}}) wh
     end
     return Symmetric(distances)
 end
-# distances_between_centers(Xst)
 
 
 
@@ -282,7 +274,6 @@ function distances_between_centers(Xs::Vector{SVector{d, PeriodicNumber{T}}}, im
     end
     return Symmetric(distances), image_indices
 end
-# distances_between_centers(Xst, generate_system_images(dt, Lt))
 
 
 
@@ -321,5 +312,3 @@ function check_for_overlaps(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, tol
     end
     return overlap, message, particles
 end
-# check_for_overlaps(Xst, 0.0, 1e-10)
-# check_for_overlaps(Xst, 1.2, 1e-10)
