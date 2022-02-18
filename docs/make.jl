@@ -7,6 +7,7 @@ using Documenter
 
 makedocs(sitename="CALiPPSO",
     # modules = [CALiPPSO, RandomIC],
+    authors = "Rafael Diaz Hernandez Rojas",
     pages = [
         "Home" => "index.md",
         "Introduction: theory and few details" => "theory.md",
@@ -18,3 +19,7 @@ makedocs(sitename="CALiPPSO",
         "API Reference" => "api.md"],
         format = Documenter.HTML(prettyurls = false)
     )
+
+deploydocs(
+    repo = "github.com/USER_NAME/PACKAGE_NAME.jl.git",
+)
