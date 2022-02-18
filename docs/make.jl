@@ -21,5 +21,5 @@ makedocs(sitename="CALiPPSO",
     )
 
 deploydocs(
-    repo = "github.com/USER_NAME/PACKAGE_NAME.jl.git",
+    repo = "github.com/rdhr/CALiPPSO.git",
 )
