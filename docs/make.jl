@@ -1,9 +1,8 @@
 # const precompile_main_function = false
-include("../src/CALiPPSO.jl")
-using .CALiPPSO
-using StaticArrays
+# include("../src/CALiPPSO.jl")
+using CALiPPSO
+# using StaticArrays
 include("../src/random_initial_conditions.jl")
-# using .RandomIC
 using Documenter
 
 makedocs(sitename="CALiPPSO",
@@ -22,5 +21,5 @@ makedocs(sitename="CALiPPSO",
     )
 
 deploydocs(
-    repo = "github.com/rdhr/CALiPPSO.git",
+    repo = "github.com/rdhr/CALiPPSO.jl.git",
 )
