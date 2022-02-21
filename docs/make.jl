@@ -1,6 +1,7 @@
-const precompile_main_function = false
+# const precompile_main_function = false
 include("../src/CALiPPSO.jl")
 using .CALiPPSO
+using StaticArrays
 include("../src/random_initial_conditions.jl")
 # using .RandomIC
 using Documenter
