@@ -1,11 +1,7 @@
-if !(@isdefined precompile_main_function)
-    const precompile_main_function = true
-end
-
 
 module CALiPPSO
 
-export produce_jammed_configuration # main function!!
+export produce_jammed_configuration, precompile_main_function # main function!! and a function used to precompile it on a small system
 export convergence_info, PeriodicNumber, MonoParticle, MonoPacking, PeriodicVector, Packing # `struct`s defined in the package
 export network_of_contacts, check_for_overlaps, PeriodicVectors, packing_fraction, get_non_rattlers, get_rattlers, is_isostatic, get_coordination_number, total_force # other useful functions; mostly for packings
 export volume_d_ball, norm # these functions are needed for generating random initial packings, in the 'random_initial_conditions.jl' script. Nevertheless, it could be the case that they're also useful when analysing results, specially 'norm'
@@ -26,22 +22,22 @@ const max_threads = Int(round(Sys.CPU_THREADS/2)) # max number of processes to b
 ## By default, Gurobi is used; so Comment the following lines if you want to use another solver
 ################################################
 
-### Parameters for Gurobi
-using Gurobi
-const default_tol_overlap=1e-8 # tolerance for identifying an Overlap. Given that Gurobi's precision is 10^-9, a larger value is needed.
-const default_tol_optimality = 1e-9; # optimality tolerances. This is the most precise value allowed by Gurobi
-const default_solver = Gurobi
-const default_args = Gurobi.Env() # to avoid printing license info every time a model is created or optimized 
-#= 
-We are omitting all the standard output of Gurobi by setting the 'OutputFlag' to 0.
-The values of feasibility (FeasibilityTol) and optimality (OptimalityTol) chosen are the most stringent ones allowed by Gurobi.
-Instead, the choice of using the 3rd method (i.e. the barrier method) might lead, in some cases, to a slower performance in comparison with the default method '0', which is a concurrent implementation of simplex (primal and dual) as well as barrier solvers. However, for reproducibility and better characterization, restricting to only using barrier method is better. Of course, this can be changed without any problems.
-More info can be found here: https://www.gurobi.com/resource/parallelism-linear-mixed-integer-programming/ and in the corresponding section of Gurobi's manual: https://www.gurobi.com/documentation/9.1/refman/method.html
-=#
-const default_solver_attributes = Dict("OutputFlag" => 0, "FeasibilityTol" => default_tol_optimality, "OptimalityTol" => default_tol_optimality, "Method" => 3, "Threads" => max_threads)
+# ### Parameters for Gurobi
+# using Gurobi
+# const default_tol_overlap=1e-8 # tolerance for identifying an Overlap. Given that Gurobi's precision is 10^-9, a larger value is needed.
+# const default_tol_optimality = 1e-9; # optimality tolerances. This is the most precise value allowed by Gurobi
+# const default_solver = Gurobi
+# const default_args = Gurobi.Env() # to avoid printing license info every time a model is created or optimized 
+# #= 
+# We are omitting all the standard output of Gurobi by setting the 'OutputFlag' to 0.
+# The values of feasibility (FeasibilityTol) and optimality (OptimalityTol) chosen are the most stringent ones allowed by Gurobi.
+# Instead, the choice of using the 3rd method (i.e. the barrier method) might lead, in some cases, to a slower performance in comparison with the default method '0', which is a concurrent implementation of simplex (primal and dual) as well as barrier solvers. However, for reproducibility and better characterization, restricting to only using barrier method is better. Of course, this can be changed without any problems.
+# More info can be found here: https://www.gurobi.com/resource/parallelism-linear-mixed-integer-programming/ and in the corresponding section of Gurobi's manual: https://www.gurobi.com/documentation/9.1/refman/method.html
+# =#
+# const default_solver_attributes = Dict("OutputFlag" => 0, "FeasibilityTol" => default_tol_optimality, "OptimalityTol" => default_tol_optimality, "Method" => 3, "Threads" => max_threads)
 
-### First calls for compilation of model creation
-Model(()->default_solver.Optimizer(default_args))
+# ### First calls for compilation of model creation
+# Model(()-> default_solver.Optimizer(default_args))
 
 
 
@@ -53,12 +49,12 @@ Model(()->default_solver.Optimizer(default_args))
 # using HiGHS
 # const default_tol_overlap=1e-8 # tolerance for identifying an Overlap.
 # const default_tol_optimality = 1e-9
-# const default_solver = :HiGHS
+# const default_solver = HiGHS
 # const default_args = nothing
 # const default_solver_attributes = Dict("small_matrix_value"=>0.1*default_tol_optimality, "primal_feasibility_tolerance" => default_tol_optimality, "dual_feasibility_tolerance" => default_tol_optimality, "solver" => "ipm", "ipm_optimality_tolerance"=>default_tol_optimality,  "highs_max_threads" => max_threads, "parallel"=>"on", "output_flag"=>false)
 
 # # ### First calls for compilation of model creation
-# Model(()->eval(default_solver).Optimizer())
+# Model(()-> default_solver.Optimizer())
 
 
 
@@ -70,28 +66,28 @@ Model(()->default_solver.Optimizer(default_args))
 # using Clp
 # const default_tol_overlap=1e-8 # tolerance for identifying an Overlap.
 # const default_tol_optimality = 1e-9
-# const default_solver = :Clp
+# const default_solver = Clp
 # const default_args = nothing
 # const default_solver_attributes = Dict("PrimalTolerance"=>default_tol_optimality, "DualTolerance" => default_tol_optimality, "LogLevel" => 0, "SolveType" => 5)
 
 # # ### First calls for compilation of model creation
-# Model(()->eval(default_solver).Optimizer())
+# Model(()-> default_solver.Optimizer())
 
 
 ################################################
 ## Uncomment the following lines if you want to use GLPK solver
 ################################################
 
-# ### Parameters for GLPK
-# using GLPK
-# const default_tol_overlap=1e-8 # tolerance for identifying an Overlap.
-# const default_tol_optimality = 0.1*default_tol_overlap
-# const default_solver = :GLPK
-# const default_args = (want_infeasibility_certificates=false, method=GLPK.MethodEnum(0)) 
-# const default_solver_attributes = Dict("msg_lev"=>GLPK.GLP_MSG_OFF, "tol_bnd"=>default_tol_optimality, "tol_dj"=>default_tol_optimality)
+### Parameters for GLPK
+using GLPK
+const default_tol_overlap=1e-8 # tolerance for identifying an Overlap.
+const default_tol_optimality = 0.1*default_tol_overlap
+const default_solver = GLPK
+const default_args = (want_infeasibility_certificates=false, method=GLPK.MethodEnum(0)) 
+const default_solver_attributes = Dict("msg_lev"=>GLPK.GLP_MSG_OFF, "tol_bnd"=>default_tol_optimality, "tol_dj"=>default_tol_optimality)
 
-# ### First calls for compilation of model creation
-# Model(()->eval(default_solver).Optimizer(;default_args...))
+### First calls for compilation of model creation
+Model(()-> default_solver.Optimizer(;default_args...))
 
 
 
@@ -104,13 +100,13 @@ Model(()->default_solver.Optimizer(default_args))
 # using COSMO
 # const default_tol_overlap=1e-5 # tolerance for identifying an Overlap.
 # const default_tol_optimality = 0.1*default_tol_overlap
-# const default_solver = :COSMO
+# const default_solver = COSMO
 # const default_args = nothing
 # const default_solver_attributes = Dict("verbose"=>false, "check_termination"=>500, "max_iter"=>10000, "eps_abs"=>default_tol_optimality, "eps_rel"=>default_tol_optimality, "adaptive_rho"=>false)
 
 
 # ### First calls for compilation of model creation
-# Model(()->eval(default_solver).Optimizer())
+# Model(()-> default_solver.Optimizer())
 
 
 
@@ -124,19 +120,19 @@ Model(()->default_solver.Optimizer(default_args))
 # using Hypatia
 # const default_tol_overlap=1e-8 # tolerance for identifying an Overlap.
 # const default_tol_optimality = 0.1*default_tol_overlap
-# const default_solver = :Hypatia
+# const default_solver = Hypatia
 # const default_args = (verbose = false, tol_abs_opt = default_tol_optimality, tol_feas = 0.1*default_tol_overlap, tol_infeas = 0.1*default_tol_overlap)
 # const default_solver_attributes = Dict()
 
 # ### First calls for compilation of model creation
-# Model(()->eval(default_solver).Optimizer(;default_args...))
+# Model(()-> default_solver.Optimizer(;default_args...))
 
 ##############################################################################
 ##############################################################################
 ## Here we begin defining all the required functions and remaining constants
 ##############################################################################
 ##############################################################################
-const default_tol_Γ_convergence = 1e-12 # default value for determining the convergence of √Γ-1. NB: this value is only recommended if you're using Gurobi; for different solvers this might be too low so you'll have to change it accordingly
+const default_tol_Γ_convergence = 1e-12 # default value for determining the convergence of √Γ-1. NB: this value is only recommended if you're using Gurobi, HiGHS, or GLPK; for different solvers this might be too low so you'll have to change it accordingly
 const default_tol_displacements = 1e-9 # default value for determining the convergence of |sᵢ|
 const default_tol_zero_forces = 0.1*default_tol_optimality # any dual variable smaller than this value is considered a 0. Note that this is actually a loose threshold
 # const default_tol_zero_forces = 1e-5 # any dual variable smaller than this value is considered a 0. Value recommended for COSMO, Tulip, and Hypatia
@@ -1140,7 +1136,7 @@ function network_of_contacts(packing::MonoPacking{d, T}, normalized::Bool=true) 
 end
 
 
-if Main.precompile_main_function
+function precompile_main_function(solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args)
     #= =====================================================================
     =====================================================================
     USING MAIN FUNCTIONS ON SMALL SYSTEM FOR COMPILATION/FIRST CALL PURPOSES
@@ -1149,7 +1145,7 @@ if Main.precompile_main_function
     printstyled("\t The following output just refers to simple first calls for precompiling needed functions\n\n", bold=true, color=:cyan)
 
     printstyled("\n\nUsing CALiPPSO (with *low accuracy*) on a small, predefined system in order to compile the needed functions.\n
-    \t\t Solver used: ", Symbol(default_solver), "\n\n", color=:cyan)
+    \t\t Solver used: ", Symbol(solver), "\n\n", color=:cyan)
     Nt=30; rt=0.52; dt=3; 
     Lt=4.0;
     images_comp = generate_system_images(dt, Lt)
@@ -1193,20 +1189,18 @@ if Main.precompile_main_function
     Ds_comp, Γ_comp, cons_comp, neighs_comp, ts_comp, stat_comp = solve_LP_instance(cen_comp, rt, 1.5, 4*rt, images_comp)
     obtain_non_rattlers(cons_comp, neighs_comp, dt);
 
-    all_contacts_comp, all_forces, all_neighs_lists_comp = network_of_contacts(cen_comp, cons_comp, neighs_comp, images_comp)
-    total_force(all_contacts_comp, all_forces)
-
     MonoPacking(cen_comp, cons_comp, neighs_comp, rt, images_comp)
 
-    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, initial_monitor=10, tol_Γ_convergence= 1e-3, tol_S_convergence=1e-2, verbose=false );
+    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= 1e-3, tol_S_convergence=1e-2, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=2 );
 
     fine_tune_forces!(Jpack_comp, 0.0, 1.0, Lt, images_comp)
     network_of_contacts(Jpack_comp)
 
     printstyled("\n\n Calling the main function once again, to compile the second method.\n\n", color=:cyan)
-    produce_jammed_configuration(Xs_comp, rt, Lt; ℓ0=Lt, initial_monitor=2, monitor_step=2, verbose=false, tol_Γ_convergence=1e-3,tol_S_convergence=1e-2)
+    produce_jammed_configuration(Xs_comp, rt, Lt; ℓ0=Lt, initial_monitor=0, monitor_step=0, verbose=false, tol_Γ_convergence=1e-3,tol_S_convergence=1e-2,
+    solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=2 )
 
-    printstyled("\n________________________________________________________\n\tCompilation process finished! \t (with solver: ", Symbol(default_solver), ")\n________________________________________________________\n\n\n\n\n", color=:cyan, bold=true)
+    printstyled("\n________________________________________________________\n\tCompilation process finished! \t (with solver: ", Symbol(solver), ")\n________________________________________________________\n\n\n\n\n", color=:cyan, bold=true)
 end
 
 end
