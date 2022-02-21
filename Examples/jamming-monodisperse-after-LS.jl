@@ -2,6 +2,27 @@ include("../src/CALiPPSO.jl")
 using .CALiPPSO  
 using DelimitedFiles, Statistics
 
+#= UNcomment the following lines if you want to use Gurobi Solver, for running the tests.
+    Or adjust them to the solver of your choice
+=#
+using Gurobi
+const solver = Gurobi
+const tol_overlap=1e-8 # tolerance for identifying an Overlap. Given that Gurobi's precision is 10^-9, a larger value is needed.
+const tol_optimality = 1e-9; # optimality tolerances. This is the most precise value allowed by Gurobi
+const solver_args = Gurobi.Env()
+const solver_attributes = Dict("OutputFlag" => 0, "FeasibilityTol" => tol_optimality, "OptimalityTol" => tol_optimality, "Method" => 3, "Threads" =>  CALiPPSO.max_threads)
+
+
+#= UNcomment the following lines if you want to use CALiPPSO default's solver and behaviour, *i.e.* GLPK =#
+# const solver = CALiPPSO.default_solver
+# const tol_overlap = CALiPPSO.default_tol_overlap
+# const tol_optimality = CALiPPSO.default_tol_optimality
+# const solver_args = CALiPPSO.default_args
+# const solver_attributes = CALiPPSO.default_solver_attributes    
+
+
+precompile_main_function(solver, solver_attributes, solver_args)
+
 const N_LS = 1024 # size of configurations obtained after LS compression
 const ds = [3, 4, 5] # dimensions to use
 const L = 1.0 # size of each side of the system's volume
@@ -18,7 +39,7 @@ for d in ds
     printstyled("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n", color=:blue)
 
 
-    @time jammed_packing, info_convergence, Γs_vs_t, smax_vs_t, iso_vs_t = produce_jammed_configuration(Xs0, r0; verbose=true, tol_Γ_convergence=1e-14)
+    @time jammed_packing, info_convergence, Γs_vs_t, smax_vs_t, iso_vs_t = produce_jammed_configuration(Xs0, r0; verbose=true, tol_Γ_convergence=1e-12, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args)
     println("Evolution of convergence criteria:")
     sqrt_gms = max.(Γs_vs_t, 1) .-1
     println("\t √Γ-1 = \t", sqrt_gms)
@@ -32,7 +53,4 @@ for d in ds
 
     
     network_of_contacts(jammed_packing)
-
-
-
 end

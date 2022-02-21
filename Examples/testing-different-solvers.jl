@@ -27,58 +27,64 @@ println("But before the test is executed, `produce_jammed_configuration` will be
 ##############################
 ### Now let's define the arguments and attributes to be used for each solver, and create an empty model for initialization
 ##############################
-Xs_comp = CALiPPSO.Xs_comp; Lt = CALiPPSO.Lt; rt=CALiPPSO.rt
+# Xs_comp = CALiPPSO.Xs_comp; Lt = CALiPPSO.Lt; rt=CALiPPSO.rt
 
 # Gurobi:
 const grb_args = Gurobi.Env()
 const grb_attributes = Dict("OutputFlag" => 0, "FeasibilityTol" => tol_optimality, "OptimalityTol" => tol_optimality, "Method" => 3, "Threads" => max_threads)
+precompile_main_function(Gurobi, grb_attributes, grb_args)
 
 
 # HiGHS
 const highs_args = nothing
 const highs_attributes = Dict("small_matrix_value"=>0.1*tol_optimality, "primal_feasibility_tolerance" => tol_optimality, "dual_feasibility_tolerance" => tol_optimality, "solver" => "ipm", "ipm_optimality_tolerance"=>tol_optimality,  "highs_max_threads" => max_threads, "parallel"=>"on", "output_flag"=>false)
-cen_comp = PeriodicVectors(Xs_comp, Lt)
-produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=Gurobi)
 printstyled("\n______________________________________________________________________________________\n", color=:yellow)
-printstyled("Performing first call (of a single iteration) of main function on compilation system using HiGHS solver\n", color=:yellow)
-produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=HiGHS, solver_attributes=highs_attributes, solver_args=highs_args);
+precompile_main_function(HiGHS, highs_attributes, highs_args)
+# cen_comp = PeriodicVectors(Xs_comp, Lt)
+# produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=Gurobi)
+# printstyled("Performing first call (of a single iteration) of main function on compilation system using HiGHS solver\n", color=:yellow)
+# produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=HiGHS, solver_attributes=highs_attributes, solver_args=highs_args);
 
 
 
 # Clp
 const clp_args = nothing
 const clp_attributes = Dict("PrimalTolerance"=>tol_optimality, "DualTolerance" => tol_optimality, "LogLevel" => 0, "SolveType" => 5)
-cen_comp = PeriodicVectors(Xs_comp, Lt)
+# cen_comp = PeriodicVectors(Xs_comp, Lt)
 printstyled("\n______________________________________________________________________________________\n", color=:yellow)
-printstyled("Performing first call (of a single iteration) of main function on compilation system using Clp solver\n", color=:yellow)
-produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=Clp, solver_attributes=clp_attributes, solver_args=clp_args);
+precompile_main_function(Clp, clp_attributes, clp_args)
+# printstyled("Performing first call (of a single iteration) of main function on compilation system using Clp solver\n", color=:yellow)
+# produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=Clp, solver_attributes=clp_attributes, solver_args=clp_args);
 
 
 # GLPK
 const glpk_args = (want_infeasibility_certificates=false, method=GLPK.MethodEnum(0) ) 
 const glpk_attributes = Dict("msg_lev"=>GLPK.GLP_MSG_OFF, "tol_bnd"=>tol_optimality, "tol_dj"=>tol_optimality)
-cen_comp = PeriodicVectors(Xs_comp, Lt)
+# cen_comp = PeriodicVectors(Xs_comp, Lt)
 printstyled("\n______________________________________________________________________________________\n", color=:yellow)
-printstyled("Performing first call (of a single iteration) of main function on compilation system using GLPK solver\n", color=:yellow)
-produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=GLPK, solver_attributes=glpk_attributes, solver_args=glpk_args);
+precompile_main_function()
+# printstyled("Performing first call (of a single iteration) of main function on compilation system using GLPK solver\n", color=:yellow)
+# produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=GLPK, solver_attributes=glpk_attributes, solver_args=glpk_args);
 
 
 # Hypatia
 const hypa_args = (verbose = false, tol_abs_opt = tol_optimality, tol_feas = 0.1*tol_overlap, tol_infeas = 0.1*tol_overlap)
 const hypa_attributes = Dict()
-cen_comp = PeriodicVectors(Xs_comp, Lt)
+# cen_comp = PeriodicVectors(Xs_comp, Lt)
 printstyled("\n______________________________________________________________________________________\n", color=:yellow)
-printstyled("Performing first call (of a single iteration) of main function on compilation system using Hypatia solver\n", color=:yellow)
-produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=Hypatia, solver_attributes=hypa_attributes, solver_args=hypa_args);
+precompile_main_function(Hypatia, hypa_attributes, hypa_args)
+# printstyled("Performing first call (of a single iteration) of main function on compilation system using Hypatia solver\n", color=:yellow)
+# produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=Hypatia, solver_attributes=hypa_attributes, solver_args=hypa_args);
 
 
 # COSMO
 const cosmo_args = nothing
 const cosmo_attributes = Dict("verbose"=>false, "max_iter"=>30000, "eps_abs"=>1e3*tol_optimality, "adaptive_rho"=>false, "eps_prim_inf"=>1e3*tol_optimality, "eps_dual_inf"=>1e3tol_optimality)
-cen_comp = PeriodicVectors(Xs_comp, Lt)
+# cen_comp = PeriodicVectors(Xs_comp, Lt)
 printstyled("\n______________________________________________________________________________________\n", color=:yellow)
-printstyled("Performing first call (of a single iteration) of main function on compilation system using COSMO solver\n", color=:yellow)
-produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=COSMO, solver_attributes=cosmo_attributes, solver_args=cosmo_args);
+precompile_main_function(COSMO, cosmo_attributes, cosmo_args)
+# printstyled("Performing first call (of a single iteration) of main function on compilation system using COSMO solver\n", color=:yellow)
+# produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=COSMO, solver_attributes=cosmo_attributes, solver_args=cosmo_args);
 
 
 # # Tulip
