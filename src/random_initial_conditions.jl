@@ -1,9 +1,4 @@
-using Distributions, StaticArrays
-
-if !(@isdefined produce_jammed_configuration)
-    include("CALiPPSO.jl")
-end
-using .CALiPPSO
+using Distributions
 
 #################################################
 # Functions to obtain particle radii from packing fraction and other simple geometric properties

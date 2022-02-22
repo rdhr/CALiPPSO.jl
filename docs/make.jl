@@ -1,8 +1,8 @@
 # const precompile_main_function = false
 # include("../src/CALiPPSO.jl")
+# using .CALiPPSO
 using CALiPPSO
-# using StaticArrays
-include("../src/random_initial_conditions.jl")
+# include("../src/random_initial_conditions.jl")
 using Documenter
 
 makedocs(sitename="CALiPPSO",

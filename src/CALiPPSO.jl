@@ -1,13 +1,13 @@
-
 module CALiPPSO
 
 export produce_jammed_configuration, precompile_main_function # main function!! and a function used to precompile it on a small system
+export generate_random_configuration, radius_from_phi # function to generate a low density, random initial configuration; and compute r from φ
 export convergence_info, PeriodicNumber, MonoParticle, MonoPacking, PeriodicVector, Packing # `struct`s defined in the package
 export network_of_contacts, check_for_overlaps, PeriodicVectors, packing_fraction, get_non_rattlers, get_rattlers, is_isostatic, get_coordination_number, total_force # other useful functions; mostly for packings
 export volume_d_ball, norm # these functions are needed for generating random initial packings, in the 'random_initial_conditions.jl' script. Nevertheless, it could be the case that they're also useful when analysing results, specially 'norm'
 
 include("Packing.jl")
-
+include("random_initial_conditions.jl")
 
 using JuMP # Library for using high level interface for optimization and model creation/manipulation 
 const max_threads = Int(round(Sys.CPU_THREADS/2)) # max number of processes to be used by any optimizer. By default, half the number of threads available in a computer
