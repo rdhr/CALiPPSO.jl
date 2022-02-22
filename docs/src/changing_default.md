@@ -41,9 +41,9 @@ const default_solver_attributes = Dict("OutputFlag" => 0, "FeasibilityTol" => de
     Nevertheless, in all the configurations we tested, we did *non* find anyone for which the force balance condition couldn't be met within the tolerance defined by `default_tol_force_equilibrium`, despite this value being much smaller than Gurobi's highest accuracy.
 
 ---
-## [Controlling `produce_jammed_configuration` with keyword arguments](@id kwargs-control)
+## [Controlling `produce_jammed_configuration!` with keyword arguments](@id kwargs-control)
 
-The full list of keyword arguments (kwargs) of [`produce_jammed_configuration`](@ref) can be readily accessed from its docstring. Here we provide the same list (with their default values, defined above), and a more detailed description when needed. Thus, the value of any of them can be conveniently tunned to your needs by calling `produce_jammed_configuration(Xs0, R, L; kwarg=<your chosen value>)`.
+The full list of keyword arguments (kwargs) of [`produce_jammed_configuration!`](@ref) can be readily accessed from its docstring. Here we provide the same list (with their default values, defined above), and a more detailed description when needed. Thus, the value of any of them can be conveniently tunned to your needs by calling `produce_jammed_configuration!(Xs0, R, L; kwarg=<your chosen value>)`.
 
 ### Kwargs for controlling how constraints are assigned to `LP_model` and setting bounds on displacements
 
@@ -100,7 +100,7 @@ We also tested some *pure-Julia* solvers, like [Hypatia.jl](https://github.com/c
 
 ### Selecting a solver and specifying its attributes
 
-Just as with the other options of [`produce_jammed_configuration`](@ref), choosing a solver is conveniently done through [keyword arguments](@ref kwargs-control):
+Just as with the other options of [`produce_jammed_configuration!`](@ref), choosing a solver is conveniently done through [keyword arguments](@ref kwargs-control):
 
 1. `solver::Symbol=default_solver`: This kwarg must correspond to the name of the solver that you want to use, as *a Symbol*. For example, as [mentioned above](@ref list-defaults), we defined `default_solver = :Gurobi`; or if you want to use, *e.g.* the HiGHS solver, you should pass `solver=:HiGHS` as argument. (Note the **colon** (`:`) before the name of the solver; this is what makes it of `Symbol` type, and it is very important that is included). Thus, other possible values of the `solver` kwarg are: `:GLP`, `:Clp`, `:Hypatia`, etc.
    - If you want to use a different solver, be sure to load the corresponding package *inside* the `CALiPPSO` module (see line `23` of `CALiPPSO.jl`). 

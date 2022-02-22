@@ -15,7 +15,7 @@ convergence_info
 
 
 ```@docs
-produce_jammed_configuration
+produce_jammed_configuration!
 network_of_contacts
 check_for_overlaps
 check_for_overlaps(::MonoPacking)

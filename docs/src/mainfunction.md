@@ -1,4 +1,4 @@
-# [How `produce_jammed_configuration` works](@id main_function)
+# [How `produce_jammed_configuration!` works](@id main_function)
 
 
 Our main function consists of two essentially independent parts: (1) the [main CALiPPSO loop](@ref Theory-behind-CALiPPSO); and (2) the packing creation from the quantities obtained after the main loop converged. We now describe each of them.
@@ -8,7 +8,7 @@ Our main function consists of two essentially independent parts: (1) the [main C
 ## [The main CALiPPSO's loop (a.k.a. ILP)](@id mainloop)
 
 
-From the initial particles' position and size (*i.e.* the input of [`produce_jammed_configuration`](@ref)), a `while` loop is initialized until the *convergence criteria* defined [before](@ref Theory-behind-CALiPPSO) are reached. More precisely, the loop continues until: (1) ``\sqrt{\Gamma^\star}-1 <``` tol_Γ_convergence` **and** (2) ``|s^\star_{i,\mu}| <`` `tol_S_convergence` for ``i=1, \dots, N`` and ``\mu=1,\dots, d`` (although see step 4 below); **or** the number of iterations (*i.e* the number of LP optimizations) exceeds `max_iters`. The default values of these 3 quantities are [specified later](@ref list-defaults) and can be easily changed through [keyword arguments](@ref kwargs-control) of [`produce_jammed_configuration`](@ref).
+From the initial particles' position and size (*i.e.* the input of [`produce_jammed_configuration!`](@ref)), a `while` loop is initialized until the *convergence criteria* defined [before](@ref Theory-behind-CALiPPSO) are reached. More precisely, the loop continues until: (1) ``\sqrt{\Gamma^\star}-1 <``` tol_Γ_convergence` **and** (2) ``|s^\star_{i,\mu}| <`` `tol_S_convergence` for ``i=1, \dots, N`` and ``\mu=1,\dots, d`` (although see step 4 below); **or** the number of iterations (*i.e* the number of LP optimizations) exceeds `max_iters`. The default values of these 3 quantities are [specified later](@ref list-defaults) and can be easily changed through [keyword arguments](@ref kwargs-control) of [`produce_jammed_configuration!`](@ref).
 
 
 This main loop consists of the following steps:
@@ -41,15 +41,15 @@ This main loop consists of the following steps:
 6. Call the [`check_for_overlaps`](@ref) function to check if there are any overlaps once the configuration has been updated.
    - Of course, **there shouldn't be!**
    -  ... but given that we live in a world of *finite precision* and that we actually aim for a condition in which some of the **constraints are saturated**, it can happen that the LP instance was not solved within the required accuracy. See [this section](@ref Setting-the-required-precision) to learn how to control the overall precision of `CALiPPSO`, and [how to tune the options](@ref kwargs-control) for setting the tolerance with which an overlap is identified.
-   -  When an overlap *does* occur, an error is thrown an `produce_jammed_configuration` terminates, also terminating the main process since `error` is called. Nevertheless, some other information is shown, that can be used, hopefully, to trace back what happened.
-   -  If you think that the problem is the related to [numerical issues](@ref Possible-issues), be sure to understand [how the precision of `produce_jammed_configuration` is determined](@ref Setting-the-required-precision).
+   -  When an overlap *does* occur, an error is thrown an `produce_jammed_configuration!` terminates, also terminating the main process since `error` is called. Nevertheless, some other information is shown, that can be used, hopefully, to trace back what happened.
+   -  If you think that the problem is the related to [numerical issues](@ref Possible-issues), be sure to understand [how the precision of `produce_jammed_configuration!` is determined](@ref Setting-the-required-precision).
    -  Note also that a *real* overlap can also occur (*i.e*. once in which a pair of particles is overlapping by an amount much larger than the accuracy with which a solver fulfills the constraints). If this happens, try some of the solutions [mentioned here](@ref REAL-overlaps)
       
 7. Check if convergence criteria are fulfilled. If this is the case, the main loop terminates. Otherwise, go back to step 1.
 
 
 
-Note that steps 5 and 6, by default, are only performed during the first few iterations (10) and at given intervals (also 10). To change how often information about the main loop progress is printed out (respectively how often overlaps checks are performed) set the keyword argument `monitor_step` (respectively `interval_overlaps_check`) to the desired value. Instead, to select in how many initial iterations to include these steps, use `initial_monitor` (for printing info) and `initial_overlaps_check` for overlaps checks. More details can be found [here](@ref kwargs-control) and in the docstring of [`produce_jammed_configuration`](@ref).
+Note that steps 5 and 6, by default, are only performed during the first few iterations (10) and at given intervals (also 10). To change how often information about the main loop progress is printed out (respectively how often overlaps checks are performed) set the keyword argument `monitor_step` (respectively `interval_overlaps_check`) to the desired value. Instead, to select in how many initial iterations to include these steps, use `initial_monitor` (for printing info) and `initial_overlaps_check` for overlaps checks. More details can be found [here](@ref kwargs-control) and in the docstring of [`produce_jammed_configuration!`](@ref).
 
 ---
 

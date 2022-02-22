@@ -62,7 +62,7 @@ for (nd, d) in enumerate(ds)
         zero_force = CALiPPSO.default_tol_zero_forces
     end
 
-    @time jammed_packing, info_convergence, Γs_vs_t, smax_vs_t, iso_vs_t = produce_jammed_configuration(Xs0, r0; ℓ0=ℓ0, sqrΓ0=1.5, non_iso_break=50, max_iters=max_iters, initial_monitor=20, zero_force=zero_force, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args) # Allow a longer streak of non-isostatic solutions because this could be a common situation during the initial LP steps when using low density configurations
+    @time jammed_packing, info_convergence, Γs_vs_t, smax_vs_t, iso_vs_t = produce_jammed_configuration!(Xs0, r0; ℓ0=ℓ0, sqrΓ0=1.5, non_iso_break=50, max_iters=max_iters, initial_monitor=20, zero_force=zero_force, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args) # Allow a longer streak of non-isostatic solutions because this could be a common situation during the initial LP steps when using low density configurations
     println("_______________________________________________________________________________________\n\n")
     times = info_convergence.times_LP_optim
     println("Info about LP times")

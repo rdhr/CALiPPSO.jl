@@ -1,8 +1,8 @@
 # Basic usage
 
-## The main function: `produce_jammed_configuration`
+## The main function: `produce_jammed_configuration!`
 
-We tried to make this package as easy to use as possible and, indeed, it consists of *a single* main function: [`produce_jammed_configuration`](@ref). (But before using it, be sure to have installed all the [dependencies](@ref Dependencies).) This function is defined in the `CALiPPSO` module, contained in the `CALiPPSO.jl` file. This means that this file should be loaded (through the `include` function) in any script making use of such function. In other words, to include `produce_jammed_configuration` in your scope or Julia script, you need to add the following lines to your script, REPL, Jupyter Notebook, etc.:
+We tried to make this package as easy to use as possible and, indeed, it consists of *a single* main function: [`produce_jammed_configuration!`](@ref). (But before using it, be sure to have installed all the [dependencies](@ref Dependencies).) This function is defined in the `CALiPPSO` module, contained in the `CALiPPSO.jl` file. This means that this file should be loaded (through the `include` function) in any script making use of such function. In other words, to include `produce_jammed_configuration!` in your scope or Julia script, you need to add the following lines to your script, REPL, Jupyter Notebook, etc.:
 
 ```julia
 include("src/CALiPPSO.jl")
@@ -10,23 +10,23 @@ using .CALiPPSO
 ```
 (Beware of the dot (.) when [importing](https://docs.julialang.org/en/v1/manual/code-loading/) the `CALiPPSO` module.) 
 
-In this way, [`produce_jammed_configuration`](@ref) as well as [other functions and `struct`'s will be loaded](@ref Main-Exported-Functions) into your environment. The additional functions that are exported when loading `CALiPPSO` (such as [`network_of_contacts`](@ref), [`check_for_overlaps`](@ref), [`get_non_rattlers`](@ref), etc.) are *not* needed for a basic usage, but might be useful for analysing the packings produced by the main function. 
+In this way, [`produce_jammed_configuration!`](@ref) as well as [other functions and `struct`'s will be loaded](@ref Main-Exported-Functions) into your environment. The additional functions that are exported when loading `CALiPPSO` (such as [`network_of_contacts`](@ref), [`check_for_overlaps`](@ref), [`get_non_rattlers`](@ref), etc.) are *not* needed for a basic usage, but might be useful for analysing the packings produced by the main function. 
 
 Once `CALiPPSO` has been loaded, you just need to call
 ```julia
-packing, info, Γ_vs_t, isostatic_vs_t = produce_jammed_configuration(Xs, R, L)
+packing, info, Γ_vs_t, isostatic_vs_t = produce_jammed_configuration!(Xs, R, L)
 ```
 Naturally, this function should generate a jammed packing from an initial (monodisperse) configuration of particles with positions `Xs`, radius `R`, and contained in a periodic (hyper-) cube of size `L` (if this argument is left unspecified, it's assumed its value is 1). `Xs` should be a `Matrix{Float64}` of size ``d\times N``, thus specifying the position of each particle (*i.e.* each of the ``N`` columns is the ``d``-dimensional position vector of a particle). Clearly, this matrix can be constructed from importing data from a `csv` or `dat` file (or any other suitable file format for that matter).
 
-Alternatively, `Xs` might be an array of ``N`` `StaticVector`s, each of size ``d`` and elements of [`PeriodicNumber`](@ref) type [(see here for the dedicated section on types)](@ref types). In such case, `L` should be given as an argument when calling [`produce_jammed_configuration`](@ref), because its value  automatically inferred from the corresponding field of `PeriodicNumber`. For convenience, if `Xs` is a matrix of `Float64` elements (*i.e.* a `Matrix{Float64}` type), it can be easily converted to an array of `StaticVector`s with `PeriodicNumber` elements using the `PeriodicVectors` function. Thus, the analogous version of the code above reads
+Alternatively, `Xs` might be an array of ``N`` `StaticVector`s, each of size ``d`` and elements of [`PeriodicNumber`](@ref) type [(see here for the dedicated section on types)](@ref types). In such case, `L` should be given as an argument when calling [`produce_jammed_configuration!`](@ref), because its value  automatically inferred from the corresponding field of `PeriodicNumber`. For convenience, if `Xs` is a matrix of `Float64` elements (*i.e.* a `Matrix{Float64}` type), it can be easily converted to an array of `StaticVector`s with `PeriodicNumber` elements using the `PeriodicVectors` function. Thus, the analogous version of the code above reads
 ```julia
 Xs = PeriodicVectors(Xs, L)
-packing, info, Γ_vs_t, isostatic_vs_t = produce_jammed_configuration(Xs, R)
+packing, info, Γ_vs_t, isostatic_vs_t = produce_jammed_configuration!(Xs, R)
 ```
 Note that here we are making use of the (fantastic) [method dispatch feature](https://docs.julialang.org/en/v1/manual/methods/#Methods) of Julia.
 
 !!! note "Precompilation"
-    Note that executing `include("src/CALiPPSO.jl")` also *pre-compiles* `produce_jammed_configuration` by calling it using a small, predefined system. This causes that whenever this file is included, several things will be printed in screen. You can safely ignore all of them. It also makes loading `CALiPPSO` somewhat time consuming.
+    Note that executing `include("src/CALiPPSO.jl")` also *pre-compiles* `produce_jammed_configuration!` by calling it using a small, predefined system. This causes that whenever this file is included, several things will be printed in screen. You can safely ignore all of them. It also makes loading `CALiPPSO` somewhat time consuming.
     
     In any case, precompilation can be avoided (hence making loading `CALiPPSO` much faster) by including a line 
     ```julia
@@ -34,12 +34,12 @@ Note that here we are making use of the (fantastic) [method dispatch feature](ht
     ``` 
     *__before__* loading the `CALiPPSO.jl` file. Nevertheless, **keep in mind** that if you do *not* define `precompile_main_function`, all the functions are precompiled by default.
     
-    Avoiding precompilation is discouraged if you actually want to use such function because model creation and optimization in JuMP suffers from a ["time-to-first-solve" issue](https://jump.dev/JuMP.jl/stable/tutorials/getting_started/performance_tips/#The-%22time-to-first-solve%22-issue), which is an analogous version of the "time-to-first-plot" one. Essentially, when a function is first called, it needs to be compiled. (This is actually the general behaviour of Julia, not only of JuMP.) Thus, by calling `produce_jammed_configuration` in a small system, the function gets pre-compiled and ready to be used in much larger systems. If `precompile_main_function` is set to `false` and then you call `produce_jammed_configuration` directly into the (presumably large) configuration you want to jam it could take much longer.
+    Avoiding precompilation is discouraged if you actually want to use such function because model creation and optimization in JuMP suffers from a ["time-to-first-solve" issue](https://jump.dev/JuMP.jl/stable/tutorials/getting_started/performance_tips/#The-%22time-to-first-solve%22-issue), which is an analogous version of the "time-to-first-plot" one. Essentially, when a function is first called, it needs to be compiled. (This is actually the general behaviour of Julia, not only of JuMP.) Thus, by calling `produce_jammed_configuration!` in a small system, the function gets pre-compiled and ready to be used in much larger systems. If `precompile_main_function` is set to `false` and then you call `produce_jammed_configuration!` directly into the (presumably large) configuration you want to jam it could take much longer.
 
-    On the other hand, avoiding precompilation is useful if you just want to import the types, functions, etc. of `CALiPPSO`, but you will not be making use of `produce_jammed_configuration`; for instance if you are only doing data analysis.
+    On the other hand, avoiding precompilation is useful if you just want to import the types, functions, etc. of `CALiPPSO`, but you will not be making use of `produce_jammed_configuration!`; for instance if you are only doing data analysis.
 
 
-Using the variables introduced in the snippets above, the output of `produce_jammed_configuration` is the following:
+Using the variables introduced in the snippets above, the output of `produce_jammed_configuration!` is the following:
 1. `packing`: A jammed packing (provided convergence was attained) stored as a [`MonoPacking`](@ref) object (actually a [`struct`](https://docs.julialang.org/en/v1/manual/types/#Composite-Types)). 
    + This object contains an array of the ``N`` particles in the packing.
      + Each particle is stored as a [`MonoParticle`](@ref) object that contains: (i) the position of the centre; (ii) the list of all contact vectors; (iii) the list of contact forces magnitudes; and (iv) the list of neighbours in contact.
@@ -50,7 +50,7 @@ Using the variables introduced in the snippets above, the output of `produce_jam
 4. `isostatic_vs_t`: An analogous list that specifies (with boolean variables) if isostaticity holds at after each iteration.
 
 
-With its [default parameters](@ref list-defaults) and assuming you're using Gurobi, [`produce_jammed_configuration`](@ref) should work in most of the cases with ``d>2`` (at least we didn't experienced any error in the [tests](@ref Some-examples-included) we ran), specially when ``p>1000`` (*i.e.* for high pressures, or ``\varphi_0\lesssim \varphi_J``). 
+With its [default parameters](@ref list-defaults) and assuming you're using Gurobi, [`produce_jammed_configuration!`](@ref) should work in most of the cases with ``d>2`` (at least we didn't experienced any error in the [tests](@ref Some-examples-included) we ran), specially when ``p>1000`` (*i.e.* for high pressures, or ``\varphi_0\lesssim \varphi_J``). 
 
 !!! tip "Initial condition at low pressure"
     If the input configuration is not sufficiently compressed, a simple fix is to increase the cutoff distance used to build the neighbours-list, ``\ell``. This parameter is conveniently fixed using [a keyword argument](@ref kwargs-control), namely, `ℓ0`. For instance, try

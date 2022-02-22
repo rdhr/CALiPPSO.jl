@@ -21,7 +21,7 @@
 When this occurs, it is likely that the value of `sbound` is too large with respect of the value of ``\ell`` used. So try using a larger value of `ℓ0` (if this occurred when ``\Gamma^\star`` was still relatively large).
    -  Try using a smaller value of `sbound`.
    -  Or try redefining the bounds with which ``\ell`` is adjusted as CALiPPSO makes progress.
-   -  These three options can be set as keywords arguments of [`produce_jammed_configuration`](@ref) as explained [in this section](@ref kwargs-control). 
+   -  These three options can be set as keywords arguments of [`produce_jammed_configuration!`](@ref) as explained [in this section](@ref kwargs-control). 
    -  See the docstring of [`bounds_and_cutoff`](@ref CALiPPSO.bounds_and_cutoff) for more info.
 
 ## Convergence not attained

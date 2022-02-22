@@ -24,7 +24,7 @@ for d in ds
     printstyled("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n", color=:blue)
 
 
-    benchmark_iLP = @benchmarkable produce_jammed_configuration(Xs, r; verbose=false) setup=(Xs = copy($Xs0); r=copy($r0) )
+    benchmark_iLP = @benchmarkable produce_jammed_configuration!(Xs, r; verbose=false) setup=(Xs = copy($Xs0); r=copy($r0) )
     res_benchmark = run(benchmark_iLP, seconds = 3600, samples=20)
 
     printstyled("\n\n - - - o o o - - - o o o - - - o o o - - - o o o - - - o o o - - - o o o - - - o o o - - - \n\n", color=:green)

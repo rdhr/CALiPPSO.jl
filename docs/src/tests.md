@@ -4,7 +4,7 @@
 
 We have included a couple of scripts so you can test that CALiPPSO is working properly. All of them are contained in the `Examples` folder, so be sure to `cd` into it before executing the commands below. Besides, be sure to have installed all the [required dependencies](#dependencies) and as well as the [solvers](#changing-the-solveroptimizer) you want to test.
 
-Besides, consider that the [main function](#basic-usage) is defined in the file `CALiPPSO.jl`, so this file should be included in any script where `produce_jammed_configuration` is called (with the usual syntax `include("CALiPPSO.jl")`). Now, when this script is first called through `include`, you'll see a rather long output printed out. As its first line explains, this is because a first compilation is being carried out, but you can safely ignore all of such output.
+Besides, consider that the [main function](#basic-usage) is defined in the file `CALiPPSO.jl`, so this file should be included in any script where `produce_jammed_configuration!` is called (with the usual syntax `include("CALiPPSO.jl")`). Now, when this script is first called through `include`, you'll see a rather long output printed out. As its first line explains, this is because a first compilation is being carried out, but you can safely ignore all of such output.
 
 ### Some examples included
 

@@ -1,6 +1,6 @@
 module CALiPPSO
 
-export produce_jammed_configuration, precompile_main_function # main function!! and a function used to precompile it on a small system
+export produce_jammed_configuration!, precompile_main_function # main function!! and a function used to precompile it on a small system
 export generate_random_configuration, radius_from_phi # function to generate a low density, random initial configuration; and compute r from φ
 export convergence_info, PeriodicNumber, MonoParticle, MonoPacking, PeriodicVector, Packing # `struct`s defined in the package
 export network_of_contacts, check_for_overlaps, PeriodicVectors, packing_fraction, get_non_rattlers, get_rattlers, is_isostatic, get_coordination_number, total_force # other useful functions; mostly for packings
@@ -489,7 +489,7 @@ given as input.
 
 
 See also [`add_non_overlapping_constraints!`](@ref), [`@constraint`](https://jump.dev/JuMP.jl/stable/reference/constraints/#JuMP.@constraint), [`optimize!`](https://jump.dev/JuMP.jl/stable/reference/solutions/#JuMP.optimize!),
-[`produce_jammed_configuration`](@ref), [`fine_tune_forces!`](@ref).
+[`produce_jammed_configuration!`](@ref), [`fine_tune_forces!`](@ref).
 """
 function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, sqrΓ::T, ℓ0::T, images::Vector{SVector{d, T}};
     solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
@@ -514,7 +514,7 @@ function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, sqr�
         elseif Symbol(solver)==:GLPK || Symbol(solver)==:Hypatia # for these solvers, some parameters are fixed as keyword args of Optimizer
             optimizer = solver.Optimizer(;solver_args...)
         else # for any other solver, no argument passing has been implemented, so they should be called with 'solver_args=nothing'a
-            error("Passing arguments to the Optimizer of : ", Symbol(solver), " is not defined!\n Try using 'solver_args=nothing' when calling `solve_LP_instance` or `produce_jammed_configuration`.")
+            error("Passing arguments to the Optimizer of : ", Symbol(solver), " is not defined!\n Try using 'solver_args=nothing' when calling `solve_LP_instance` or `produce_jammed_configuration!`.")
         end
     end
     #### Once the optimizer has been chosen, the model is finally created
@@ -709,7 +709,7 @@ Besides updating the `forces` of each particle in 'Packing', this function produ
 
 
 See also [`add_non_overlapping_constraints!`](@ref), [`optimize!`](https://jump.dev/JuMP.jl/stable/reference/solutions/#JuMP.optimize!),
-[`produce_jammed_configuration`](@ref), [`solve_LP_instance`](@ref).
+[`produce_jammed_configuration!`](@ref), [`solve_LP_instance`](@ref).
 """
 function fine_tune_forces!(Packing::MonoPacking{d, T}, force_mismatch::T, sqrΓ::T, ℓ0::T, images::Vector{SVector{d, T}};      
     solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
@@ -740,7 +740,7 @@ function fine_tune_forces!(Packing::MonoPacking{d, T}, force_mismatch::T, sqrΓ:
         elseif Symbol(solver)==:GLPK || Symbol(solver)==:Hypatia # for these solvers, some parameters are fixed as keyword args of Optimizer
             optimizer = solver.Optimizer(;solver_args...)
         else # for any other solver, no argument passing has been implemented, so they should be called with 'solver_args=nothing'a
-            error("Passing arguments to the Optimizer of : ", Symbol(solver), " is not defined!\n Try using 'solver_args=nothing' when calling `fine_tune_forces!` or `produce_jammed_configuration`.")
+            error("Passing arguments to the Optimizer of : ", Symbol(solver), " is not defined!\n Try using 'solver_args=nothing' when calling `fine_tune_forces!` or `produce_jammed_configuration!`.")
         end
     end
     #### Once the optimizer has been chosen, the model is finally created
@@ -846,8 +846,8 @@ end
 ##########################################################################
 ##########################################################################
 @doc raw"""
-    produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T; <keyword arguments>) where {d, T<:Float64, I<:Int64}
-    produce_jammed_configuration(Xs::Matrix{T}, R::T, L::T=1.0; <keyword arguments>) where {T<:Float64, I<:Int64}
+    produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T; <keyword arguments>) where {d, T<:Float64, I<:Int64}
+    produce_jammed_configuration!(Xs::Matrix{T}, R::T, L::T=1.0; <keyword arguments>) where {T<:Float64, I<:Int64}
 
 Use CALiPPSO to generate a jammed packing from a configuration of hard-spheres with positions 'Xs' and radius 'R'.
 
@@ -892,12 +892,12 @@ guaranteed to be in mechanical equilibrium, within the same precision.
 - `thresholds_bounds::Tuple{T, T}=(5e-4, 1e-5)`: Thresholds that determine the different behaviour of `bounds_and_cutoff`.
 - `sbound::T=0.01`: Fraction of 'R' used for very small inflation factor; see `bounds_and_cutoff`.
 
-## Arguments that determine `produce_jammed_configuration` termination criteria
+## Arguments that determine `produce_jammed_configuration!` termination criteria
 The list of default values is specified in [this part](@ref list-defaults) of the documentation.
 - `max_iters::I=1000`: Maximum number iterations of the main loop; that is, the maximum number of LP optimizations allowed.
 - `tol_Γ_convergence::T=default_tol_Γ_convergence`: determines the convergence criterion of the packing fraction as ``\sqrt{\Gamma^\star}-1 \leq `` `tol_Γ_convergence`. 
 - `tol_S_convergence::T=default_tol_displacements`: determines the convergence criterion for the displacements as ``\max |\mathbf{s}_{i,\mu}^\star|_{i=1,\dots,N}^{\mu=1,\dots, d} \leq `` `<=tol_S_conv`.
-- `non_iso_break::I=10`: Number of *consecutive* non-isostatic solutions allowed before `produce_jammed_configuration` terminates. The reason is that it is very likely that the final configuration will also be non-isostatic (specially if beginning from a highly compressed state). Note however that every time an isostatic configuration is obtained, this counter resets to 0.
+- `non_iso_break::I=10`: Number of *consecutive* non-isostatic solutions allowed before `produce_jammed_configuration!` terminates. The reason is that it is very likely that the final configuration will also be non-isostatic (specially if beginning from a highly compressed state). Note however that every time an isostatic configuration is obtained, this counter resets to 0.
 
 ## Arguments for controlling the behaviour of the solver/optimizer
 
@@ -926,7 +926,7 @@ See [`check_for_overlaps`](@ref) for more information
 - `initial_overlaps_check::I=initial_monitor`: number of initial LP optimizations at which it is verified that no overlaps are present; given that for low density initial configurations, CALiPPSO might produce rather large displacements, it is always convenient to keep track of the overlaps in such initial stage.
 
 """
-function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T;
+function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T;
         ℓ0::T=3.4*R, sqrΓ0::Real=1.01, thresholds_bounds::Tuple{T, T}=(5e-4, 1e-5), sbound::T=0.01,
         solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
         max_iters::I=1000, tol_Γ_convergence::T=default_tol_Γ_convergence, tol_S_convergence::T=default_tol_displacements, tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces,
@@ -1084,8 +1084,8 @@ function produce_jammed_configuration(Xs::Vector{SVector{d, PeriodicNumber{T}}},
 end
 
 
-function produce_jammed_configuration(Xs::Matrix{T}, R::T, L::T=1.0; kwargs...) where {T<:Float64}
-    produce_jammed_configuration(PeriodicVectors(Xs, L), R; kwargs...)
+function produce_jammed_configuration!(Xs::Matrix{T}, R::T, L::T=1.0; kwargs...) where {T<:Float64}
+    produce_jammed_configuration!(PeriodicVectors(Xs, L), R; kwargs...)
 end
 
 """
@@ -1093,7 +1093,7 @@ end
 
 Obtain the list of contact indices (as ordered pairs, i.e. [i, j] with j>i), the corresponding contact vectors, and magnitudes of contact forces, from a given 'packing'.
 
-This function is not used in the main CALiPPSO function (i.e. `produce_jammed_configuration`), but 
+This function is not used in the main CALiPPSO function (i.e. `produce_jammed_configuration!`), but 
 might be useful for analysing afterwards the jammed packings generated.
 """
 function network_of_contacts(packing::MonoPacking{d, T}, normalized::Bool=true) where {d, T<:Float64}
@@ -1191,13 +1191,13 @@ function precompile_main_function(solver::Module=default_solver, solver_attribut
 
     MonoPacking(cen_comp, cons_comp, neighs_comp, rt, images_comp)
 
-    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration(cen_comp, rt, ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= 1e-3, tol_S_convergence=1e-2, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=2 );
+    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration!(cen_comp, rt, ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= 1e-3, tol_S_convergence=1e-2, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=2 );
 
     fine_tune_forces!(Jpack_comp, 0.0, 1.0, Lt, images_comp)
     network_of_contacts(Jpack_comp)
 
     printstyled("\n\n Calling the main function once again, to compile the second method.\n\n", color=:cyan)
-    produce_jammed_configuration(Xs_comp, rt, Lt; ℓ0=Lt, initial_monitor=0, monitor_step=0, verbose=false, tol_Γ_convergence=1e-3,tol_S_convergence=1e-2,
+    produce_jammed_configuration!(Xs_comp, rt, Lt; ℓ0=Lt, initial_monitor=0, monitor_step=0, verbose=false, tol_Γ_convergence=1e-3,tol_S_convergence=1e-2,
     solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=2 )
 
     printstyled("\n________________________________________________________\n\tCompilation process finished! \t (with solver: ", Symbol(solver), ")\n________________________________________________________\n\n\n\n\n", color=:cyan, bold=true)

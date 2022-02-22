@@ -39,7 +39,7 @@ for d in ds
     printstyled("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n", color=:blue)
 
 
-    @time jammed_packing, info_convergence, Γs_vs_t, smax_vs_t, iso_vs_t = produce_jammed_configuration(Xs0, r0; verbose=true, tol_Γ_convergence=1e-12, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args)
+    @time jammed_packing, info_convergence, Γs_vs_t, smax_vs_t, iso_vs_t = produce_jammed_configuration!(Xs0, r0; verbose=true, tol_Γ_convergence=1e-12, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args)
     println("Evolution of convergence criteria:")
     sqrt_gms = max.(Γs_vs_t, 1) .-1
     println("\t √Γ-1 = \t", sqrt_gms)
