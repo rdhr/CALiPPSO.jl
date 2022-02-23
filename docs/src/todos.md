@@ -9,10 +9,10 @@
 - [ ] Add examples using [Literate.jl](https://fredrikekre.github.io/Literate.jl/v2/)
 - [ ] Finish/correct *docstrings* in the scripts
 - [X] Change `iLP-for-jamming.jl` to `CALiPPSO.jl` or something like that. Remember to also change the name in the documentation and relevant scripts.
-- [X] Change "ILP" to "CALiPPSO", and "Steps" to "Iterations" in the printed output of `produce_jammed_configuration` and *in the rest of the files, __including scripts__*
+- [X] Change "ILP" to "CALiPPSO", and "Steps" to "Iterations" in the printed output of `produce_jammed_configuration!` and *in the rest of the files, __including scripts__*
 - [X] Add `verbose` argument to `MonoPacking` function called when the final packing is constructed.
 - [X] Add time of `fine_tune_forces!` to total time.
-- [X] Add array of `max_si_vs_t` to the output of `produce_jammed_configuration`
+- [X] Add array of `max_si_vs_t` to the output of `produce_jammed_configuration!`
 - [ ] Improve the `show` method for `MonoParticle` and `MonoPacking`
 - [X] Remove unneeded calls and precompilations ... maybe
 - [ ] Check the correct default tolerance values are defined in scripts and documentation
