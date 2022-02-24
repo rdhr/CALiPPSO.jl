@@ -390,7 +390,8 @@ function bounds_and_cutoff(sqrΓ::T, R::T, ℓ0::T, d::Int64; thresholds::Tuple{
     th1, th2 = thresholds
 
     if sqrΓ > 1+th1 # For large or intermediate values of inflation factor, choose cutoff and bounds loosely
-        s_bound = (ℓ0 - sqrt(sqrΓ)*R)/sqrt(d)
+        # s_bound = (ℓ0 - sqrt(sqrΓ)*R)/sqrt(d)
+        s_bound = (0.5ℓ0 - max(1.5, sqrΓ)*R)/sqrt(d)
         return ℓ0, s_bound
     elseif th1 >= sqrΓ-1 > th2 # For small values, the cutoff should be only neighbours within two shells
         return min(4R, ℓ0), 0.1R
@@ -835,7 +836,7 @@ function monitor_force_balance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constr
     contacts, forces, neighs_lists= network_of_contacts(Xs, constraints, neighbours_list, images, zero_force=zero_force)
     all_f_mags = reduce(vcat, forces); 
     (sort!(all_f_mags); unique!(all_f_mags)); 
-    small_fs = all_f_mags[1:sample_size]
+    small_fs = all_f_mags[1:min(sample_size, length(all_f_mags))]
     f_mismatch = maximum(norm.(total_force(contacts, forces)))
     return f_mismatch, small_fs
 end
@@ -887,7 +888,7 @@ guaranteed to be in mechanical equilibrium, within the same precision.
 # Keyword arguments
 
 ## Arguments needed for calling [`bounds_and_cutoff`](@ref)
-- `ℓ0::T=3.4*R`: Upper bound for the radius of influence.
+- `ℓ0::T=4*R`: Upper bound for the radius of influence.
 - `sqrΓ0::Real=1.01`: Initialization value of ``\sqrt{\Gamma}``.
 - `thresholds_bounds::Tuple{T, T}=(5e-4, 1e-5)`: Thresholds that determine the different behaviour of `bounds_and_cutoff`.
 - `sbound::T=0.01`: Fraction of 'R' used for very small inflation factor; see `bounds_and_cutoff`.
@@ -897,11 +898,11 @@ The list of default values is specified in [this part](@ref list-defaults) of th
 - `max_iters::I=1000`: Maximum number iterations of the main loop; that is, the maximum number of LP optimizations allowed.
 - `tol_Γ_convergence::T=default_tol_Γ_convergence`: determines the convergence criterion of the packing fraction as ``\sqrt{\Gamma^\star}-1 \leq `` `tol_Γ_convergence`. 
 - `tol_S_convergence::T=default_tol_displacements`: determines the convergence criterion for the displacements as ``\max |\mathbf{s}_{i,\mu}^\star|_{i=1,\dots,N}^{\mu=1,\dots, d} \leq `` `<=tol_S_conv`.
-- `non_iso_break::I=10`: Number of *consecutive* non-isostatic solutions allowed before `produce_jammed_configuration!` terminates. The reason is that it is very likely that the final configuration will also be non-isostatic (specially if beginning from a highly compressed state). Note however that every time an isostatic configuration is obtained, this counter resets to 0.
+- `non_iso_break::I=50`: Number of *consecutive* non-isostatic solutions allowed before `produce_jammed_configuration!` terminates. The reason is that it is very likely that the final configuration will also be non-isostatic (specially if beginning from a highly compressed state). Note however that every time an isostatic configuration is obtained, this counter resets to 0.
 
 ## Arguments for controlling the behaviour of the solver/optimizer
 
-- `solver::Symbol=default_solver`: The solver (*i.e.* the package or library) employed used by JuMP to solve each LP instance. By default it is `:Gurobi`.
+- `solver::Module=default_solver`: The solver (*i.e.* the package or library) employed used by JuMP to solve each LP instance. By default it is `:Gurobi`.
 - `solver_attributes::Dict=default_solver_attributes`: The attributes used by the solver. It's used to control some of its features, such as precision, iteration limits, etc. But it depend on which solver is used.
 - `solver_args=default_args`: Arguments passed to the `solver.Optimizer` function. It is also used to control the parameters of the optimizer.
 
@@ -927,10 +928,10 @@ See [`check_for_overlaps`](@ref) for more information
 
 """
 function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T;
-        ℓ0::T=3.4*R, sqrΓ0::Real=1.01, thresholds_bounds::Tuple{T, T}=(5e-4, 1e-5), sbound::T=0.01,
+        ℓ0::T=4*R, sqrΓ0::Real=1.01, thresholds_bounds::Tuple{T, T}=(5e-4, 1e-5), sbound::T=0.01,
         solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
         max_iters::I=1000, tol_Γ_convergence::T=default_tol_Γ_convergence, tol_S_convergence::T=default_tol_displacements, tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces,
-        tol_overlap::T=default_tol_overlap, non_iso_break::I=10, 
+        tol_overlap::T=default_tol_overlap, non_iso_break::I=50, 
         verbose::Bool=true, monitor_step::I=10, initial_monitor::I=monitor_step, interval_overlaps_check::I=10, initial_overlaps_check::I=initial_monitor) where {d, T<:Float64, I<:Int}
     
     N = length(Xs)
