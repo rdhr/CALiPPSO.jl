@@ -1,4 +1,4 @@
-# Installation
+# [Installation](@id Installation)
 
 Naturally, the first thing is to have [Julia installed in your system](https://julialang.org/downloads/). Afterwards, you can add [CALiPPSO.jl package](https://github.com/rdhr/CALiPPSO.jl) using the Julia's package manager. However, CALiPPSO is not yet registered in Julia Registries (but we are working to make it so). Therefore, you'll need to add it from the GitHub repo:
 ```julia

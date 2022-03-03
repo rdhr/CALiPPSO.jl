@@ -2,15 +2,16 @@
 
 ## The main function: `produce_jammed_configuration!`
 
-We tried to make this package as easy to use as possible and, indeed, it consists of *a single* main function: [`produce_jammed_configuration!`](@ref). This function is defined in the `CALiPPSO` module, contained in the `CALiPPSO.jl` file. Thus, to include `produce_jammed_configuration!` in your scope or Julia script, you need to add the following lines to your script, REPL, Jupyter Notebook, etc.:
+We tried to make this package as easy to use as possible and, indeed, it consists of *a single* main function: [`produce_jammed_configuration!`](@ref). This function is defined in the `CALiPPSO` module defined in the `src/CALiPPSO.jl` file. In any case, [once CALiPPSO has been installed](@ref Installation),  `produce_jammed_configuration!` is imported into your scope simply by including the following line to your script, REPL, Jupyter Notebook, etc.:
 
 ```julia
 using CALiPPSO  
 ```
 In this way, [`produce_jammed_configuration!`](@ref) as well as [other functions and `struct`'s will be loaded](@ref Main-Exported-Functions) into your environment. The additional functions that are exported when loading `CALiPPSO` (such as [`network_of_contacts`](@ref), [`check_for_overlaps`](@ref), [`get_non_rattlers`](@ref), etc.) are *not* needed for a basic usage, but might be useful for analysing the packings produced by the main function. 
 
-Once `CALiPPSO` has been loaded, you just need to call
+Once `CALiPPSO` has been loaded, you just need to call (the usage of `precompile_main_function` is explained short below)
 ```julia
+precompile_main_function() #optional, but highly recommended. This will produce a colorful output that you can safely ignore
 packing, info, Γ_vs_t, Smax_vs_t, isostatic_vs_t = produce_jammed_configuration!(Xs, R, L)
 ```
 Naturally, this function should generate a jammed packing from an initial (monodisperse) configuration of particles with positions `Xs`, radius `R`, and contained in a periodic (hyper-) cube of size `L` (if this argument is left unspecified, it's assumed its value is 1). `Xs` should be a `Matrix{Float64}` of size ``d\times N``, thus specifying the position of each particle (*i.e.* each of the ``N`` columns is the ``d``-dimensional position vector of a particle). Clearly, this matrix can be constructed from importing data from a `csv` or `dat` file (or any other suitable file format for that matter).
@@ -41,11 +42,11 @@ packing, info, Γ_vs_t, Smax_vs_t, isostatic_vs_t = produce_jammed_configuration
 
 
 !!! note "Precompilation"
-    `precompile_main_function()` calls `produce_jammed_configuration!` on a small, predefined system. (It will also produce a colorful output that you can safely ignore.) Thus, the main function will be pre-compiled and ready to use in larger and more demanding systems.
+    `precompile_main_function()` calls `produce_jammed_configuration!` on a small, predefined system. (It will also produce a colorful output that you can safely ignore.) Thus, the main function will be already *pre*-compiled and ready to use in larger and more demanding systems.
 
     Calling `precompile_main_function()` is optional, but strongly suggested if you want to use CALiPPSO for producing jammed packings (*i.e.* if at any point you call `produce_jammed_configuration!`). However, it you only use CALiPPSO for analysing packings previously produced there's no need for precompiling.
     
-    The reason why avoiding precompilation is discouraged is that model creation and optimization in JuMP suffers from a ["time-to-first-solve" issue](https://jump.dev/JuMP.jl/stable/tutorials/getting_started/performance_tips/#The-%22time-to-first-solve%22-issue), which is an analogous version of the "time-to-first-plot" one. Essentially, when a function is first called, it needs to be compiled. (This is actually the general behaviour of Julia, not only of JuMP.) Thus, by calling `produce_jammed_configuration!` in a small system, the function gets pre-compiled and ready to be used in much larger systems. If `precompile_main_function()` is not called, and `produce_jammed_configuration!` is used directly in the (presumably large) configuration you want to jam it could take much longer.
+    The reason why precompilation is suggested is that model creation and optimization in JuMP suffers from a ["time-to-first-solve" issue](https://jump.dev/JuMP.jl/stable/tutorials/getting_started/performance_tips/#The-%22time-to-first-solve%22-issue), which is an analogous version of the "time-to-first-plot" one. Essentially, when a function is first called, it needs to be compiled. (This is actually the general behaviour of Julia, not only of JuMP.) Thus, by calling `produce_jammed_configuration!` in a small system, the function gets pre-compiled and ready to be used in much larger systems. If `precompile_main_function()` is not called, and `produce_jammed_configuration!` is used directly in the (presumably large) configuration you want to jam, it will take much longer.
     
     
 ### Output
@@ -56,7 +57,7 @@ Using the variables introduced in the snippets above, the output of `produce_jam
      + Each particle is stored as a [`MonoParticle`](@ref) object that contains: (i) the position of the centre; (ii) the list of all contact vectors; (iii) the list of contact forces magnitudes; and (iv) the list of neighbours in contact.
    + The radius of all the (hyper-) spheres in the packing.
    + Information of whether (i) the packing satisfies mechanical equilibrium (stored as a boolean in the `mechanical_equilibrium` field), and (ii) whether the packings reached jamming or not (also as a boolean specified using the `jammed` field).
-2. `info`: Information about the process and termination status of CALiPPSO, *e.g.*, number of iterations, the time and amount of memory allocated during the full process, list of times of each LP optimization, etc. All of this is stored using a [`convergence_info`](@ref) object.
+2. `info`: Information about the process and termination status of CALiPPSO, *e.g.*, number of iterations, the time and amount of memory allocated during the full process, list of times of each LP optimization, etc. All of this is stored using a [`convergence_info`](@ref) `struct`.
 3. `Γ_vs_t`: The list of values of ``\sqrt{\Gamma^\star}`` obtained after each iteration; see [the theory section](@ref Theory-behind-CALiPPSO) for more information.
 4. `Smax_vs_t`: The list of values of ``\max_{i,\mu} \{s_{i,\mu}^\star\}_{i=1,\dots,N}^{\mu=1,\dots,d}`` obtained after each iteration; see [the theory section](@ref Theory-behind-CALiPPSO) for more information.
 5. `isostatic_vs_t`: An analogous list that specifies (with boolean variables) if isostaticity holds at after each iteration.
@@ -192,8 +193,8 @@ TO BE ADDED
 - The dimensionality of the system is inferred from `Xs` and the periodic boundary conditions are automatically implemented through the usage of [`PeriodicNumber`](@ref). Of course: **no overlap should be present in the initial configuration** for CALiPPSO to run properly. 
 
 - You can (or at least should be able to) use as input any valid hard-sphere configuration generated from your favourite method (for instance, the Lubachevsky─Stillinger (LS) compression protocol as described [before](@ref The-initial-conditions)).
-- Alternatively, you can also use the function [`generate_random_configuration`](@ref)`(d, N, ϕ)` provided here to generate a random *low-density* initial configuration of `N` particles in `d` dimensions with density `ϕ`. See however [the possible caveat](@ref The-initial-conditions) of initializing CALiPPSO with a configuration of low density (*i.e. far from jamming).
-- As CALiPPSO progresses, checks of the absence of overlaps are implemented automatically.
+- Alternatively, you can also use the function [`generate_random_configuration`](@ref)`(d, N, ϕ, [L])` provided here to generate a random *low-density* initial configuration of `N` particles in `d` dimensions with density `ϕ`. See however [the possible caveat](@ref The-initial-conditions) of initializing CALiPPSO with a configuration of low density (*i.e. far from jamming).
+- As CALiPPSO progresses, checks of the absence of overlaps are implemented automatically in the main function.
 - Stability and force balance checks are implemented. They are useful to track possible numerical issues after each of the LP optimizations are carried out; the details are given [above](@ref output-process) and how to solve numerical issues is discussed [here](@ref Problem-solving).
 - The cutoff or radius of influence, ``\ell``, is automatically adjusted in such a way that only nearby pairs of particles are considered when building the set of non-overlapping constraints.
 - The behaviour and other parameters of the main function can be easily controlled through [keyword arguments](@ref kwargs-control).

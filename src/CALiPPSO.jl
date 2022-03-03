@@ -902,7 +902,7 @@ The list of default values is specified in [this part](@ref list-defaults) of th
 
 ## Arguments for controlling the behaviour of the solver/optimizer
 
-- `solver::Module=default_solver`: The solver (*i.e.* the package or library) employed used by JuMP to solve each LP instance. By default it is `:Gurobi`.
+- `solver::Module=GLPK`: The solver (*i.e.* the package or library) employed used by JuMP to solve each LP instance. 
 - `solver_attributes::Dict=default_solver_attributes`: The attributes used by the solver. It's used to control some of its features, such as precision, iteration limits, etc. But it depend on which solver is used.
 - `solver_args=default_args`: Arguments passed to the `solver.Optimizer` function. It is also used to control the parameters of the optimizer.
 
