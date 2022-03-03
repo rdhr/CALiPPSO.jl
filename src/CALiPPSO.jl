@@ -1,6 +1,7 @@
 module CALiPPSO
 
 export produce_jammed_configuration!, precompile_main_function # main function!! and a function used to precompile it on a small system
+export default_parameters # Dict of default parameters defined in this module
 export generate_random_configuration, radius_from_phi # function to generate a low density, random initial configuration; and compute r from φ
 export convergence_info, PeriodicNumber, MonoParticle, MonoPacking, PeriodicVector, Packing # `struct`s defined in the package
 export network_of_contacts, check_for_overlaps, PeriodicVectors, packing_fraction, get_non_rattlers, get_rattlers, is_isostatic, get_coordination_number, total_force # other useful functions; mostly for packings
@@ -127,16 +128,25 @@ Model(()-> default_solver.Optimizer(;default_args...))
 # ### First calls for compilation of model creation
 # Model(()-> default_solver.Optimizer(;default_args...))
 
+const dict_solver = Dict("default_solver"=> default_solver, "default_solver_args"=>default_args, "default_solver_attributes"=> default_solver_attributes)
 ##############################################################################
 ##############################################################################
 ## Here we begin defining all the required functions and remaining constants
 ##############################################################################
 ##############################################################################
+const default_max_iterations = 1000
 const default_tol_Γ_convergence = 1e-12 # default value for determining the convergence of √Γ-1. NB: this value is only recommended if you're using Gurobi, HiGHS, or GLPK; for different solvers this might be too low so you'll have to change it accordingly
-const default_tol_displacements = 1e-9 # default value for determining the convergence of |sᵢ|
+const default_tol_displacements_convergence = 1e-9 # default value for determining the convergence of |sᵢ|
 const default_tol_zero_forces = 0.1*default_tol_optimality # any dual variable smaller than this value is considered a 0. Note that this is actually a loose threshold
 # const default_tol_zero_forces = 1e-5 # any dual variable smaller than this value is considered a 0. Value recommended for COSMO, Tulip, and Hypatia
-# const default_tol_zero_forces = eps() # NB: when using Gurobi, this can actually be set as 0.0 without affecting the accuracy with which the *real* active dual variables are found
+# const default_tol_zero_forces = eps() # NB: when using Gurobi, in *many* cases this can actually be set as 0.0 without affecting the accuracy with which the *real* active dual variables are found
+
+const dict_precision = Dict("default_tol_overlap"=>default_tol_overlap, "default_tol_optimality"=>default_tol_optimality, "default_tol_zero_forces"=>default_tol_zero_forces, "default_tol_force_equilibrium"=>default_tol_force_equilibrium)
+const dict_convergence = Dict("default_tol_Γ_convergence"=>default_tol_Γ_convergence, "default_tol_displacements_convergence"=>default_tol_displacements_convergence, "default_max_iterations"=>default_max_iterations)
+
+const dict_other = Dict("default_threads"=>max_threads)
+
+const default_parameters = Dict("Convergence parameters"=>dict_convergence, "Precision parameters"=>dict_precision, "Solver parameters"=>dict_solver, "Other parameters"=>dict_other)
 
 #########################################################################################
 ### Some functions to print output and monitor the progress and termination status of CALiPPSO
@@ -930,7 +940,7 @@ See [`check_for_overlaps`](@ref) for more information
 function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T;
         ℓ0::T=4*R, sqrΓ0::Real=1.01, thresholds_bounds::Tuple{T, T}=(5e-4, 1e-5), sbound::T=0.01,
         solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
-        max_iters::I=1000, tol_Γ_convergence::T=default_tol_Γ_convergence, tol_S_convergence::T=default_tol_displacements, tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces,
+        max_iters::I=default_max_iterations, tol_Γ_convergence::T=default_tol_Γ_convergence, tol_S_convergence::T=default_tol_displacements_convergence, tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces,
         tol_overlap::T=default_tol_overlap, non_iso_break::I=50, 
         verbose::Bool=true, monitor_step::I=10, initial_monitor::I=monitor_step, interval_overlaps_check::I=10, initial_overlaps_check::I=initial_monitor) where {d, T<:Float64, I<:Int}
     

@@ -1,12 +1,9 @@
-# const precompile_main_function = false
 # include("../src/CALiPPSO.jl")
 # using .CALiPPSO
 using CALiPPSO
-# include("../src/random_initial_conditions.jl")
 using Documenter
 
 makedocs(sitename="CALiPPSO",
-    # modules = [CALiPPSO, RandomIC],
     authors = "Rafael Diaz Hernandez Rojas",
     pages = [
         "Home" => "index.md",

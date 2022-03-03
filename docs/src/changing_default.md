@@ -1,44 +1,104 @@
 # Changing the default options
 
-For ease of use, several default values have been defined in our code. Some of them are specific or related to the solver we used, while others specified convergence criteria, etc. In any case, we stress that all of them have been extensively tested *only with the Gurobi solver*, and when the CALiPPSO's [initial configuration was obtained after LS compression](@ref The-initial-conditions). Therefore, if you want to [use a different solver](@ref changing_the_solver) or initialize CALiPPSO from a different type of configuration it is likely that you'll need to make some small changes to these default parameters.
+For ease of use, several default values have been defined in our code. Some of them are specific or related to the solvers we testes, while others specified convergence criteria, etc. In any case, we stress that all of them have been extensively tested *only with the Gurobi solver*, and when the CALiPPSO's [initial configuration was obtained after LS compression](@ref The-initial-conditions). Therefore, if you want to [use a different solver](@ref changing_the_solver) or initialize CALiPPSO from a different type of configuration it is likely that you'll need to make some small changes to these default parameters.
 
 ## [List of default values](@id list-defaults)
 
-The main default values, all of them defined as *global* variables (using `const`), are the following:
+The main default values, all of them defined as *global* variables (using `const`), can be accessed by calling `default_parameters` once CALiPPSO has been loaded. `default_parameters` is a Julia's Dictionary [(*i.e.* a `Dict` type)](https://docs.julialang.org/en/v1/base/collections/#Base.Dict) whose values are `Dict`s themselves:
 
-
-| Variable      | default value |  Role  | defined in file |
-| :------------ | :-----------: |:--- | :--------------------- |
-| `default_tol_overlap` | 1e-8          | Tolerance for identifying overlaps (*e.g.* in functions like `check_for_overlaps`) |`CALiPPSO.jl` |
-| `default_tol_optimality` | 1e-9       | General precision of optimal solutions  |`CALiPPSO.jl` |
-| `default_tol_Γ_convergence` | `eps()` (*i.e.* `2.22e-16`)|  Tolerance for testing convergence of ``\sqrt{\Gamma^*}-1`` |`CALiPPSO.jl` |
-| `default_tol_displacements` | 1e-10 | Tolerance for testing convergence of ``s_{i,\mu}^\star``   | `CALiPPSO.jl` |
-| `default_tol_zero_forces` | 1e-10   | Tolerance for considering a force different from 0 | `CALiPPSO.jl` |
-| `default_tol_force_equilibrium` | 1e-12 | Tolerance for testing force balance (per particle) | `Particles-types-and-functions.jl` |
-| `max_threads` | `Int(round(Sys.CPU_THREADS/2))` (*i.e.* half of the max threads available) | Number of threads to be used by solvers that allow parallelization | `CALiPPSO.jl` |
-
-On the other hand, to use Gurobi as the default solver, the following lines are included in the `CALiPPSO.jl` file. They define the attributes and other options passed to the solver when a model is created, modified, or optimized. Analogous lines are also included (but have been commented out) for [other solvers](@ref changing_the_solver).
-
-```julia
-const default_solver = :Gurobi
-const default_args = Gurobi.Env()
-const default_solver_attributes = Dict("OutputFlag" => 0, "FeasibilityTol" => default_tol_optimality, "OptimalityTol" => default_tol_optimality, "Method" => 3, "Threads" => max_threads)
+```@example
+default_parameters
 ```
 
+Thus, you can access, say, all the default values associated with the precision of CALiPPSO by calling
+```@example
+default_parameters["Precision parameters"]
+```
 
-!!! note "Default values for Gurobi"
-    The value of `tol_optimality` corresponds to the most precise one allowed by Gurobi (both for 'OptimalityTol' and 'FeasibilityTol'); go [here](https://www.gurobi.com/documentation/9.1/refman/optimalitytol.html) for more information. The value of `tol_overlap` was then chosen accordingly; that is, several times (10) larger, because the optimal value of each degree of freedom is determined with an accuracy of `tol_optimality`.
+while the default value that determines, *e.g.* the convergence criterion of ``\Gamma^\star`` can be obtained as:
+```@example
+default_parameters["Convergence parameters"]["default_tol_Γ_convergence"]
+```
 
-    On the other hand, the values that determine the convergence criteria are clearly smaller than such tolerance value allowed by Gurobi. Nevertheless, in our tests we observed that after enough iterations these more stringent conditions can actually be met. In fact, achieving ``\sqrt{\Gamma^\star} -1 \leq `` `eps()` is relatively simple. The more complicated part is to reach a configuration with ``\max |\mathbf{s}_{i,\mu}^\star|_{i=1,\dots,N}^{\mu=1,\dots, d} \leq `` `<=tol_S_conv`. Specially for relatively large systems, *e.g.* ``N\geq 5000``.
+!!! warning
+    Note that changing the values of `default_parameters`, or any of its entries will **not** change the default behaviour of `produce_jammed_configuration!`. To do so, the associated kwarg should be specified when calling  this function, as explained [below](@ref kwargs-control)
 
-    Thus, when dealing with large systems you might want to try something like
+
+For completeness, we also show here a list with all the default values of such global variables. Note however that these default values have been mostly tested with Gurobi, so you might need to pass different values to `produce_jammed_configuration!`, depending on which solver you choose to use; see the end of this section for more info.
+
+### Parameters related to the precision; accessed through `default_parameters["Precision parameters"]`
+
+| Variable      | default value |  Role  |
+| :------------ | :-----------: |:--- | 
+| `default_tol_overlap` | ``10^{-8}``         | Tolerance for identifying overlaps (*e.g.* in functions like `check_for_overlaps`) |
+| `default_tol_optimality` | `0.1*default_tol_overlap` (``10^{-9}``)       | General precision of optimal solutions. This value determines different features for each solver. (See below)  |
+| `default_tol_zero_forces` | `0.1*default_tol_optimality` (``10^{-10}``)   | If a force's magnitude is smaller than this value, it is considered 0. | 
+| `default_tol_force_equilibrium` | ``10^{-12}`` | Force balance condition (per particle) should be satisfied within this precision. |
+
+**Note:** The value of `default_tol_optimality` was chosen having in mind that you can use Gurobi or HiGHS solvers. But it also seems to work fine with GLPK. However, we have not performed extensive tests.
+
+### Parameters related to convergence criteria; accessed through `default_parameters["Convergence parameters"]`
+
+| Variable      | default value |  Role  |
+| :------------ | :-----------: |:--- | 
+| `default_tol_Γ_convergence` | ``10^{-12}``|  Tolerance for testing convergence of ``\sqrt{\Gamma^*}-1`` |
+| `default_tol_displacements_convergence` | ``10^{-9}`` | Tolerance for testing convergence of ``s_{i,\mu}^\star``, restricted to *non*-rattlers. | 
+| `default_max_iterations`  | ``1000`` | Maximum number of LP optimizations performed in the [main loop](@ref mainloop) before it's terminated.|
+
+
+
+### Parameters related to the default solver and its behaviour; accessed through `default_parameters["Solver parameters"]`
+
+| Variable      | default value |  Role  |
+| :------------ | :-----------: |:--- | 
+| `default_solver` | `GLPK` | Solver used by `produce_jammed_configuration!` |
+| `default_solver_args` | `(want_infeasibility_certificates = false, method = GLPK.SIMPLEX)` | Specify method used by GLPK; avoid infeasibility certificates to improve speed|
+| `default_solver_attributes` | `Dict("tol_dj"  => default_tol_optimality, "msg_lev" => 0, "tol_bnd" => default_tol_optimality)`| Precision of GLPK solver; avoid printing output. See GLPK's documentation for more info.|
+
+
+
+### Other parameters defined; accessed through `default_parameters["Other parameters"]`
+
+| Variable      | default value |  Role  |
+| `default_threads` | `Int(round(Sys.CPU_THREADS/2))` (*i.e.* half of the max threads available) | Number of threads to be used by solvers that allow parallelization | 
+
+
+
+
+!!! tip "Default values for Gurobi"
+    If you have access to a Gurobi license and want to use it as solver, we suggest using the following values when calling `produce_jammed_configuration!`
     ```julia
-    const default_tol_Γ_convergence = default_tol_optimality
-    const default_tol_displacements = default_tol_optimality
+    const default_tol_optimality = CALiPPSO.default_tol_optimality
+    const max_threads = CALiPPSO.max_threads
+    const grb_args = Gurobi.Env()
+    const grb_attributes = Dict("OutputFlag" => 0, "FeasibilityTol" => default_tol_optimality, "OptimalityTol" => default_tol_optimality, "Method" => 3, "Threads" => max_threads)
+    
+    precompile_main_function(Gurobi, grb_attributes, grb_args)
+    produce_jammed_configuration!(Xs0, r0; solver=Gurobi, solver_args=grb_args, solver_attributes=grb_attributes, <other kwargs>)
+    ```
+    
+    In fact, the value of `default_tol_optimality` reported above was chosen based on highest precision allowed by Gurobi (both for 'OptimalityTol' and 'FeasibilityTol'); go [here](https://www.gurobi.com/documentation/9.1/refman/optimalitytol.html) for more information. The value of `default_tol_overlap` was then chosen accordingly; that is, several times (10) larger, because the optimal value of each degree of freedom is determined with an accuracy of `default_tol_optimality`.
+
+    On the other hand, the values that determine the convergence criteria are clearly smaller than such precision allowed by Gurobi. Nevertheless, in our tests we observed that after enough iterations these more stringent conditions can actually be met. In fact, achieving ``\sqrt{\Gamma^\star} -1 \leq 10^{-12}`` is relatively simple. The more complicated part is to reach a configuration with ``\max |\mathbf{s}_{i,\mu}^\star|_{i=1,\dots,N}^{\mu=1,\dots, d} \leq 10^{-9}`` . Specially for relatively large systems, *e.g.* ``N\geq 5000``.
+
+    Thus, when dealing with very large systems (about ``N>20,000``) you might want to try something like
+    ```julia
+    const tol_Γ_convergence = default_tol_optimality
+    const tol_displacements = 0.1*default_tol_optimality
+
+    produce_jammed_configuration!(Xs0, r0; solver=Gurobi, solver_args=grb_args, solver_attributes=grb_attributes, tol_Γ_convergence=tol_Γ_convergence, tol_S_convergence=tol_displacements, <other kwargs>)
     ```
     in order to speed up convergence.
 
-    Nevertheless, in all the configurations we tested, we did *non* find anyone for which the force balance condition couldn't be met within the tolerance defined by `default_tol_force_equilibrium`, despite this value being much smaller than Gurobi's highest accuracy.
+    In any case, in all the configurations we tested, we did *not* find anyone for which the force balance condition couldn't be met within the tolerance defined by `default_tol_force_equilibrium`, despite this value being much smaller than Gurobi's highest accuracy.
+
+
+!!! tip "Default values for Other Solvers"
+    We do not list here the analogous values and variables for the [other solvers](@ref changing_the_solver) we [tested](@ref solvers-test). However, you can find some of the ones we found useful in the first few lines of the `CALiPPSO.jl` file. These lines have been commented out, so only GLPK and its corresponding attributes are defined. But if you want to modify the source code of `CALiPPSO` so that other solver is used by default, uncommenting the relevant lines would be useful.
+
+    Note also that the default values defined in `CALiPPSO.jl` for `Hypathia` and `COSMO` do not really produce very good results. If you find a better choice of arguments, please let us know or open a pull request.
+    They define the attributes and other options passed to the solver when a model is created, modified, or optimized. Analogous lines are also included (but have been commented out) for [other solvers](@ref changing_the_solver).
+
 
 ---
 ## [Controlling `produce_jammed_configuration!` with keyword arguments (a.k.a. kwargs)](@id kwargs-control)
