@@ -41,7 +41,7 @@ const default_solver_attributes = Dict("OutputFlag" => 0, "FeasibilityTol" => de
     Nevertheless, in all the configurations we tested, we did *non* find anyone for which the force balance condition couldn't be met within the tolerance defined by `default_tol_force_equilibrium`, despite this value being much smaller than Gurobi's highest accuracy.
 
 ---
-## [Controlling `produce_jammed_configuration!` with keyword arguments](@id kwargs-control)
+## [Controlling `produce_jammed_configuration!` with keyword arguments (a.k.a. kwargs)](@id kwargs-control)
 
 The full list of keyword arguments (kwargs) of [`produce_jammed_configuration!`](@ref) can be readily accessed from its docstring. Here we provide the same list (with their default values, defined above), and a more detailed description when needed. Thus, the value of any of them can be conveniently tunned to your needs by calling `produce_jammed_configuration!(Xs0, R, L; kwarg=<your chosen value>)`.
 
