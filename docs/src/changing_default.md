@@ -7,21 +7,24 @@ For ease of use, several default values have been defined in our code. Some of t
 The main default values, all of them defined as *global* variables (using `const`), can be accessed by calling `default_parameters` once CALiPPSO has been loaded. `default_parameters` is a Julia's Dictionary [(*i.e.* a `Dict` type)](https://docs.julialang.org/en/v1/base/collections/#Base.Dict) whose values are `Dict`s themselves:
 
 ```@example
+using CALiPPSO # hide
 default_parameters
 ```
 
 Thus, you can access, say, all the default values associated with the precision of CALiPPSO by calling
 ```@example
+using CALiPPSO # hide
 default_parameters["Precision parameters"]
 ```
 
 while the default value that determines, *e.g.* the convergence criterion of ``\Gamma^\star`` can be obtained as:
 ```@example
+using CALiPPSO # hide
 default_parameters["Convergence parameters"]["default_tol_Γ_convergence"]
 ```
 
 !!! warning
-    Note that changing the values of `default_parameters`, or any of its entries will **not** change the default behaviour of `produce_jammed_configuration!`. To do so, the associated kwarg should be specified when calling  this function, as explained [below](@ref kwargs-control)
+    Note that changing the values of `default_parameters`, or any of its entries, will **not** change the default behaviour of `produce_jammed_configuration!`. To do so, the associated kwarg should be specified when calling  this function, as explained [below](@ref kwargs-control)
 
 
 For completeness, we also show here a list with all the default values of such global variables. Note however that these default values have been mostly tested with Gurobi, so you might need to pass different values to `produce_jammed_configuration!`, depending on which solver you choose to use; see the end of this section for more info.
@@ -94,7 +97,7 @@ For completeness, we also show here a list with all the default values of such g
 
 
 !!! tip "Default values for Other Solvers"
-    We do not list here the analogous values and variables for the [other solvers](@ref changing_the_solver) we [tested](@ref solvers-test). However, you can find some of the ones we found useful in the first few lines of the `CALiPPSO.jl` file. These lines have been commented out, so only GLPK and its corresponding attributes are defined. But if you want to modify the source code of `CALiPPSO` so that other solver is used by default, uncommenting the relevant lines would be useful.
+    We do not list here the analogous values and variables for the [other solvers](@ref changing_the_solver) we [tested](@ref Testing-different-solvers). However, you can find some of the ones we found useful in the first few lines of the `CALiPPSO.jl` file. These lines have been commented out, so only GLPK and its corresponding attributes are defined. But if you want to modify the source code of `CALiPPSO` so that other solver is used by default, uncommenting the relevant lines would be useful.
 
     Note also that the default values defined in `CALiPPSO.jl` for `Hypathia` and `COSMO` do not really produce very good results. If you find a better choice of arguments, please let us know or open a pull request.
     They define the attributes and other options passed to the solver when a model is created, modified, or optimized. Analogous lines are also included (but have been commented out) for [other solvers](@ref changing_the_solver).
