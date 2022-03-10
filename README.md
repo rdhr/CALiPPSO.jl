@@ -43,7 +43,7 @@ const d, N, φ0, L = 3, 512, 0.3, 1.0
 r0, Xs0 = generate_random_configuration(d, N, φ0, L) # if L is not passed, it's assumed that the systems is in a box of size 1
 
 packing, info, Γ_vs_t, Smax_vs_t, isostatic_vs_t = produce_jammed_configuration!(Xs0, r0; 
-            ℓ0=0.2*L, non_iso_break=50, max_iters=500)
+            ℓ0=0.2*L, max_iters=500)
 ```
 Therefore, the main arguments of `produce_jammed_configuration!` are the particles' initial position `Xs0` and their initial radius, `r0`. So far, our implementation of `produce_jammed_configuration!` assumes the system is contained in a *periodic* (hyper-) cube of size `L`. 
 The value of `L` is inferred in the following way
@@ -90,7 +90,7 @@ const d, N, φ0, L = 3, 512, 0.3, 1.0
 r0, Xs0 = generate_random_configuration(d, N, φ0, L) # if L is not passed, it's assumed that the systems is in a box of size 1
 
 packing, info, Γ_vs_t, Smax_vs_t, isostatic_vs_t = produce_jammed_configuration!(Xs0, r0; 
-        ℓ0=0.2*L, non_iso_break=50, max_iters=500, solver=Gurobi, solver_args=grb_args, solver_attributes=grb_attributes)
+        ℓ0=0.2*L, max_iters=500, solver=Gurobi, solver_args=grb_args, solver_attributes=grb_attributes)
 ```
 
 Note that different solvers require different choices of attributes and/or arguments. Refer to the [documentation](https://rdhr.github.io/CALiPPSO.jl/dev/changing_default.html#changing_the_solver) for more options and advanced usage.

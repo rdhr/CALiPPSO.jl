@@ -907,8 +907,8 @@ guaranteed to be in mechanical equilibrium, within the same precision.
 The list of default values is specified in [this part](@ref list-defaults) of the documentation.
 - `max_iters::I=1000`: Maximum number iterations of the main loop; that is, the maximum number of LP optimizations allowed.
 - `tol_Γ_convergence::T=default_tol_Γ_convergence`: determines the convergence criterion of the packing fraction as ``\sqrt{\Gamma^\star}-1 \leq `` `tol_Γ_convergence`. 
-- `tol_S_convergence::T=default_tol_displacements`: determines the convergence criterion for the displacements as ``\max |\mathbf{s}_{i,\mu}^\star|_{i=1,\dots,N}^{\mu=1,\dots, d} \leq `` `<=tol_S_conv`.
-- `non_iso_break::I=50`: Number of *consecutive* non-isostatic solutions allowed before `produce_jammed_configuration!` terminates. The reason is that it is very likely that the final configuration will also be non-isostatic (specially if beginning from a highly compressed state). Note however that every time an isostatic configuration is obtained, this counter resets to 0.
+- `tol_S_convergence::T=default_tol_displacements_convergence`: determines the convergence criterion for the displacements as ``\max |\mathbf{s}_{i,\mu}^\star|_{i=1,\dots,N}^{\mu=1,\dots, d} \leq `` `<=tol_S_conv`.
+- `non_iso_break::I=max_iters`: Number of *consecutive* non-isostatic solutions allowed before `produce_jammed_configuration!` terminates. The reason is that it is very likely that the final configuration will also be non-isostatic (specially if beginning from a highly compressed state). Note however that every time an isostatic configuration is obtained, this counter resets to 0.
 
 ## Arguments for controlling the behaviour of the solver/optimizer
 
@@ -941,7 +941,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
         ℓ0::T=4*R, sqrΓ0::Real=1.01, thresholds_bounds::Tuple{T, T}=(5e-4, 1e-5), sbound::T=0.01,
         solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
         max_iters::I=default_max_iterations, tol_Γ_convergence::T=default_tol_Γ_convergence, tol_S_convergence::T=default_tol_displacements_convergence, tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces,
-        tol_overlap::T=default_tol_overlap, non_iso_break::I=50, 
+        tol_overlap::T=default_tol_overlap, non_iso_break::I=max_iters, 
         verbose::Bool=true, monitor_step::I=10, initial_monitor::I=monitor_step, interval_overlaps_check::I=10, initial_overlaps_check::I=initial_monitor) where {d, T<:Float64, I<:Int}
     
     N = length(Xs)
