@@ -24,7 +24,7 @@ packing, info, Γ_vs_t, Smax_vs_t, isostatic_vs_t = produce_jammed_configuration
 Note that here we are making use of the [method dispatch feature](https://docs.julialang.org/en/v1/manual/methods/#Methods) of Julia.
 
 
-Of course, these last examples assume  that you are already given a valid configuration that can be used as initial condition. If this is not the case, or  you want to use a random, low-density initial configuration as input to CALiPSSO, you can use [`generate_random_configuration`](@ref), which is also loaded when importing CALiPPSO. Thus a MWE would be the following
+Of course, these last examples assume  that you are already given a valid configuration that can be used as initial condition. If this is not the case, or  you want to use a random, low-density initial configuration as input to CALiPPSO, you can use [`generate_random_configuration`](@ref), which is also loaded when importing CALiPPSO. Thus a MWE would be the following
 
 ```julia
 using CALiPPSO  

@@ -24,7 +24,7 @@ We provide the following examples to test our algorithm under different circumst
       ```
    - This script does not depend on any input file as initial condition. But be sure to have the [Distributions.jl](https://github.com/JuliaStats/Distributions.jl) package already installed.
 
-### [Testing different solvers](@id solvers-test)
+### Testing different solvers
 
 3. Testing CALiPPSO with [different solvers](#changing-the-solveroptimizer).
    - For running this test, type:  

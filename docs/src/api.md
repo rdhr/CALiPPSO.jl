@@ -58,7 +58,7 @@ CALiPPSO.MIC_distance
 CALiPPSO.volume
 ```
 
-### Functions for printing CALiPSSO info and progress
+### Functions for printing CALiPPSO info and progress
 
 ```@docs
 CALiPPSO.print_monitor_progress

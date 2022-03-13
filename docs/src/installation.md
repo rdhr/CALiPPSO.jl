@@ -17,7 +17,7 @@ If you have everything set up, you can jump to the [Basic usage](@ref) section.
 
 ## Dependencies
 
-All the dependencies should be downloaded and installed once you add CALiPPSO. However, as mentioned above, its default solver is GNU Linear Programming Kit (a.k.a. [GLPK](https://www.gnu.org/software/glpk/)). This solver has been amply tested in the community, but is not really performant compared to more modern options, at least for the linear optimization problems involved in CALiPPSO. Thus, we suggest to use a different solver if you are going to use CALiPSSO for systems of, say, ``N >2000`` particles.
+All the dependencies should be downloaded and installed once you add CALiPPSO. However, as mentioned above, its default solver is GNU Linear Programming Kit (a.k.a. [GLPK](https://www.gnu.org/software/glpk/)). This solver has been amply tested in the community, but is not really performant compared to more modern options, at least for the linear optimization problems involved in CALiPPSO. Thus, we suggest to use a different solver if you are going to use CALiPPSO for systems of, say, ``N >2000`` particles.
 
 We have mostly tested our algorithm with the [Gurobi optimizer](https://www.gurobi.com/), naturally using it through its Julia package: [Gurobi.jl](https://github.com/jump-dev/Gurobi.jl).
 
