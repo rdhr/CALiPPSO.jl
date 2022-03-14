@@ -1,16 +1,27 @@
 # CALiPPSO: A Linear Programming Algorithm for Jamming Hard Spheres
 
-This package is a pure [Julia](https://julialang.org/) implementation of the CALiPPSO algorithm for generating jammed packings of hard spheres in arbitrary dimensions. This algorithm was introduced in **XXXXXX** by *Artiaco, Díaz, Parisi, and Ricci-Tersenghi*. As explained there, CALiPPSO consists on a **C**hain of **A**pproximate **Li**near **P**rogramming for **P**acking **S**pherical **O**bjects.
+This package is a pure [Julia](https://julialang.org/) implementation of the CALiPPSO algorithm for generating jammed packings of hard spheres in arbitrary dimensions. The algorithm was introduced in [this article](https://arxiv.org/abs/2203.05654) by *Artiaco, Díaz, Parisi, and Ricci-Tersenghi*. As explained there, CALiPPSO consists on a **C**hain of **A**pproximate **Li**near **P**rogramming for **P**acking **S**pherical **O**bjects.
 
 This package is licensed under the MIT license, so please feel free to use/modify/improve this code as better suits you. We only ask you to cite our work if you find it useful.
 
 ```
-@article{...}
+@article{calippso,
+  title = {{{CALiPPSO}}: {{A Linear Programming Algorithm}} for {{Jamming Hard Spheres}}},
+  author = {Artiaco, Claudia and {D{\'i}az Hern{\'a}ndez Rojas}, Rafael and Parisi, Giorgio and {Ricci-Tersenghi}, Federico},
+  year = {2022},
+  month = mar,
+  journal = {arXiv},
+  eprint = {2203.05654},
+  eprinttype = {arxiv},
+  primaryclass = {cond-mat, physics:physics},
+  url = {http://arxiv.org/abs/2203.05654},
+  archiveprefix = {arXiv}
+}
 ```
 
 ## Documentation
 
-You can read the full documentation of our code [here](https://rdhr.github.io/CALiPPSO.jl/dev/index.html)
+You can read the full documentation of our code [here](https://rdhr.github.io/CALiPPSO.jl/dev/index.html).
 
 
 ## Basic usage
@@ -29,7 +40,7 @@ Below we show a minimal working example (MWE) and show how to [change the solver
 
 ### Minimal example
 
-We tried to make this package as easy to use as possible and, indeed, it consists of *a single* main function: `produce_jammed_configuration!(Xs0, r0, L=1.0)`. We also provide a function to generate a low density random initial condition so that you can use CALiPPSO right away. However, as we explain in [our paper](XXXXXXXX) and in [the relevant part of the documentation](https://rdhr.github.io/CALiPPSO.jl/dev/theory.html#The-initial-conditions), our algorithm works best if the initial condition is already close to its jamming point. Thus, our code is not guaranteed to work with any such low density configurations. 
+We tried to make this package as easy to use as possible and, indeed, it consists of *a single* main function: `produce_jammed_configuration!(Xs0, r0, L=1.0)`. We also provide a function to generate a low density random initial condition so that you can use CALiPPSO right away. However, as we explain in [our paper](https://arxiv.org/abs/2203.05654) and in [the relevant part of the documentation](https://rdhr.github.io/CALiPPSO.jl/dev/theory.html#The-initial-conditions), our algorithm works best if the initial condition is already close to its jamming point. Thus, our code is not guaranteed to work with any such low density configurations. 
 However, for small systems, even a low density configuration should be suitable for initializing CALiPPSO. So, for instance, to jammed a d=3 system of 512 hard-spheres, here is a MWE
 
 ```julia

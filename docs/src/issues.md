@@ -1,5 +1,7 @@
 # Problem solving
 
+SECTION UNDER CONSTRUCTION.
+
 ## Possible issues 
 
 1. Modify `sbound` if isostaticity gap is negative for several steps due to `abs(s_i)=sbound*R`
