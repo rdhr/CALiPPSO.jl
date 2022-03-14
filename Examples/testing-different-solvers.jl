@@ -1,8 +1,7 @@
 ############## 
 ### Testing CALiPPSO in the same system, with different solvers
 ############## 
-include("../src/CALiPPSO.jl")
-using .CALiPPSO  
+using CALiPPSO  
 using DelimitedFiles, Statistics
 
 
@@ -13,12 +12,12 @@ const L = 1.0 # size of each side of the system's volume
 const tol_Γ_convergence = 1e-12 
 const tol_overlap = CALiPPSO.default_tol_overlap
 const tol_zero_forces = CALiPPSO.default_tol_zero_forces
-const default_tol_displacements = CALiPPSO.default_tol_displacements
+const default_tol_displacements = CALiPPSO.default_tol_displacements_convergence
 const tol_optimality = CALiPPSO.default_tol_optimality
 const max_threads = CALiPPSO.max_threads
 
-const solvers = [:Gurobi, :HiGHS, :Clp, :GLPK, :Hypatia, :COSMO] # array of solver's names (or symbols)
-using Gurobi, HiGHS, Clp, GLPK, Hypatia, COSMO
+const solvers = [:Gurobi, :HiGHS, :Clp, :GLPK, :COSMO] # array of solver's names (or symbols)
+using Gurobi, HiGHS, Clp, GLPK, COSMO #,Hypatia
 
 
 println("This script will test the following solvers: ",  map(x->x*", ", string.(solvers))...)
@@ -27,7 +26,6 @@ println("But before the test is executed, `produce_jammed_configuration!` will b
 ##############################
 ### Now let's define the arguments and attributes to be used for each solver, and create an empty model for initialization
 ##############################
-# Xs_comp = CALiPPSO.Xs_comp; Lt = CALiPPSO.Lt; rt=CALiPPSO.rt
 
 # Gurobi:
 const grb_args = Gurobi.Env()
@@ -37,68 +35,46 @@ precompile_main_function(Gurobi, grb_attributes, grb_args)
 
 # HiGHS
 const highs_args = nothing
-const highs_attributes = Dict("small_matrix_value"=>0.1*tol_optimality, "primal_feasibility_tolerance" => tol_optimality, "dual_feasibility_tolerance" => tol_optimality, "solver" => "ipm", "ipm_optimality_tolerance"=>tol_optimality,  "highs_max_threads" => max_threads, "parallel"=>"on", "output_flag"=>false)
+const highs_attributes = Dict("small_matrix_value"=>0.1*tol_optimality, "primal_feasibility_tolerance" => tol_optimality, "dual_feasibility_tolerance" => tol_optimality, "solver" => "ipm", "ipm_optimality_tolerance"=>tol_optimality,  "threads" => max_threads, "parallel"=>"on", "output_flag"=>false)
 printstyled("\n______________________________________________________________________________________\n", color=:yellow)
 precompile_main_function(HiGHS, highs_attributes, highs_args)
-# cen_comp = PeriodicVectors(Xs_comp, Lt)
-# produce_jammed_configuration!(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=Gurobi)
-# printstyled("Performing first call (of a single iteration) of main function on compilation system using HiGHS solver\n", color=:yellow)
-# produce_jammed_configuration!(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=HiGHS, solver_attributes=highs_attributes, solver_args=highs_args);
 
 
 
 # Clp
 const clp_args = nothing
 const clp_attributes = Dict("PrimalTolerance"=>tol_optimality, "DualTolerance" => tol_optimality, "LogLevel" => 0, "SolveType" => 5)
-# cen_comp = PeriodicVectors(Xs_comp, Lt)
 printstyled("\n______________________________________________________________________________________\n", color=:yellow)
 precompile_main_function(Clp, clp_attributes, clp_args)
-# printstyled("Performing first call (of a single iteration) of main function on compilation system using Clp solver\n", color=:yellow)
-# produce_jammed_configuration!(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=Clp, solver_attributes=clp_attributes, solver_args=clp_args);
 
 
 # GLPK
 const glpk_args = (want_infeasibility_certificates=false, method=GLPK.MethodEnum(0) ) 
 const glpk_attributes = Dict("msg_lev"=>GLPK.GLP_MSG_OFF, "tol_bnd"=>tol_optimality, "tol_dj"=>tol_optimality)
-# cen_comp = PeriodicVectors(Xs_comp, Lt)
 printstyled("\n______________________________________________________________________________________\n", color=:yellow)
 precompile_main_function()
-# printstyled("Performing first call (of a single iteration) of main function on compilation system using GLPK solver\n", color=:yellow)
-# produce_jammed_configuration!(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=GLPK, solver_attributes=glpk_attributes, solver_args=glpk_args);
-
-
-# Hypatia
-const hypa_args = (verbose = false, tol_abs_opt = tol_optimality, tol_feas = 0.1*tol_overlap, tol_infeas = 0.1*tol_overlap)
-const hypa_attributes = Dict()
-# cen_comp = PeriodicVectors(Xs_comp, Lt)
-printstyled("\n______________________________________________________________________________________\n", color=:yellow)
-precompile_main_function(Hypatia, hypa_attributes, hypa_args)
-# printstyled("Performing first call (of a single iteration) of main function on compilation system using Hypatia solver\n", color=:yellow)
-# produce_jammed_configuration!(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=Hypatia, solver_attributes=hypa_attributes, solver_args=hypa_args);
 
 
 # COSMO
 const cosmo_args = nothing
 const cosmo_attributes = Dict("verbose"=>false, "max_iter"=>30000, "eps_abs"=>1e3*tol_optimality, "adaptive_rho"=>false, "eps_prim_inf"=>1e3*tol_optimality, "eps_dual_inf"=>1e3tol_optimality)
-# cen_comp = PeriodicVectors(Xs_comp, Lt)
 printstyled("\n______________________________________________________________________________________\n", color=:yellow)
 precompile_main_function(COSMO, cosmo_attributes, cosmo_args)
-# printstyled("Performing first call (of a single iteration) of main function on compilation system using COSMO solver\n", color=:yellow)
-# produce_jammed_configuration!(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=COSMO, solver_attributes=cosmo_attributes, solver_args=cosmo_args);
 
 
-# # Tulip
-# const tulip_args = nothing
-# const tulip_attributes = Dict("OutputLevel"=>0)
-# cen_comp = PeriodicVectors(Xs_comp, Lt)
+# # Hypatia
+# const hypa_args = (verbose = false, tol_abs_opt = tol_optimality, tol_feas = 0.1*tol_overlap, tol_infeas = 0.1*tol_overlap)
+# const hypa_attributes = Dict()
 # printstyled("\n______________________________________________________________________________________\n", color=:yellow)
-# printstyled("Performing first call (of a single iteration) of main function on compilation system using Tulip solver\n", color=:yellow)
-# produce_jammed_configuration!(cen_comp, rt, ℓ0=Lt, max_iters=1, verbose=false, solver=:Tulip, solver_attributes=tulip_attributes, solver_args=tulip_args);
+# precompile_main_function(Hypatia, hypa_attributes, hypa_args)
+
+
+
 
 
 #### create arrays of these variables, for easier calling
-const solvers_args = [grb_args, highs_args, clp_args, glpk_args, hypa_args, cosmo_args]
-const solvers_attributes = [grb_attributes, highs_attributes,clp_attributes ,glpk_attributes, hypa_attributes, cosmo_attributes]
+const solvers_args = [grb_args, highs_args, clp_args, glpk_args, cosmo_args]
+const solvers_attributes = [grb_attributes, highs_attributes,clp_attributes ,glpk_attributes, cosmo_attributes]
 
 
 ## Array of packings to perform later comparison
@@ -122,19 +98,16 @@ for (ns, solver) in enumerate(solvers)
         # continue
         overlap_tolerance = 1e3*tol_overlap
         zero_force = 1e-5
-        # S_conv = 1e-9
         Γ_conv = tol_Γ_convergence
     elseif Symbol(solver)==:Hypatia
         # continue
         overlap_tolerance = tol_overlap
         zero_force = 1e-5
-        # S_conv = 1e-9
         Γ_conv = 1e-10
     else
         # continue
         overlap_tolerance = tol_overlap
         zero_force = tol_zero_forces
-        # S_conv = default_tol_displacements
         Γ_conv = tol_Γ_convergence
     end
     S_conv = default_tol_displacements
@@ -148,7 +121,7 @@ for (ns, solver) in enumerate(solvers)
 
     @time jammed_packing, info_convergence, Γs_vs_t, smax_vs_t, iso_vs_t = produce_jammed_configuration!(Xs0, r0; verbose=true, 
     solver=eval(solver), solver_args=solver_args, solver_attributes=solver_attrs, tol_Γ_convergence=Γ_conv, tol_S_convergence = S_conv,
-    tol_overlap=overlap_tolerance, initial_monitor=30, zero_force=zero_force, max_iters=50) 
+    tol_overlap=overlap_tolerance, initial_monitor=30, zero_force=zero_force, max_iters=25) 
 
     println("_______________________________________________________________________________________\n\n")
     times = info_convergence.times_LP_optim

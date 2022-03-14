@@ -6,7 +6,7 @@ In the mean time, you can access the relevant docstrings of all of them using, *
 
 ## Used packages
 
-- Static vectors from `StaticArrays`
+- Static vectors from `StaticArrays`. These package allows to defined arrays of *fixed* size that can be efficiently operated on.
 
 ## The `PeriodicNumber` type
 

@@ -1,6 +1,13 @@
-include("../src/CALiPPSO.jl")
-using .CALiPPSO
-using DelimitedFiles, StatsBase, BenchmarkTools
+using CALiPPSO
+using DelimitedFiles, StatsBase, BenchmarkTools, HiGHS
+
+const tol_optimality = CALiPPSO.default_tol_optimality
+
+const highs_args = nothing
+const highs_attributes = Dict("small_matrix_value"=>0.1*tol_optimality, "primal_feasibility_tolerance" => tol_optimality, "dual_feasibility_tolerance" => tol_optimality, "solver" => "ipm", "ipm_optimality_tolerance"=>tol_optimality,  "threads" => CALiPPSO.max_threads, "parallel"=>"on", "output_flag"=>false)
+printstyled("\n______________________________________________________________________________________\n", color=:yellow)
+precompile_main_function(HiGHS, highs_attributes, highs_args)
+
 
 test_bench = @benchmarkable sin(1)
 run(test_bench)
@@ -24,7 +31,7 @@ for d in ds
     printstyled("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n", color=:blue)
 
 
-    benchmark_iLP = @benchmarkable produce_jammed_configuration!(Xs, r; verbose=false) setup=(Xs = copy($Xs0); r=copy($r0) )
+    benchmark_iLP = @benchmarkable produce_jammed_configuration!(Xs, r; verbose=false, solver=HiGHS, solver_attributes=highs_attributes, solver_args=highs_args) setup=(Xs = copy($Xs0); r=copy($r0) )
     res_benchmark = run(benchmark_iLP, seconds = 3600, samples=20)
 
     printstyled("\n\n - - - o o o - - - o o o - - - o o o - - - o o o - - - o o o - - - o o o - - - o o o - - - \n\n", color=:green)

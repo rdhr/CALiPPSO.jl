@@ -1,35 +1,31 @@
-include("../src/CALiPPSO.jl")
-using .CALiPPSO  
-using DelimitedFiles, Statistics, Random
+using CALiPPSO  
+using Statistics, Random
 
-include("../src/random_initial_conditions.jl")
-Random.seed!(456)
+Random.seed!(456) # Just for reproducibility
 
 #= UNcomment the following lines if you want to use Gurobi Solver, for running the tests.
     Or adjust them to the solver of your choice
 =#
-using Gurobi
-const solver = Gurobi
-const tol_overlap=1e-8 # tolerance for identifying an Overlap. Given that Gurobi's precision is 10^-9, a larger value is needed.
-const tol_optimality = 1e-9; # optimality tolerances. This is the most precise value allowed by Gurobi
-const solver_args = Gurobi.Env()
-const solver_attributes = Dict("OutputFlag" => 0, "FeasibilityTol" => tol_optimality, "OptimalityTol" => tol_optimality, "Method" => 3, "Threads" =>  CALiPPSO.max_threads)
+# using Gurobi
+# const solver = Gurobi
+# const tol_overlap=1e-8 # tolerance for identifying an Overlap. Given that Gurobi's precision is 10^-9, a larger value is needed.
+# const tol_optimality = 1e-9; # optimality tolerances. This is the most precise value allowed by Gurobi
+# const solver_args = Gurobi.Env()
+# const solver_attributes = Dict("OutputFlag" => 0, "FeasibilityTol" => tol_optimality, "OptimalityTol" => tol_optimality, "Method" => 3, "Threads" =>  CALiPPSO.max_threads)
 
 
-#= UNcomment the following lines if you want to use CALiPPSO default's solver and behaviour, *i.e.* GLPK =#
-# const solver = CALiPPSO.default_solver
-# const tol_overlap = CALiPPSO.default_tol_overlap
-# const tol_optimality = CALiPPSO.default_tol_optimality
-# const solver_args = CALiPPSO.default_args
-# const solver_attributes = CALiPPSO.default_solver_attributes    
+#= Comment the following lines if you want to use CALiPPSO with a different solver than GLPK; e.g., Gurobi (see above)=#
+const solver = CALiPPSO.default_solver
+const tol_overlap = CALiPPSO.default_tol_overlap
+const tol_optimality = CALiPPSO.default_tol_optimality
+const solver_args = CALiPPSO.default_args
+const solver_attributes = CALiPPSO.default_solver_attributes    
 
 
 precompile_main_function(solver, solver_attributes, solver_args)
 
 const Nrand = 512 # size of configurations to test
 const L = 1.0 # size of each side of the system's volume
-# const ds = [2, 3, 4, 5] # dimensions to use
-# const ϕs_ds = [0.4, 0.3, 0.15, 0.1]
 const ds = [3, 4, 5] # dimensions to use
 const ϕs_ds = [0.3, 0.15, 0.1]
 
@@ -62,7 +58,7 @@ for (nd, d) in enumerate(ds)
         zero_force = CALiPPSO.default_tol_zero_forces
     end
 
-    @time jammed_packing, info_convergence, Γs_vs_t, smax_vs_t, iso_vs_t = produce_jammed_configuration!(Xs0, r0; ℓ0=ℓ0, sqrΓ0=1.5, non_iso_break=50, max_iters=max_iters, initial_monitor=20, zero_force=zero_force, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args) # Allow a longer streak of non-isostatic solutions because this could be a common situation during the initial LP steps when using low density configurations
+    @time jammed_packing, info_convergence, Γs_vs_t, smax_vs_t, iso_vs_t = produce_jammed_configuration!(Xs0, r0; ℓ0=ℓ0, sqrΓ0=1.5,  max_iters=max_iters, initial_monitor=20, zero_force=zero_force, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args) # Allow a longer streak of non-isostatic solutions because this could be a common situation during the initial LP steps when using low density configurations
     println("_______________________________________________________________________________________\n\n")
     times = info_convergence.times_LP_optim
     println("Info about LP times")

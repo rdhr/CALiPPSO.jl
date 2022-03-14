@@ -4,7 +4,7 @@ export produce_jammed_configuration!, precompile_main_function # main function!!
 export default_parameters # Dict of default parameters defined in this module
 export generate_random_configuration, radius_from_phi # function to generate a low density, random initial configuration; and compute r from φ
 export convergence_info, PeriodicNumber, MonoParticle, MonoPacking, PeriodicVector, Packing # `struct`s defined in the package
-export network_of_contacts, check_for_overlaps, PeriodicVectors, packing_fraction, get_non_rattlers, get_rattlers, is_isostatic, get_coordination_number, total_force # other useful functions; mostly for packings
+export network_of_contacts, check_for_overlaps, PeriodicVectors, packing_fraction, get_non_rattlers, get_rattlers, is_isostatic, get_coordination_number, total_force, difference_in_packings # other useful functions; mostly for packings
 export volume_d_ball, norm # these functions are needed for generating random initial packings, in the 'random_initial_conditions.jl' script. Nevertheless, it could be the case that they're also useful when analysing results, specially 'norm'
 
 include("Packing.jl")
@@ -1104,8 +1104,8 @@ end
 
 Obtain the list of contact indices (as ordered pairs, i.e. [i, j] with j>i), the corresponding contact vectors, and magnitudes of contact forces, from a given 'packing'.
 
-This function is not used in the main CALiPPSO function (i.e. `produce_jammed_configuration!`), but 
-might be useful for analysing afterwards the jammed packings generated.
+This function is not used in the main CALiPPSO function (i.e. [`produce_jammed_configuration!`](@ref)), but 
+is useful for extracting the system's micro-structural information once the jammed packings have been generated.
 """
 function network_of_contacts(packing::MonoPacking{d, T}, normalized::Bool=true) where {d, T<:Float64}
     particles = packing.Particles

@@ -63,7 +63,7 @@ Using the variables introduced in the snippets above, the output of `produce_jam
 5. `isostatic_vs_t`: An analogous list that specifies (with boolean variables) if isostaticity holds at after each iteration.
 
 
-With its [default parameters](@ref list-defaults) and assuming you're using Gurobi, [`produce_jammed_configuration!`](@ref) should work in most of the cases with ``d>2`` (at least we didn't experienced any error in the [tests](@ref Some-examples-included) we ran), specially when ``p>1000`` (*i.e.* for high pressures, or ``\varphi_0\lesssim \varphi_J``). 
+With its [default parameters](@ref list-defaults) and assuming you're using Gurobi, [`produce_jammed_configuration!`](@ref) should work in most of the cases with ``d>2`` (at least we didn't experienced any error in the [tests](@ref Tests-and-examples-provided) we ran), specially when ``p>1000`` (*i.e.* for high pressures, or ``\varphi_0\lesssim \varphi_J``). 
 
 !!! tip "Initial condition at low pressure"
     If the input configuration is not sufficiently compressed, a simple fix is to increase the cutoff distance used to build the neighbours-list, ``\ell``. This parameter is conveniently fixed using [a keyword argument](@ref kwargs-control), namely, `ℓ0`. For instance, try

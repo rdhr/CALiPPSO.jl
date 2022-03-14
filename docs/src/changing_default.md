@@ -98,7 +98,7 @@ For completeness, we also show here a list with all the default values of such g
 
 
 !!! tip "Default values for Other Solvers"
-    We do not list here the analogous values and variables for the [other solvers](@ref changing_the_solver) we [tested](@ref Testing-different-solvers). However, you can find some of the ones we found useful in the first few lines of the `CALiPPSO.jl` file and in the [examples section](@ref Some-examples-included). Note that if you want to modify the source code of `CALiPPSO` so that other solver is used by default, uncommenting the relevant lines would be useful.
+    We do not list here the analogous values and variables for the [other solvers](@ref changing_the_solver) we [tested](@ref Testing-different-solvers). However, you can find some of the ones we found useful in the first few lines of the `CALiPPSO.jl` file and in the exampled described in the [Testing different solvers](@ref) section. Note that if you want to modify the source code of `CALiPPSO` so that other solver is used by default, uncommenting the relevant lines would be useful.
 
     Note also that the default values defined in the file `CALiPPSO.jl` for the `Hypathia` and `COSMO` solvers do not really produce very good results. If you find a better choice of arguments, [*please let us know*](mailto:rafael.diazhernandezrojas@uniroma1.it).
 

@@ -18,7 +18,6 @@ convergence_info
 produce_jammed_configuration!
 network_of_contacts
 check_for_overlaps
-check_for_overlaps(::MonoPacking)
 generate_random_configuration
 total_force
 packing_fraction
