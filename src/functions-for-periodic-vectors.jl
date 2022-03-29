@@ -25,7 +25,7 @@ Convert 'vec' to a Static Vector of the same size, but with elements of 'Periodi
 
 The periodicity of the numbers, 'L', is given as second argument and defaults to 1.0.
 """
-function PeriodicVector(vec::Vector{T}, L::T=1.0) where {T<:Real}
+function PeriodicVector(vec::Vector{T}, L::T=1.0) where {T<:AbstractFloat}
     dim=length(vec)
     if typeof(L)==T
         SVector{dim}(PeriodicNumber.(vec, L))
@@ -34,11 +34,10 @@ function PeriodicVector(vec::Vector{T}, L::T=1.0) where {T<:Real}
     end    
 end
 PeriodicVector(rand(4), 2.0)
-PeriodicVector([1,3,53,4], 3)
 
 
 """
-    PeriodicVectors(mat::Matrix{T}, L::T=1.0) where {T<:Real}
+    PeriodicVectors(mat::Matrix{T}, L::T=1.0) where {T<:AbstractFloat}
 
 Convert 'mat' to a Vector of elements of type SVector{d, PeriodicNumber{T}}.
 
@@ -46,13 +45,12 @@ mat should be of size d x N. The output is a 1-dimensional array of N elements, 
 consists of StaticVector's of size d, and PeriodicNumber{T} as data.
 The periodicity of the numbers, 'L', is given as second argument and defaults to 1.0.
 """
-function PeriodicVectors(mat::Matrix{T}, L::T=1.0) where {T<:Real}
+function PeriodicVectors(mat::Matrix{T}, L::T=1.0) where {T<:AbstractFloat}
     dim, N = size(mat)
     @assert dim<N "d>N. N should be larger than the dimensionality of vectors"
     [PeriodicVector(mat[:,i], L) for i in 1:N]
 end
 PeriodicVectors(rand(4, 10), 2.0)
-PeriodicVectors(rand(1:100, 4, 10), 2)
 
 #### Format the output of periodic vectors
 function Base.show(io::IO, PV::SVector{d, <:PeriodicNumber}) where {d}
@@ -65,6 +63,11 @@ function Base.show(io::IO, PV::SVector{d, <:PeriodicNumber}) where {d}
     end
 end
 
+
+function value(Xs::Vector{SVector{d, PeriodicNumber{T}}}) where {d, T<:AbstractFloat}
+    N = length(Xs)
+    value.(reshape(reinterpret(PeriodicNumber{T}, Xs), (d, N)))
+end
 #########################################################################################################
 #########################################################################################################
 ### Functions to compute the distance between two vectors with 'PeriodicNumber' components
@@ -155,7 +158,7 @@ The output is the index of the image of minimum distance (0 if no shift is neede
 
 See also: [`MIC_vector`](@ref).
 """
-function MIC_distance(V1::SVector{d, PeriodicNumber{T}}, V2::SVector{d, PeriodicNumber{T}}, images::Vector{SVector{d, T}}) where {d, T<:Float64}
+function MIC_distance(V1::SVector{d, PeriodicNumber{T}}, V2::SVector{d, PeriodicNumber{T}}, images::Vector{SVector{d, T}}) where {d, T<:AbstractFloat}
     L1 = V1[1].L; L2 = V2[1].L # periodicities of each vector
     #check that both vectors have the same periodicity
     (L1 != L2) && error("Comparing periodic vectors of different periodicity")
@@ -192,7 +195,7 @@ The output is the MIC vector (as a `SVector` type) and the index of the image of
 
 See also: [`MIC_distance`](@ref).
 """
-function MIC_vector(V1::SVector{d, PeriodicNumber{T}}, V2::SVector{d, PeriodicNumber{T}}, images::Vector{SVector{d, T}}) where {d, T<:Float64}
+function MIC_vector(V1::SVector{d, PeriodicNumber{T}}, V2::SVector{d, PeriodicNumber{T}}, images::Vector{SVector{d, T}}) where {d, T<:AbstractFloat}
     L1 = V1[1].L; L2 = V2[1].L # periodicities of each vector
     #check that both vectors have the same periodicity
     (L1 != L2) && error("Comparing periodic vectors of different periodicity")
@@ -232,13 +235,22 @@ We make use of the 'Symmetric' constructor, so only N*(N-1)/2 distances are calc
 
 See also [`distances_between_particles`](@ref)
 """
-function distances_between_centers(Xs::Vector{SVector{d, PeriodicNumber{T}}}) where {d, T<:Real}
+function distances_between_centers(Xs::Vector{SVector{d, PeriodicNumber{T}}}) where {d, T<:AbstractFloat}
     N = length(Xs)
     distances=zeros(N,N)
-    for i in 1:N, j in i+1:N
+    @inbounds for i in 1:N, j in i+1:N
         distances[i,j]=norm(Xs[i] .- Xs[j])
     end
     return Symmetric(distances)
+end
+
+function distances_between_centers!(distances::Symmetric{T, Matrix{T}}, Xs::Vector{SVector{d, PeriodicNumber{T}}}, is::Vector{Int64}) where {d, T<:AbstractFloat}
+    N = length(Xs)
+    dists=distances.data
+    @inbounds for i in is, j in i+1:N
+        dists[i,j]=norm(Xs[i] .- Xs[j])
+    end
+    copy!(distances, Symmetric(dists))
 end
 
 
@@ -256,7 +268,7 @@ We make use of the 'Symmetric' constructor, so only N*(N-1)/2 distances are calc
 
 See also: [`MIC_distance`](@ref).
 """
-function distances_between_centers(Xs::Vector{SVector{d, PeriodicNumber{T}}}, images::Vector{SVector{d, T}}) where {d, T<:Real}
+function distances_between_centers(Xs::Vector{SVector{d, PeriodicNumber{T}}}, images::Vector{SVector{d, T}}) where {d, T<:AbstractFloat}
     N = length(Xs)
     distances=zeros(N,N)
     image_indices = zeros(Int64, N, N)
@@ -293,7 +305,7 @@ A tolerance to determine whether there is an overlap or not should  be passed as
 - 'message': a string  that contains some information about the overlapping particles.
 - 'particles': a tuple containing the indices of the overlapping particles; '(0, 0)' if no overlap
 """
-function check_for_overlaps(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, tolerance::T) where {d, T<:Float64}
+function check_for_overlaps(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, tolerance::T) where {d, T<:AbstractFloat}
     σ = 2*R
     N = length(Xs)
     distances = distances_between_centers(Xs)

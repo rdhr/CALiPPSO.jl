@@ -1,23 +1,10 @@
 # Some ToDo's
 
 - [ ] Add implementation for polydisperse packings
+- [ ] Add implementation with *closed* boundary conditions
 - [ ] Try to implement model creation with `direct_model` instead of `Model` (to avoid copying the model).
   - Currently, when `direct` model is used it throws the error `The solver does not support an objective function of type MathOptInterface.SingleVariable.` when using HiGHS (and possibly with other solvers similar errors occur). 
-- [ ] Finish the documentation
-- [ ] Check all links
-- [ ] Add API of main functions (remember to add it to side bar and TOC)
-- [ ] Add examples using [Literate.jl](https://fredrikekre.github.io/Literate.jl/v2/)
-- [ ] Finish/correct *docstrings* in the scripts
-- [X] Change `iLP-for-jamming.jl` to `CALiPPSO.jl` or something like that. Remember to also change the name in the documentation and relevant scripts.
-- [X] Change "ILP" to "CALiPPSO", and "Steps" to "Iterations" in the printed output of `produce_jammed_configuration!` and *in the rest of the files, __including scripts__*
-- [X] Add `verbose` argument to `MonoPacking` function called when the final packing is constructed.
-- [X] Add time of `fine_tune_forces!` to total time.
-- [X] Add array of `max_si_vs_t` to the output of `produce_jammed_configuration!`
-- [ ] Improve the `show` method for `MonoParticle` and `MonoPacking`
-- [X] Remove unneeded calls and precompilations ... maybe
-- [ ] Check the correct default tolerance values are defined in scripts and documentation
+- [ ] Finish the *Issues* section of the documentation
+- [ ] Try adding examples using [Literate.jl](https://fredrikekre.github.io/Literate.jl/v2/)
 - [ ] Add support for Mosek solver
 - [ ] Add functions to analyse packings (e.g. compute gaps, extract forcess --distinguishing bucklers--, etc.)
-- [ ] Run the `testing-different-solver.jl` script until the end to verify that everything works.
-- [ ] Improve how different solvers can be used simultaneously (that is, within the same scope.)
-  - I tried somthing like `CALiPPSO.Solver = :HiGHS`, in the main scope, but didn't work.

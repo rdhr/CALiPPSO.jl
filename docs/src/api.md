@@ -55,6 +55,7 @@ CALiPPSO.obtain_non_rattlers
 CALiPPSO.MIC_vector
 CALiPPSO.MIC_distance
 CALiPPSO.volume
+CALiPPSO.update_distances!
 ```
 
 ### Functions for printing CALiPPSO info and progress
@@ -65,15 +66,4 @@ CALiPPSO.print_converged
 CALiPPSO.print_info_convergence
 CALiPPSO.print_failed_max_iters
 CALiPPSO.print_non_isostatic
-```
-
-## Other functions
-
-```
-
-```@autodocs
-Modules = [CALiPPSO]
-Order = [:function]
-```
-
 ```

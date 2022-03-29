@@ -434,12 +434,10 @@ constraints and indices associated to particles of index greater than 'i'.
 See also [`MIC_distance`](@ref), [`MIC_vector`](@ref), [`@constraint`](https://jump.dev/JuMP.jl/stable/reference/constraints/#JuMP.@constraint), 
 [`solve_LP_instance`](@ref), [`fine_tune_forces!`](@ref).
 """
-function add_non_overlapping_constraints!(model::JuMP.Model, Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, ℓ::T, images::Vector{SVector{d, T}}) where {d, T<:Float64}
+function add_non_overlapping_constraints!(model::JuMP.Model, Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, ℓ::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}}) where {d, T<:Float64}
     #TODO: check if the method of distances_between_centers(centers, images) yields a more efficient function. In such case, the indices of images are also computed from the beginning
     
     N = length(Xs); # number of particles
-    distances = distances_between_centers(Xs); # distances between all pair of particles position
-    
     # access the design variables of 'model' (S corresponds to the d*N array of the displacements; the inflation factor determines how much the radius of each particle is increased)
     S⃗ = model[:S];  Γ = model[:inflation_factor]
 
@@ -502,12 +500,11 @@ given as input.
 See also [`add_non_overlapping_constraints!`](@ref), [`@constraint`](https://jump.dev/JuMP.jl/stable/reference/constraints/#JuMP.@constraint), [`optimize!`](https://jump.dev/JuMP.jl/stable/reference/solutions/#JuMP.optimize!),
 [`produce_jammed_configuration!`](@ref), [`fine_tune_forces!`](@ref).
 """
-function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, sqrΓ::T, ℓ0::T, images::Vector{SVector{d, T}};
+function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, ℓ::T, s_bound::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}};
     solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
-    thresholds::Tuple{T, T}=(5e-4, 1e-5), sbound::T=0.01, verbose_LP_info::Bool=false, dig_S::Int=13) where {d, T<:Float64}
+    verbose_LP_info::Bool=false, dig_S::Int=13) where {d, T<:Float64}
         
     N = length(Xs); # number of particles
-    ℓ, s_bound = bounds_and_cutoff(sqrΓ, R, ℓ0, d; thresholds=thresholds, sbound=sbound) # radius of influence and displacements' bound
     
     #= The optimizer of the model is constructed, using the Optimizer of the solver chosen
      and (possibly) other parameters needed to control the precision, turn-off verbose output, etc.
@@ -539,7 +536,7 @@ function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, sqr�
     fix.(S[:, N], 0.0; force=true) # Fix one displacement vector so the center of mass remains constant
     
     # add the full list of non-overlapping to the model
-    constraints, possible_neighs  = add_non_overlapping_constraints!(LP_model, Xs, R, ℓ, images) 
+    constraints, possible_neighs  = add_non_overlapping_constraints!(LP_model, Xs, R, ℓ, images, distances) 
     
     @objective(LP_model, Max, inflation_factor) # define the objective of the model (i.e. maximize the inflation factor)
     optimize!(LP_model) # solve the LP instance, i.e. find the optimal solution (consistent with the constraints imposed above)
@@ -722,9 +719,9 @@ Besides updating the `forces` of each particle in 'Packing', this function produ
 See also [`add_non_overlapping_constraints!`](@ref), [`optimize!`](https://jump.dev/JuMP.jl/stable/reference/solutions/#JuMP.optimize!),
 [`produce_jammed_configuration!`](@ref), [`solve_LP_instance`](@ref).
 """
-function fine_tune_forces!(Packing::MonoPacking{d, T}, force_mismatch::T, sqrΓ::T, ℓ0::T, images::Vector{SVector{d, T}};      
+function fine_tune_forces!(Packing::MonoPacking{d, T}, force_mismatch::T, ℓ::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}};
     solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
-    thresholds::Tuple{T,T}=(5e-4, 1e-5), tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T = default_tol_zero_forces) where {d, T<:Float64}
+    tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T = default_tol_zero_forces) where {d, T<:Float64}
     
     Xs = get_positions(Packing) ; N = length(Xs)        
     R = Packing.R
@@ -733,8 +730,6 @@ function fine_tune_forces!(Packing::MonoPacking{d, T}, force_mismatch::T, sqrΓ:
     printstyled("\nForce balance condition not met yet; max force mismatch = ", force_mismatch, "\n", color=:yellow, bold=true)
     println("Performing a last LP optimization to improve force balance.")
 
-    ℓ, s_bound = bounds_and_cutoff(sqrΓ, R, ℓ0, d; thresholds=thresholds)
-    
     #= The optimizer of the model is constructed, using the Optimizer of the solver chosen
      and (possibly) other parameters needed to control the precision, turn-off verbose output, etc.
      These parameters cannot be fixed by using the 'set_optimizer_attributes' function of JuMP, 
@@ -764,7 +759,7 @@ function fine_tune_forces!(Packing::MonoPacking{d, T}, force_mismatch::T, sqrΓ:
     @variable(LP_model, S[μ=1:d, i=1:N], base_name="S⃗"); # Declare displacements design variables (UNbounded)
     fix.(S[:, N], 0.0; force=true) # Fix one displacement vector so the center of mass remains constant
     
-    constraints, possible_neighs  = add_non_overlapping_constraints!(LP_model, Xs, R, ℓ, images)
+    constraints, possible_neighs  = add_non_overlapping_constraints!(LP_model, Xs, R, ℓ, images, distances)
     
     @objective(LP_model, Max, inflation_factor)
     
@@ -851,6 +846,59 @@ function monitor_force_balance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constr
     return f_mismatch, small_fs
 end
 
+"""
+    function update_distances!(S⃗_cum::Vector{SVector{d, T}}, s_update::T, Xs::Vector{SVector{d, PeriodicNumber{T}}}, distances::Symmetric{T, Matrix{T}}; verbose=Bool=true) where {d, T<:AbstractFloat}
+    
+Update (in place) the list of distances between pairs of particles, depending on the cumulative displacements `S⃗_cum` and a threshold `s_update`.
+If less than 10% of the particles have a displacement, whose norm is smaller than `s_update`, only the list of distances of such particles is recalculated.
+Otherwise, the distances between of all pairs is recomputed.
+
+For convenience, if this function is called with `s_update=0.0`, the distances are always recalculated, without the need to first find the particles which have moved a lot. This feature might be useful if you want to be sure that before each LP instance all the relevant constrictions are considered.
+"""
+function update_distances!(S⃗_cum::Vector{SVector{d, T}}, s_update::T, Xs::Vector{SVector{d, PeriodicNumber{T}}}, distances::Symmetric{T, Matrix{T}}; verbose=Bool=true) where {d, T<:AbstractFloat}
+
+    if s_update ==0.0 # this option is useful in case you want to update the list of pairs' distances at every iteration
+        copy!(distances, distances_between_centers(Xs))
+        # copy!(S⃗_cum, svectors(zeros(d, N-1), Val(d)))
+
+    else # this is the procedure if the list of distances should be updated only when the cumulative displacements are larger than a finite 's_update'
+        norms_S = norm.(S⃗_cum)
+        N = length(Xs)
+        indices_to_change = findall(S -> S ≥ s_update, norms_S)
+        n_to_change = length(indices_to_change)
+        if n_to_change ≥ N/10  # so, if at least 10% of the configuration has moved a lot, update ALL the distances
+            verbose && printstyled("Updating ALL distances because ", n_to_change, " particles moved more than \ts_update = ", s_update, "\n", color=:yellow)
+            verbose && printstyled("__________________________________________________________________________\n\n", color=:yellow)
+            copy!(distances, distances_between_centers(Xs))
+            copy!(S⃗_cum, svectors(zeros(d, N-1), Val(d)))
+
+        elseif 0 < n_to_change #instead, if less than 10% has changed, only update the relevant particles
+            inds_sort = sortperm(norms_S[indices_to_change], rev=true)[1:min(10, n_to_change)]
+            
+            if verbose
+                printstyled("Updating distances of ", n_to_change, " particles. Threshold for updating s_update = ", s_update, "\n", color=:yellow)
+                println("Some of the cumulative displacements are: \t ", norms_S[indices_to_change][inds_sort])
+                println("Corresponding to particles: \t ", indices_to_change[inds_sort])
+                printstyled("__________________________________________________________________________\n\n", color=:yellow)
+            end
+            
+            distances_between_centers!(distances, Xs, indices_to_change)
+            for i in indices_to_change
+                S⃗_cum[i] = @SVector zeros(d)
+            end
+
+        elseif 0 == n_to_change && verbose
+            inds_sort = sortperm(norms_S,rev=true)[1:min(10, N-1)]
+            large_disps = norms_S[inds_sort]
+            printstyled("No need to update distances.  Threshold for updating s_update = ", s_update, "\n", color=:yellow)
+            println("Some of the largest cumulative displacements are: \t", large_disps)
+            println("Corresponding to particles: \t", inds_sort)
+            verbose && printstyled("__________________________________________________________________________\n\n", color=:yellow)
+        end
+    end
+end
+
+
 ##########################################################################
 ##########################################################################
 ## Finally, we define the main function to use CALiPPSO to produce a jammed configuration of hard-spheres
@@ -931,10 +979,11 @@ The list of default values is specified in [this part](@ref list-defaults) of th
 - `monitor_step::I=10`: How often info about the progress in the main main loop should be printed out; will only take effect if `verbose=true`. See [`print_monitor_progress`](@ref) for more information.
 - `initial_monitor::I=monitor_step`: print info about the main loop progress during this amount of initial LP optimizations; will only take effect if `verbose=true`.
 
-## Arguments for performing overlaps checks
-See [`check_for_overlaps`](@ref) for more information
+## Arguments for performing overlaps checks and updating list of distances
+See [`check_for_overlaps`](@ref) and [`update_distances!`](@ref) for more information
 - `interval_overlaps_check::I=10`: interval of LP optimizations at which it is verified that no overlaps are present in the system.
 - `initial_overlaps_check::I=initial_monitor`: number of initial LP optimizations at which it is verified that no overlaps are present; given that for low density initial configurations, CALiPPSO might produce rather large displacements, it is always convenient to keep track of the overlaps in such initial stage.
+- `ratio_sℓ_update::T=0.1`: This quantity determines the threshold (`s_update`) after which the list of distances of a particles is updated. Such threshold is calculated as `s_update=ratio_sℓ_update*ℓ/sqrt(d)`, with `ℓ` determined by `bounds_and_cutoff`.
 
 """
 function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T;
@@ -942,6 +991,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
         solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
         max_iters::I=default_max_iterations, tol_Γ_convergence::T=default_tol_Γ_convergence, tol_S_convergence::T=default_tol_displacements_convergence, tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces,
         tol_overlap::T=default_tol_overlap, non_iso_break::I=max_iters, 
+        ratio_sℓ_update::T=0.1,
         verbose::Bool=true, monitor_step::I=10, initial_monitor::I=monitor_step, interval_overlaps_check::I=10, initial_overlaps_check::I=initial_monitor) where {d, T<:Float64, I<:Int}
     
     N = length(Xs)
@@ -955,7 +1005,9 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
     config_images = generate_system_images(d, L)
     #Initialization values
     sqrΓ=sqrΓ0; iter=0;  max_Si=1.0;  non_iso_count = 0; converged = true
-    Nnr_iter = 0;
+    Nnr_iter = 0; 
+    update_distances= false; S⃗_cum = svectors(zeros(d, N-1), Val(d))
+    distances = distances_between_centers(Xs)
     #Arrays to store the output
     constraints = Vector{Vector{ConstraintRef}}(undef, N-1); possible_neighs = Vector{Vector{Int64}}(undef, N-1)
     Γs_vs_t = zeros(max_iters+1); smax_vs_t = L*ones(max_iters+1); iso_vs_t = falses(max_iters+1); solve_ts = similar(Γs_vs_t); # +1 because it could be that an additional LP step might be needed after convergence to guarantee force balance
@@ -984,8 +1036,11 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
             verbose_LP_info = false
         end
 
+        ℓ, s_bound = bounds_and_cutoff(sqrΓ, R, ℓ0, d; thresholds=thresholds_bounds, sbound=sbound)
+        s_update = ratio_sℓ_update*ℓ/sqrt(d)
+
         # obtain the optimal value of displacements, inflation factor, relevant constraints, and other quantities from the LP optimization
-        S⃗, Γ, constraints, possible_neighs, t_solve, status = solve_LP_instance(Xs, R, sqrΓ, ℓ0, config_images; thresholds=thresholds_bounds, verbose_LP_info=verbose_LP_info, sbound=sbound, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args)
+        S⃗, Γ, constraints, possible_neighs, t_solve, status = solve_LP_instance(Xs, R, ℓ, s_bound, config_images, distances; verbose_LP_info=verbose_LP_info, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args)
         
         # track the force balance in the current iteration or not 
         if verbose  && (iter<=initial_monitor || iter%monitor_step==0)
@@ -1000,6 +1055,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
             # Xs[i] += SVector{d}(S⃗[:, i]) 
             # It seems  that converting each column of S⃗ to an SVector takes more allocations than simply summing the elements without conversion
             Xs[i] += S⃗[:, i]
+            S⃗_cum[i] += S⃗[:, i] # To monitor the total displacement of each particle
         end
 
         Γs_vs_t[iter] = sqrΓ; solve_ts[iter] = t_solve # store the optimal √Γ and solving time
@@ -1015,6 +1071,9 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
         if verbose && (iter<=initial_monitor || iter%monitor_step==0)
             print_monitor_progress(max_Si, R, N, L, d, zs_iter, non_rattlers_iter, length.(constraints), iso_cond, f_mismatch, small_fs)
         end
+
+        # determine whether distances between centers should be updated
+        update_distances!(S⃗_cum, s_update, Xs, distances, verbose=verbose_LP_info)
 
         # count how many NON-isostatic *consecutive* solutions have been produced and print info if currently NON-isostatic
         if iso_cond
@@ -1070,11 +1129,12 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
 
     ## if there is a (relatively) large force mismatch, perform a last LP optimizations so the force balance condition is met more accurately
     if force_mismatch>tol_mechanical_equilibrium 
+        ℓ, s_bound = bounds_and_cutoff(sqrΓ, R, ℓ0, d; thresholds=thresholds_bounds, sbound=sbound)
         fine_tune_stats = @timed begin
 
             iter+=1
             
-            t_solve, isostatic, Nc, Nnr, status = fine_tune_forces!(final_packing, force_mismatch, sqrΓ, ℓ0, config_images; thresholds=thresholds_bounds, tol_mechanical_equilibrium=tol_mechanical_equilibrium, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, zero_force=zero_force)
+            t_solve, isostatic, Nc, Nnr, status = fine_tune_forces!(final_packing, force_mismatch, ℓ, config_images, distances; tol_mechanical_equilibrium=tol_mechanical_equilibrium, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, zero_force=zero_force)
 
             solve_ts[iter] = t_solve; Γs_vs_t[iter] = 1.0; smax_vs_t[iter] = 0.0; iso_vs_t[iter] = isostatic # store time, √Γ, and if isostatic of this last iteration.
         end
@@ -1196,20 +1256,19 @@ function precompile_main_function(solver::Module=default_solver, solver_attribut
 
     printstyled("\nThe usual output of the tested optimizers has been disabled by default. Change the value of OutputFlag (or verbose, or the corresponding field of the solver of your choice) if you want such information to be printed out.\n\n", color=:magenta)
 
-
-    Ds_comp, Γ_comp, cons_comp, neighs_comp, ts_comp, stat_comp = solve_LP_instance(cen_comp, rt, 1.5, 4*rt, images_comp)
+    dists_comp = distances_between_centers(cen_comp)
+    Ds_comp, Γ_comp, cons_comp, neighs_comp, ts_comp, stat_comp = solve_LP_instance(cen_comp, rt, 1.5, 4*rt, images_comp, dists_comp)
     obtain_non_rattlers(cons_comp, neighs_comp, dt);
 
     MonoPacking(cen_comp, cons_comp, neighs_comp, rt, images_comp)
 
-    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration!(cen_comp, rt, ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= 1e-3, tol_S_convergence=1e-2, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=2 );
+    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration!(cen_comp, rt, ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= 1e-3, tol_S_convergence=1e-2, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=20 );
 
-    fine_tune_forces!(Jpack_comp, 0.0, 1.0, Lt, images_comp)
     network_of_contacts(Jpack_comp)
 
     printstyled("\n\n Calling the main function once again, to compile the second method.\n\n", color=:cyan)
     produce_jammed_configuration!(Xs_comp, rt, Lt; ℓ0=Lt, initial_monitor=0, monitor_step=0, verbose=false, tol_Γ_convergence=1e-3,tol_S_convergence=1e-2,
-    solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=2 )
+    solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=20 )
 
     printstyled("\n________________________________________________________\n\tCompilation process finished! \t (with solver: ", Symbol(solver), ")\n________________________________________________________\n\n\n\n\n", color=:cyan, bold=true)
 end

@@ -129,13 +129,14 @@ As explained in our paper, the constraints a particle is subject to are assigned
 3. `max_iters=default_max_iterations` (``1000``): Maximum number of iterations (*i.e.* LP optimizations) allowed before stopping the main CALiPPSO's loop.
 4. `non_iso_break=max_iters`: Maximum number of non-isostatic configurations that can be obtained *consecutively* before the main CALiPPSO's loop is terminated. Only to be able to stop the main function when dealing with strange, atypical cases (*e.g.* a configuration for which CALiPPSO repeatedly fails to converge because a stable particle is surrounded by several rattlers); in general it shouldn't be necessary to tune this parameter.
 
-### Kwargs for controlling precision of overlaps and force balance tests
+### Kwargs for controlling precision of overlaps, testing force balance, and updating lists of distances
 
 1. `tol_mechanical_equilibrium=default_tol_force_equilibrium` (``10^{-12}``): When the norm of the total force acting on a particle is smaller than this quantity, said particle is considered to be in equilibrium.
 2. `zero_force=default_tol_zero_forces` (``10^{-10}``): This is the threshold for determining when a force, or dual variable, is different from zero (*active*). In other words, whenever [`shadow_price`](https://jump.dev/JuMP.jl/stable/reference/solutions/#JuMP.shadow_price)`(constraint)` --with `constraint` being a [`ConstraintRef`](https://jump.dev/JuMP.jl/stable/reference/constraints/#JuMP.ConstraintRef)-- outputs a value larger than `zero_force`, we consider that such constraint is active, and its value is precisely `shadow_price(constraint)`. 
 3. `tol_overlap=default_tol_overlap` (``10^{-8}``): Maximum value of overlap that can occur between particles. That is, if ``\sigma_{ij} - |\mathbf{r}_{ij}| \geq `` `tol_overlap`, an overlap is said to have occurred.
 4. `initial_overlaps_check=initial_monitor` (``10``): During each of these many *initial* iterations [`check_for_overlaps`](@ref) is called, after the configuration has been updated following an LP optimization. (`initial_monitor` is described below.)
 5. `interval_overlaps_check=10`: [`check_for_overlaps`](@ref) is also called every `interval_overlaps_check` iterations, after the configuration has been updated.
+6. `ratio_sℓ_update::T=0.1`: This is the fraction of the cutoff distance ``\ell`` which is allowed for each particle to move, before updating the list of its distances with the rest of spheres. The threshold for the displacement, `s_update`, is determined as `s_update=ratio_sℓ_update*ℓ/sqrt(d)`. Setting `s_update=0.0` is equivalent to updating the lists of distances after each LP optmization. Of course, this hinders performance for large samples, but in such way it can be guaranteed that all the relevant constraints are considered. See [`update_distances!`](@ref CALiPPSO.update_distances!) for more information about how the update of the lists of distances is implemented.
 
 ### Kwargs for controlling output printing on terminal
 

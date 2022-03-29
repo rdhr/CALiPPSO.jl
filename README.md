@@ -106,6 +106,12 @@ packing, info, Γ_vs_t, Smax_vs_t, isostatic_vs_t = produce_jammed_configuration
 
 Note that different solvers require different choices of attributes and/or arguments. Refer to the [documentation](https://rdhr.github.io/CALiPPSO.jl/dev/changing_default.html#changing_the_solver) for more options and advanced usage.
 
+
+
+### Other examples
+
+You can find other examples of how CALiPPSO is used in dimensions d=3,4,5, and other features in the [Examples section](https://rdhr.github.io/CALiPPSO.jl/dev/tests.html) of the documentation.
+
 ### Advanced usage
 
 For other features, advanced usage, and more details of how `produce_jammed_configuration!` works please refer to the [documentation](https://rdhr.github.io/CALiPPSO.jl/dev/mainfunction.html).
@@ -113,7 +119,8 @@ For other features, advanced usage, and more details of how `produce_jammed_conf
 ## ToDo's
 
 1. Write implementation of the analogous functions for polydisperse packings.
-2. Register CALiPPSO in Julia's packages registry.
+2. Implement functions for closed boundary conditions
+3. Register CALiPPSO in Julia's packages registry.
 
 ## Acknowledgements
 
