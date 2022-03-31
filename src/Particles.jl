@@ -174,7 +174,60 @@ Particle(X::Vector{T}, R::T, L::T, contact_vecs::Matrix{T}, fs::Vector{T}, neigh
 
 #########################################################################################################
 #########################################################################################################
-### Functions for generic (i.e. abstract) type of 'Particle'
+### Other functions; e.g. to compute volume
+#########################################################################################################
+#########################################################################################################
+
+"""
+    volume_d_ball(d::Int64, R::Real)
+
+Compute the volume of a d-dimensional sphere of radius R (that defaults to 1)
+"""
+function volume_d_ball(d::Int64, R::Real=1)::Float64
+    ((sqrt(π)*R)^d)/gamma(1.0 + 0.5d)
+end
+
+"""
+    volume(P::Particle)
+
+Compute the volume of 'P' (i.e. a hypersphere of d dimensions and radius R=P.R.
+"""
+volume(P::Particle) = volume_d_ball(length(P.X), P.R)
+
+function check_for_overlaps(P1::Particle{d,T}, P2::Particle{d,T}, tolerance::T) where {d, T<:AbstractFloat}
+    σij = P1.R + P2.R
+    dist = norm(P1.X - P2.X)
+    overlap=false; gap = 0.0
+    if dist-σij < -tolerance
+        gap = σji - dist
+        overlap = true
+    end
+    return overlap, gap
+end
+
+# function check_for_overlaps(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, tolerance::T) where {d, T<:AbstractFloat}
+#     σ = 2*R
+#     N = length(Xs)
+#     distances = distances_between_centers(Xs)
+#     overlap=false; message = "No overlap is present"; particles = (0, 0)
+#     for i in 1:N, j in i+1:N
+#         if distances[i,j]-σ < -tolerance
+#             gap = σ - distances[i,j]
+#             Xi = value.(Xs[i])
+#             Xj = value.(Xs[j])
+#             message = "Overlap between particles $i and $j;\n Centers at: $Xi; \t $Xj. \n\t\tradius:  $R; \t Overlap = $gap ."
+
+#             overlap = true
+#             particles = (i, j)
+#             break
+#         end
+#     end
+#     return overlap, message, particles
+# end
+
+#########################################################################################################
+#########################################################################################################
+### Functions for generic (i.e. abstract) type of particle
 #########################################################################################################
 #########################################################################################################
 
@@ -232,28 +285,3 @@ By default such tolerance is `default_tol_force_equilibrium` (a `const`) and equ
 function force_equilibrium(particles::Vector{<:AbstractParticle} ; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium)
     all(x-> x <= tol_mechanical_equilibrium, norm.(total_force.(particles)))
 end
-
-
-
-#########################################################################################################
-#########################################################################################################
-### Other functions; e.g. to compute volume
-#########################################################################################################
-#########################################################################################################
-
-"""
-    volume_d_ball(d::Int64, R::Real)
-
-Compute the volume of a d-dimensional sphere of radius R (that defaults to 1)
-"""
-function volume_d_ball(d::Int64, R::Real=1)::Float64
-    ((sqrt(π)*R)^d)/gamma(1.0 + 0.5d)
-end
-
-
-"""
-    volume(P::Particle)
-
-Compute the volume of 'P' (i.e. a hypersphere of d dimensions and radius R=P.R.
-"""
-volume(P::Particle) = volume_d_ball(length(P.X), P.R)

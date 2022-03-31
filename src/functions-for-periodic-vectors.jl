@@ -310,12 +310,48 @@ function check_for_overlaps(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, tol
     N = length(Xs)
     distances = distances_between_centers(Xs)
     overlap=false; message = "No overlap is present"; particles = (0, 0)
-    for i in 1:N, j in i+1:N
+    @inbounds for i in 1:N, j in i+1:N
         if distances[i,j]-σ < -tolerance
             gap = σ - distances[i,j]
             Xi = value.(Xs[i])
             Xj = value.(Xs[j])
             message = "Overlap between particles $i and $j;\n Centers at: $Xi; \t $Xj. \n\t\tradius:  $R; \t Overlap = $gap ."
+
+            overlap = true
+            particles = (i, j)
+            break
+        end
+    end
+    return overlap, message, particles
+end
+
+"""
+    check_for_overlaps(Xs::Vector{SVector{d, PeriodicNumber{T}}}, Rs::Vector{T}, tolerance::T)
+
+Check whether there is an overlap between all pairs of particles centred at 'Xs' and of radii
+'Rs'. 
+
+Each element of 'Xs' plays the role of the position of a particle's center, while its associated
+radius is stored in corresponding element of 'Rs'
+A tolerance to determine whether there is an overlap or not should  be passed as third argument.
+
+# Output
+
+- 'overlap': a boolean that is 'true' only when an overlap is present
+- 'message': a string  that contains some information about the overlapping particles.
+- 'particles': a tuple containing the indices of the overlapping particles; '(0, 0)' if no overlap
+"""
+function check_for_overlaps(Xs::Vector{SVector{d, PeriodicNumber{T}}}, Rs::Vector{T}, tolerance::T) where {d, T<:AbstractFloat}
+    N = length(Xs)
+    distances = distances_between_centers(Xs)
+    overlap=false; message = "No overlap is present"; particles = (0, 0)
+    @inbounds for i in 1:N, j in i+1:N
+        σ = Rs[i] + Rs[j]
+        if distances[i,j]-σ < -tolerance
+            gap = σ - distances[i,j]
+            Xi = value.(Xs[i]); Ri = Rs[i]
+            Xj = value.(Xs[j]); Rj = Rs[j]
+            message = "Overlap between particles $i and $j;\n Centers at: $Xi; \t $Xj. \n\t\tradii:  ($Ri, $Rj); \t Overlap = $gap ."
 
             overlap = true
             particles = (i, j)
