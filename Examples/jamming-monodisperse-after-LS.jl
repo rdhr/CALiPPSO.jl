@@ -27,7 +27,7 @@ const ds = [3, 4, 5] # dimensions to use
 const L = 1.0 # size of each side of the system's volume
 
 # Testing CALiPPSO in systems of different dimensions.
-# The initial conditions are configurations compressed with Lubachevsky--Stillinger up to a (reduced) pressure p>>10
+# The initial conditions are configurations compressed with Lubachevsky--Stillinger up to a (reduced) pressure p>>100
 for d in ds
     σ0 = readdlm("Centers-after-LS--N-$(N_LS)--d-$d.dat", skipstart=2)[1, 1] # initial diameter of the particles
     r0 = 0.5*σ0 # initial radius of particles

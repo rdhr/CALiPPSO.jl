@@ -639,14 +639,8 @@ Construct a `MonoPacking` from the set of particles' position ('Xs'), set of all
 """
 MonoPacking(Xs::Vector, constraints::Vector, neighbours::Vector, R::Real)
 function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, R::T, images::Vector{SVector{d, T}}, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces, verbose::Bool=true) where {d, T<:AbstractFloat}
-    
-    # N = length(Xs); # System's size 
     all_contacts, forces_dual, particles_dual_contact = network_of_contacts(Xs, constraints, neighbours_list, images, zero_force=zero_force)
-
-    # particles = Vector{MonoParticle{d,Float64}}(undef, N)
-    # for i in eachindex(Xs)
-    #     particles[i] = MonoParticle(Xs[i], all_contacts[i], forces_dual[i], particles_dual_contact[i])
-    # end
+        
     particles = [MonoParticle(Xs[i], all_contacts[i], forces_dual[i], particles_dual_contact[i]) for i in eachindex(Xs)]
 
     return MonoPacking(particles, R, jammed; tol_mechanical_equilibrium=tol_mechanical_equilibrium, verbose=verbose)
@@ -658,14 +652,8 @@ end
 Construct a `PolyPacking` from the set of particles' position ('Xs'), radii ('Rs'), set of all constraints defined in the LP model ('constraints'), list of *possible* neighbours ('neighbours_list'), and virtual images ('images') needed for the MIC contact vectors. "
 """
 function PolyPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, Rs::Vector{T}, images::Vector{SVector{d, T}}, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces, verbose::Bool=true) where {d, T<:AbstractFloat}
-    
-    # N = length(Xs); # System's size 
     all_contacts, forces_dual, particles_dual_contact = network_of_contacts(Xs, Rs, constraints, neighbours_list, images, zero_force=zero_force)
 
-    # particles = Vector{Particle{d,Float64}}(undef, N)
-    # for i in eachindex(Xs)
-    #     particles[i] = Particle(Xs[i], Rs[i], all_contacts[i], forces_dual[i], particles_dual_contact[i])
-    # end
     particles = [Particle(Xs[i], Rs[i], all_contacts[i], forces_dual[i], particles_dual_contact[i]) for i in eachindex(Xs)]
 
     return PolyPacking(particles, jammed; tol_mechanical_equilibrium=tol_mechanical_equilibrium, verbose=verbose)
@@ -1093,6 +1081,7 @@ The list of default values is specified in [this part](@ref list-defaults) of th
 
 ## Arguments controlling the screen printed output
 - `verbose::Bool=true`: Control whether some info about the progress of CALiPPSO and the final packing is printed out or not.
+- `non_iso_warn::Bool=false`: Print some information whenever a non-isostatic *preliminary* configuration is obtained, after solving a LOP.
 - `monitor_step::I=10`: How often info about the progress in the main main loop should be printed out; will only take effect if `verbose=true`. See [`print_monitor_progress`](@ref) for more information.
 - `initial_monitor::I=monitor_step`: print info about the main loop progress during this amount of initial LP optimizations; will only take effect if `verbose=true`.
 
@@ -1109,7 +1098,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
         max_iters::I=default_max_iterations, tol_Γ_convergence::T=default_tol_Γ_convergence, tol_S_convergence::T=default_tol_displacements_convergence, tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces,
         tol_overlap::T=default_tol_overlap, non_iso_break::I=max_iters, 
         ratio_sℓ_update::T=0.1,
-        verbose::Bool=true, monitor_step::I=10, initial_monitor::I=monitor_step, interval_overlaps_check::I=10, initial_overlaps_check::I=initial_monitor) where {d, T<:Float64, I<:Int}
+        verbose::Bool=true, non_iso_warn::Bool=false, monitor_step::I=10, initial_monitor::I=monitor_step, interval_overlaps_check::I=10, initial_overlaps_check::I=initial_monitor) where {d, T<:Float64, I<:Int}
     
     N = length(Xs)
     L = Xs[1][1].L
@@ -1123,7 +1112,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
     #Initialization values
     sqrΓ=sqrΓ0; iter=0;  max_Si=1.0;  non_iso_count = 0; converged = true
     Nnr_iter = 0; 
-    update_distances= false; S⃗_cum = svectors(zeros(d, N-1), Val(d))
+    S⃗_cum = svectors(zeros(d, N-1), Val(d))
     distances = distances_between_centers(Xs)
     #Arrays to store the output
     constraints = Vector{Vector{ConstraintRef}}(undef, N-1); possible_neighs = Vector{Vector{Int64}}(undef, N-1)
@@ -1178,7 +1167,9 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
         
         # obtain non-rattlers (important so only the displacements of these particles are considered)
         non_rattlers_iter, Nnr_iter, zs_iter = obtain_non_rattlers(constraints, possible_neighs, d; zero_force=zero_force)
-        (Nnr_iter>0) && (max_Si = maximum(abs.(S⃗[:, non_rattlers_iter])); smax_vs_t[iter] = max_Si ); # update and store value of maximum displacement (max_Si) 
+        # update and store value of maximum displacement (max_Si) 
+        (Nnr_iter>0) ? (max_Si = maximum(abs.(S⃗[:, non_rattlers_iter]))) : (max_Si = maximum(abs.(S⃗)))
+        smax_vs_t[iter] = max_Si 
 
         # What follows are just checks for overlaps, verifying isostaticity, printing some output at given steps, etc.
         iso_cond = 0.5*sum(zs_iter[non_rattlers_iter]) == (d*(Nnr_iter-1)+1) # test whether the configuration is isostatic 
@@ -1197,13 +1188,13 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
         else
             non_iso_count +=1
             
-            if !verbose || !(iter<=initial_monitor || iter%monitor_step==0) # in case the non-isostatic package was obtained in an iteration for which no printed output was expected
+            if non_iso_warn && (!verbose || !(iter<=initial_monitor || iter%monitor_step==0)) # in case the non-isostatic package was obtained in an iteration for which no printed output was expected
                 f_mismatch, small_fs = monitor_force_balance(Xs, constraints, possible_neighs, config_images; zero_force=zero_force)
                 bound_si = bounds_and_cutoff(sqrΓ, R, ℓ0, d; thresholds=thresholds_bounds, sbound=sbound)[2]
 
                 print_non_isostatic(d, zs_iter, non_rattlers_iter, iter, max_Si, bound_si, f_mismatch, small_fs)
 
-            else
+            elseif verbose_LP_info
                 print_non_isostatic(d, zs_iter, non_rattlers_iter)
             end
         end
@@ -1281,7 +1272,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
     max_iters::I=default_max_iterations, tol_Γ_convergence::T=default_tol_Γ_convergence, tol_S_convergence::T=default_tol_displacements_convergence, tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces,
     tol_overlap::T=default_tol_overlap, non_iso_break::I=max_iters, 
     ratio_sℓ_update::T=0.1,
-    verbose::Bool=true, monitor_step::I=10, initial_monitor::I=monitor_step, interval_overlaps_check::I=10, initial_overlaps_check::I=initial_monitor) where {d, T<:Float64, I<:Int}
+    verbose::Bool=true, non_iso_warn::Bool=false, monitor_step::I=10, initial_monitor::I=monitor_step, interval_overlaps_check::I=10, initial_overlaps_check::I=initial_monitor) where {d, T<:Float64, I<:Int}
 
     N = length(Xs)
     L = Xs[1][1].L
@@ -1296,7 +1287,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
     #Initialization values
     sqrΓ=sqrΓ0; iter=0;  max_Si=1.0;  non_iso_count = 0; converged = true
     Nnr_iter = 0; 
-    update_distances= false; S⃗_cum = svectors(zeros(d, N-1), Val(d))
+    S⃗_cum = svectors(zeros(d, N-1), Val(d))
     distances = distances_between_centers(Xs)
     #Arrays to store the output
     constraints = Vector{Vector{ConstraintRef}}(undef, N-1); possible_neighs = Vector{Vector{Int64}}(undef, N-1)
@@ -1351,7 +1342,9 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
         
         # obtain non-rattlers (important so only the displacements of these particles are considered)
         non_rattlers_iter, Nnr_iter, zs_iter = obtain_non_rattlers(constraints, possible_neighs, d; zero_force=zero_force)
-        (Nnr_iter>0) && (max_Si = maximum(abs.(S⃗[:, non_rattlers_iter])); smax_vs_t[iter] = max_Si ); # update and store value of maximum displacement (max_Si) 
+        # update and store value of maximum displacement (max_Si) 
+        (Nnr_iter>0) ? (max_Si = maximum(abs.(S⃗[:, non_rattlers_iter]))) : (max_Si = maximum(abs.(S⃗)))
+        smax_vs_t[iter] = max_Si 
 
         # What follows are just checks for overlaps, verifying isostaticity, printing some output at given steps, etc.
         iso_cond = 0.5*sum(zs_iter[non_rattlers_iter]) == (d*(Nnr_iter-1)+1) # test whether the configuration is isostatic 
@@ -1370,13 +1363,13 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
         else
             non_iso_count +=1
             
-            if !verbose || !(iter<=initial_monitor || iter%monitor_step==0) # in case the non-isostatic package was obtained in an iteration for which no printed output was expected
+            if non_iso_warn && (!verbose || !(iter<=initial_monitor || iter%monitor_step==0)) # in case the non-isostatic package was obtained in an iteration for which no printed output was expected
                 f_mismatch, small_fs = monitor_force_balance(Xs, constraints, possible_neighs, config_images; zero_force=zero_force)
                 bound_si = bounds_and_cutoff(sqrΓ, Rs[i_max], ℓ0, d; thresholds=thresholds_bounds, sbound=sbound)[2]
 
                 print_non_isostatic(d, zs_iter, non_rattlers_iter, iter, max_Si, bound_si, f_mismatch, small_fs)
 
-            else
+            elseif verbose_LP_info
                 print_non_isostatic(d, zs_iter, non_rattlers_iter)
             end
         end
