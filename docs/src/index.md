@@ -2,7 +2,7 @@
 
 The CALiPPSO algorithm was introduced in [our paper](https://arxiv.org/abs/2203.05654), by *Artiaco, Díaz, Parisi, and Ricci-Tersenghi*. A [Julia](https://julialang.org/) implementation of this algorithm is available through the [CALiPPSO.jl package](https://github.com/rdhr/CALiPPSO.jl) ,developed by ourselves. This is the documentation of such Julia package. 
 
-As we explain in our paper, CALiPPSO is an iterative Linear Programming algorithm to produce jammed packings of hard-spheres (HS) *in arbitrary* dimensions, $d$.
+As we explain in our paper, CALiPPSO is an iterative Linear Programming algorithm to produce jammed packings of hard-spheres (HS) *in arbitrary* dimensions, $d$. Besides, it works for both mono- and poly-disperse packings.
 Essentially, our method consists on a **C**hain of **A**pproximate **Li**near **P**rogramming for **P**acking **S**pherical **O**bjects.
 
 The code contained in the [CALiPPSO.jl package](https://github.com/rdhr/CALiPPSO.jl) is written in pure [Julia](https://julialang.org/), and makes extensive use of  the (wonderful) optimization and modelling package [JuMP.jl](https://github.com/jump-dev/JuMP.jl), as well as other existing packages ([StaticArrays.jl](https://juliaarrays.github.io/StaticArrays.jl/stable/), [GLPK.jl](https://github.com/jump-dev/GLPK.jl), etc.). 
