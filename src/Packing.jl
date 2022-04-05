@@ -9,15 +9,20 @@ abstract type AbstractPacking{d, T} end
 ### Functions for generic (i.e. any type of packings) packings 
 #########################################################################################################
 #########################################################################################################
+
+get_positions(packing::AbstractPacking) = getfield.(packing.Particles, :X)
+length(packing::AbstractPacking) = length(packing.Particles)
+size(packing::AbstractPacking{d, T}) where {d, T<:Real} = (d, length(packing))
+
 "Obtain the set of stable particles in a packing."
 function get_non_rattlers(packing::AbstractPacking)
-    N = length(packing.Particles)
+    N = length(packing)
     return (1:N)[is_stable_particle.(packing.Particles)]
 end
 
 "Obtain the set of rattlers (i.e. unstable particles) in a packing."
 function get_rattlers(packing::AbstractPacking)
-    N = length(packing.Particles)
+    N = length(packing)
     return (1:N)[is_a_rattler.(packing.Particles)]
 end
 
@@ -43,10 +48,6 @@ function total_force(packing::AbstractPacking{d, T})::Vector{SVector{d, T}} wher
     total_force.(packing.Particles)
 end
 
-
-get_positions(packing::AbstractPacking) = getfield.(packing.Particles, :X)
-length(packing::AbstractPacking) = length(get_positions(packing))
-size(packing::AbstractPacking{d, T}) where {d, T<:Real} = (d, length(packing))
 
 distances_between_centers(packing::AbstractPacking) = distances_between_centers(get_positions(packing))
 
@@ -374,7 +375,7 @@ function distances_between_particles(packing::PolyPacking)
 end
 
 """
-    check_for_overlaps(packing::PolyPacking, tolerance::Float64)
+    check_for_overlaps(packing::PolyPacking{d,T}, tolerance::T)
 
 Apply `check_for_overlaps` to all the particles in 'packing'.
 """

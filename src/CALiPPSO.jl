@@ -3,7 +3,7 @@ module CALiPPSO
 export produce_jammed_configuration!, precompile_main_function # main function!! and a function used to precompile it on a small system
 export default_parameters # Dict of default parameters defined in this module
 export generate_random_configuration, radius_from_phi # function to generate a low density, random initial configuration; and compute r from φ
-export convergence_info, PeriodicNumber, MonoParticle, MonoPacking, PeriodicVector, Packing # `struct`s defined in the package
+export convergence_info, PeriodicNumber, MonoParticle, Particle, MonoPacking, PolyPacking, PeriodicVector, Packing # `struct`s defined in the package
 export network_of_contacts, check_for_overlaps, PeriodicVectors, packing_fraction, get_non_rattlers, get_rattlers, is_isostatic, get_coordination_number, total_force, difference_in_packings # other useful functions; mostly for packings
 export volume_d_ball, norm # these functions are needed for generating random initial packings, in the 'random_initial_conditions.jl' script. Nevertheless, it could be the case that they're also useful when analysing results, specially 'norm'
 
@@ -151,7 +151,7 @@ const default_parameters = Dict("Convergence parameters"=>dict_convergence, "Pre
 #########################################################################################
 ### Some functions to print output and monitor the progress and termination status of CALiPPSO
 #########################################################################################
-
+# TODO: Move all these functions to another file
 #Memory usage in GB
 memory_usage() = round(parse(Int, split(read(`ps -p $(getpid()) -o rss`, String))[2]) / 1024^2, digits=3) 
 memory_usage()
@@ -207,8 +207,8 @@ end
 
 
 "Print info about CALiPPSO progress, including new values of ``|s_i|``, density and ``R``, statistics of constraints and contacts, forces, etc."
-function print_monitor_progress(max_Si, R, N::I, L, d::I, zs::Vector{I}, non_rattlers::Vector{I}, n_constr::Vector{I}, iso_cond::Bool, f_mismatch::Float64, small_fs::Vector{Float64};
-     dig_R::I=9, dig_z::I = Int(ceil(log10(N*d))), dig_S::I=13, color::Symbol=:cyan) where {I<:Int}
+function print_monitor_progress(max_Si::T, R::T, N::I, L::T, d::I, zs::Vector{I}, non_rattlers::Vector{I}, n_constr::Vector{I}, iso_cond::Bool, f_mismatch::T, small_fs::Vector{T};
+    dig_R::I=9, dig_z::I = Int(ceil(log10(N*d))), dig_S::I=13, color::Symbol=:cyan) where {I<:Int, T<:AbstractFloat}
      
      ϕ = packing_fraction(d, R, N, L)
      
@@ -246,10 +246,65 @@ function print_monitor_progress(max_Si, R, N::I, L, d::I, zs::Vector{I}, non_rat
     printstyled("__________________________________________________________________________\n\n", color=color)
 end
 
+"Print info about CALiPPSO progress, including new values of ``|s_i|``, density and some statistics of ``R``, statistics of constraints and contacts, forces, etc."
+function print_monitor_progress(max_Si::T, Rs::Vector{T}, L::T, d::I, zs::Vector{I}, non_rattlers::Vector{I}, n_constr::Vector{I}, iso_cond::Bool, f_mismatch::T, small_fs::Vector{T};
+     dig_R::I=9, dig_z::I = Int(ceil(log10(length(Rs)*d))), dig_S::I=13, color::Symbol=:cyan) where {I<:Int, T<:AbstractFloat}
+     
+     ϕ = packing_fraction(d, Rs, L)
+     N = length(Rs)
+     
+     Nnr = length(non_rattlers)
+     rattlers = setdiff(1:N, non_rattlers)
+     zs_rat = zs[rattlers]
+
+     # Statistics number of constraints
+     max_constr = maximum(n_constr); avg_constr = round(mean(n_constr), digits=2); std_constr = round(std(n_constr), digits=2)
+
+     # Parameters for printing output
+     max_Si_print = round(max_Si, digits = dig_S)
+     
+     Rmin = minimum(Rs); Ravg = mean(Rs); Rmax = maximum(Rs)
+     printstyled("\t Max |sᵢ| (stable particles) = ", max_Si_print ,"\n New  values of φ = ", round(ϕ, digits=dig_R)," and (Rₘᵢₙ, ⟨R⟩, Rₘₐₓ) = ", round.([Rmin, Ravg, Rmax],  digits=dig_R), "\n", bold=true)
+
+     if Nnr>0
+        zs_non_rat = zs[non_rattlers]
+        
+        if iso_cond
+            println("(Max, mean±std) constraints per particle per d: ", [max_constr, avg_constr, std_constr], "\t Isostatic: ", iso_cond, "\t (Mean, Max, total in rattlers) z = ", [round(mean(zs_non_rat), digits=dig_z), maximum(zs), sum(zs_rat) ] , "\t\tNon_rattlers= ", Nnr)
+        else
+            iso_gap = (d*(Nnr-1)+1) - 0.5*sum(zs_non_rat) 
+            println("(Max, mean±std) constraints per particle per d: ", [max_constr, avg_constr, std_constr], "\t Isostatic: ", iso_cond, ";  isostaticity gap = ", iso_gap, "\t (Mean, Max, total in rattlers) z = ", [round(mean(zs_non_rat), digits=dig_z), maximum(zs), sum(zs_rat) ] , "\t\tNon-rattlers= ", Nnr)
+        end
+
+     else
+        printstyled("All particles are rattlers!!\n", color=:yellow)
+        println("Max constraints per particle per d: ", max_constr, "\t Isostatic: NA", "\tNon-rattlers= ", 0, "\tTotal z of rattlers = ", sum(zs_rat))
+     end
+
+    printstyled("----------------------------------\n", color=color)
+    println("Force mismatch = ", f_mismatch)
+    println("Sample of smallest forces = \t", small_fs)
+    
+    printstyled("__________________________________________________________________________\n\n", color=color)
+end
+
 "Test whether there is an overlap between particles. Also info about displacements 
 (in the possible overlapping pair) is given."
-function check_for_overlaps(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, S::Matrix{T}, t::Int64, possible_neighbours::Vector{Vector{Int64}}; tol_overlap::T=default_tol_overlap) where {d, T<:Real}
+function check_for_overlaps(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, S::Matrix{T}, t::Int64, possible_neighbours::Vector{Vector{Int64}}; tol_overlap::T=default_tol_overlap) where {d, T<:AbstractFloat}
     overlap, message, particles = check_for_overlaps(Xs, R, tol_overlap)
+    if overlap
+        i, j = particles
+        nghs_i = possible_neighbours[i]; nghs_j = possible_neighbours[j]
+        Si = S[:, i]; Sj = S[:, j];
+
+        message *= "\n Info particle $i: S = $Si;\t particles inducing constraints on it $(nghs_i)"
+        message *= "\n Info particle $j: S = $Sj;\t particles inducing constraints on it $(nghs_j)"
+        error("At iteration $t: "*message)
+    end
+end
+
+function check_for_overlaps(Xs::Vector{SVector{d, PeriodicNumber{T}}}, Rs::Vector{T}, S::Matrix{T}, t::Int64, possible_neighbours::Vector{Vector{Int64}}; tol_overlap::T=default_tol_overlap) where {d, T<:AbstractFloat}
+    overlap, message, particles = check_for_overlaps(Xs, Rs, tol_overlap)
     if overlap
         i, j = particles
         nghs_i = possible_neighbours[i]; nghs_j = possible_neighbours[j]
@@ -264,7 +319,7 @@ end
 
 
 "Print that CALiPPSO has converged, and some basic info (final ϕ, number of non rattlers, etc.)."
-function print_converged(t::I, status, sqrΓ, max_Si, R, N::I, L, d::I, n_constr::Vector{I}, Nnr::I; dig_R::I=8, dig_S::I=15, color::Symbol=:green) where {I<:Int}
+function print_converged(t::I, status, sqrΓ::T, max_Si::T, R::T, N::I, L::T, d::I, n_constr::Vector{I}, Nnr::I; dig_R::I=8, dig_S::I=15, color::Symbol=:green) where {I<:Int, T<:AbstractFloat}
     ϕ = packing_fraction(d, R, N, L)
 
      # Statistics number of constraints
@@ -272,6 +327,19 @@ function print_converged(t::I, status, sqrΓ, max_Si, R, N::I, L, d::I, n_constr
 
     printstyled("\n\n\tCALiPPSO converged! \t \t Status of last LP optimization: ", status, "\n", bold=true, color=color)
     printstyled("Iterations to convergence = ", t, ",\t√Γ-1 = ", sqrΓ-1, ",\t Max displacement = ", round(max_Si, digits=dig_S), ",\t (ϕ, R) = ",  round.([ϕ, R], digits=dig_R), "\n", bold=true, color=color)
+    println("\tNon_rattlers= ", Nnr, "\t% of rattlers = ", round(100*(1-Nnr/N), digits=3),  "\t(Max, mean±std) constraints per particle per d: ", [max_constr, avg_constr, std_constr])
+end
+
+function print_converged(t::I, status, sqrΓ::T, max_Si::T, Rs::Vector{T}, N::I, L::T, d::I, n_constr::Vector{I}, Nnr::I; dig_R::I=8, dig_S::I=15, color::Symbol=:green) where {I<:Int, T<:AbstractFloat}
+    ϕ = packing_fraction(d, Rs, L)
+    # Statistics of radii
+    Rmin = minimum(Rs); Ravg = mean(Rs); Rmax = maximum(Rs)
+
+     # Statistics number of constraints
+     max_constr = maximum(n_constr); avg_constr = round(mean(n_constr), digits=2); std_constr = round(std(n_constr), digits=2)
+
+    printstyled("\n\n\tCALiPPSO converged! \t \t Status of last LP optimization: ", status, "\n", bold=true, color=color)
+    printstyled("Iterations to convergence = ", t, ",\t√Γ-1 = ", sqrΓ-1, ",\t Max displacement = ", round(max_Si, digits=dig_S), ",\t Final  values of φ = ", round(ϕ, digits=dig_R), " and (Rₘᵢₙ, ⟨R⟩, Rₘₐₓ) = ", round.([Rmin, Ravg, Rmax],  digits=dig_R), "\n", bold=true, color=color)
     println("\tNon_rattlers= ", Nnr, "\t% of rattlers = ", round(100*(1-Nnr/N), digits=3),  "\t(Max, mean±std) constraints per particle per d: ", [max_constr, avg_constr, std_constr])
 end
 
@@ -287,11 +355,11 @@ isostaticity of the packing is assessed. Besides, some information about perform
 
 See also [`print_converged`](@ref), [`print_monitor_progress`](@ref).
 """
-function print_info_convergence(final_packing::MonoPacking{d, T}, isostatic::Bool, time, memory; digs::Int64=2) where {d, T<:Float64}
+function print_info_convergence(final_packing::AbstractPacking{d, T}, isostatic::Bool, time, memory; digs::Int64=2) where {d, T<:AbstractFloat}
     
     isostatic ? (col_p = :green) : (col_p = :magenta)
 
-    N = length(final_packing.Particles)
+    N = length(final_packing)
     non_rattlers = get_non_rattlers(final_packing); Nnr = length(non_rattlers)
     rattlers = setdiff(1:N, non_rattlers)
     zs = get_coordination_number(final_packing, only_stable=false)
@@ -316,8 +384,7 @@ end
     check_for_overlaps(packing::MonoPacking, t::Int64, possible_neighbours::Vector{Vector{Int64}}, jammed::Bool; tolerance=default_tol_overlap)
 Check for overlaps in all the particles of a given packing, obtained after CALiPPSO converged.
 """
-check_for_overlaps(packing::MonoPacking)
-function check_for_overlaps(packing::MonoPacking, t::Int64, possible_neighbours::Vector{Vector{Int64}}, jammed::Bool; tolerance=default_tol_overlap)
+function check_for_overlaps(packing::AbstractPacking, t::Int64, possible_neighbours::Vector{Vector{Int64}}, jammed::Bool; tolerance=default_tol_overlap)
     printstyled("Checking for overlaps after convergence...\n", color=:yellow, bold=false)
 
     overlap, message, particles_indices =check_for_overlaps(packing, tolerance)
@@ -415,9 +482,10 @@ bounds_and_cutoff(5.0, 0.52, 3.0, 3)
 
 """
     add_non_overlapping_constraints!(model::JuMP.Model, Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, ℓ::T, images::Vector{SVector{d, T}})
+    add_non_overlapping_constraints!(model::JuMP.Model, Xs::Vector{SVector{d, PeriodicNumber{T}}}, Rs::Vector{T}, ℓ::T, images::Vector{SVector{d, T}})
 
 Assign the linearized non-overlapping constraints to 'model', according to particle 
-positions, 'Xs', and radius, 'R'.
+positions, 'Xs', and radius, 'R' (or radii 'Rs' in polydisperse systems).
 
 A pair of particles is included in the set of constraints only if their distance is smaller 
 than the cutoff 'ℓ'. Because the MIC distance is considered, also the set of virtual 
@@ -434,7 +502,7 @@ constraints and indices associated to particles of index greater than 'i'.
 See also [`MIC_distance`](@ref), [`MIC_vector`](@ref), [`@constraint`](https://jump.dev/JuMP.jl/stable/reference/constraints/#JuMP.@constraint), 
 [`solve_LP_instance`](@ref), [`fine_tune_forces!`](@ref).
 """
-function add_non_overlapping_constraints!(model::JuMP.Model, Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, ℓ::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}}) where {d, T<:Float64}
+function add_non_overlapping_constraints!(model::JuMP.Model, Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, ℓ::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}}) where {d, T<:AbstractFloat}
     #TODO: check if the method of distances_between_centers(centers, images) yields a more efficient function. In such case, the indices of images are also computed from the beginning
     
     N = length(Xs); # number of particles
@@ -466,11 +534,43 @@ function add_non_overlapping_constraints!(model::JuMP.Model, Xs::Vector{SVector{
     return constraints, nearby_particles_list
 end
 
+function add_non_overlapping_constraints!(model::JuMP.Model, Xs::Vector{SVector{d, PeriodicNumber{T}}}, Rs::Vector{T}, ℓ::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}}) where {d, T<:AbstractFloat}
+    #TODO: check if the method of distances_between_centers(centers, images) yields a more efficient function. In such case, the indices of images are also computed from the beginning
+    
+    N = length(Xs); # number of particles
+    # access the design variables of 'model' (S corresponds to the d*N array of the displacements; the inflation factor determines how much the radius of each particle is increased)
+    S⃗ = model[:S];  Γ = model[:inflation_factor]
+
+    # Because we're using ordered pairs [i.e. (i,j) with (i<j)] to enumerate the constraints, only N-1 entries are needed in the following arrays
+    constraints = Vector{Vector{ConstraintRef}}(undef, N-1) # initialization of vector for storing the lists of constraints
+    nearby_particles_list = Vector{Vector{Int64}}(undef, N-1) # initialization of vector for storing the lists of particles inducing constraints
+
+    # We will only consider nearby particles --i.e. particles inside a neighbourhood of size 'ℓ' around-- as possible neighbours
+    # And hence, the non-overlapping constraint will only be applied to this smaller set of particles
+    for i in 1:N-1::Int
+        #NB. We reduce the number of constraints, by considering neighbours with index >i.
+        neigh_parts = collect(i+1:N)[distances[i+1:N, i] .<= ℓ]  # indices of particles whose distance to i is smaller than ℓ
+        Nn = length(neigh_parts) # number of particles nearby i
+        nearby_particles_list[i] = neigh_parts; # store the list of nearby particles
+        
+        constrs_part_i = Vector{ConstraintRef}(undef, Nn) # temporary array to store the constraints associated to particle i
+        # this loop adds the relevant constraints of particle i to 'model' AND stores them in 'constrs_part_i'
+        for (num, j) in enumerate(neigh_parts)
+            # to determine the vector joining Xi with a given neighbour we used the MIC distance
+            Xij, mic_image = MIC_vector(Xs[i], Xs[j], images)
+            constrs_part_i[num] = @constraint(model, 2*dot(Xij, S⃗[:, j]-S⃗[:, i]) + Γ*(Rs[i]+Rs[j])^2 <= norm(Xij)^2 )
+        end
+        constraints[i] = constrs_part_i #store the list of constraints of particle i as the i-th entry of 'constraints'
+
+    end
+    return constraints, nearby_particles_list
+end
+
 
 """
     solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, sqrΓ::T, ℓ0::T, images::Vector{SVector{d, T}}; <keyword arguments>)
     
-Optimize a LP instance defined by the particles positions 'Xs' and radius 'R'.
+Optimize a LP instance defined by the particles positions 'Xs' and radius 'R' (or radii 'Rs' in polydisperse systems).
 
 The function creates the necessary JuMP model (using `direct_model`), defines the associated 
 design variables, assigns all the non-overlapping constraints, the bounds on the 
@@ -557,6 +657,64 @@ function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, ℓ:
     return S⃗, Γ, constraints, possible_neighs, t_solve, status
 end
 
+function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, Rs::Vector{T}, ℓ::T, s_bound::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}};
+    solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
+    verbose_LP_info::Bool=false, dig_S::Int=13) where {d, T<:Float64}
+        
+    N = length(Xs); # number of particles
+    
+    #= The optimizer of the model is constructed, using the Optimizer of the solver chosen
+     and (possibly) other parameters needed to control the precision, turn-off verbose output, etc.
+     These parameters cannot be fixed by using the 'set_optimizer_attributes' function of JuMP, 
+     but are instead determined as arguments passed when calling the optimizer.
+     Now, the problem is that different solvers have different ways of passing such arguments; 
+     we thus end up with the following rather ugly implementation.
+     *** Note that you'll might need to add/modify the instance of the solver of your choice ***
+     (and recall to do the same in `fine_tune_forces!`) =#
+    if solver_args === nothing
+        optimizer = solver.Optimizer()
+    else
+        if Symbol(solver) == :Gurobi # calling the solver with Gurobi.Env() to avoid that the license is retrieved every time a model is created
+            optimizer = solver.Optimizer(solver_args)
+        elseif Symbol(solver)==:GLPK || Symbol(solver)==:Hypatia # for these solvers, some parameters are fixed as keyword args of Optimizer
+            optimizer = solver.Optimizer(;solver_args...)
+        else # for any other solver, no argument passing has been implemented, so they should be called with 'solver_args=nothing'a
+            error("Passing arguments to the Optimizer of : ", Symbol(solver), " is not defined!\n Try using 'solver_args=nothing' when calling `solve_LP_instance` or `produce_jammed_configuration!`.")
+        end
+    end
+    #### Once the optimizer has been chosen, the model is finally created
+    # LP_model = direct_model(optimizer) # this way of creating models is more efficient but does *not* work with HiGHS (but it does with Gurobi)
+    # LP_model = Model(() -> optimizer; bridge_constraints = false) # create a model with the solver defined by 'optimizer'; also fails with HiGHS
+    LP_model = Model(() -> optimizer) # create a model with the solver defined by 'optimizer'
+    set_optimizer_attributes(LP_model, solver_attributes...) # pass the optimizer attributes to the model
+    
+    @variable(LP_model, inflation_factor>=1, base_name="Γ") # Declare inflation factor design variable
+    @variable(LP_model, -s_bound <= S[μ=1:d, i=1:N] <= s_bound, base_name="S⃗"); # Declare displacements design variables (BOUNDED)
+    fix.(S[:, N], 0.0; force=true) # Fix one displacement vector so the center of mass remains constant
+    
+    # add the full list of non-overlapping to the model
+    constraints, possible_neighs  = add_non_overlapping_constraints!(LP_model, Xs, Rs, ℓ, images, distances) 
+    
+    @objective(LP_model, Max, inflation_factor) # define the objective of the model (i.e. maximize the inflation factor)
+    optimize!(LP_model) # solve the LP instance, i.e. find the optimal solution (consistent with the constraints imposed above)
+    t_solve = solve_time(LP_model) #store the  time required for the optimization
+    
+    Γ = JuMP.value(inflation_factor)
+    status = termination_status(LP_model)
+    S⃗ = JuMP.value.(S)
+    max_Si_print = round(maximum(abs.(S⃗)), digits=dig_S)
+
+    # if verbose option is true, show info of the values of ℓ and bound on displacements used when creating the LP instance
+    if verbose_LP_info
+        R_max = maximum(Rs)
+        println("LP instance generated with (ℓ, ℓ/Rₘₐₓ) = ", [ℓ, ℓ/R_max], "\t and bound on (|s_i|, |s_i|/Rₘₐₓ) = ", [s_bound, s_bound/R_max])
+        println("Status: ", status, "; \t time solve LP instance (s) = ", round(t_solve, digits=4) )
+        printstyled("\t Optimal values: \t √Γ-1 = ", sqrt(Γ)-1, ",\t max |sᵢ| (all particles) = ", max_Si_print, "\n", bold=true)
+    end
+    
+    return S⃗, Γ, constraints, possible_neighs, t_solve, status
+end
+
 
 """
     network_of_contacts(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, images::Vector{SVector{d, T}}) where {d, T<:Float64}
@@ -582,12 +740,12 @@ we assume i>j.
 
 See also [`add_non_overlapping_constraints!`](@ref), [`@constraint`](https://jump.dev/JuMP.jl/stable/reference/constraints/#JuMP.@constraint), [`optimize!`](https://jump.dev/JuMP.jl/stable/reference/solutions/#JuMP.optimize!), [`solve_LP_instance`](@ref).
 """
-function network_of_contacts(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, images::Vector{SVector{d, T}}; zero_force::T=default_tol_zero_forces) where {d, T<:Float64}
+function network_of_contacts(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, images::Vector{SVector{d, T}}; zero_force::T=default_tol_zero_forces) where {d, T<:AbstractFloat}
     
     N = length(Xs) ; 
 
     particles_dual_contact = Vector{Vector{Int64}}(undef, N)  # particles linked by dual variables
-    forces_dual = Vector{Vector{Float64}}(undef, N) # values of forces magnitudes
+    forces_dual = Vector{Vector{Float64}}(undef, N) # values of forces magnitudes, from dual variables
 
     all_contacts = Vector{Vector{SVector{d, T}}}(undef, N)
 
@@ -602,8 +760,8 @@ function network_of_contacts(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constrai
 
         contact_vecs = Vector{SVector{d, T}}(undef, m)
 
-        for (ind, particle) in enumerate(particles_dual_contact[i])
-            contact_vec, img_ind = MIC_vector(Xs[i], Xs[particle], images)
+        for (ind, j) in enumerate(particles_dual_contact[i])
+            contact_vec, img_ind = MIC_vector(Xs[i], Xs[j], images)
             contact_vecs[ind] = contact_vec
         end
         all_contacts[i] = contact_vecs
@@ -628,38 +786,107 @@ function network_of_contacts(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constrai
     return all_contacts, forces_dual, particles_dual_contact
 end
 
+function network_of_contacts(Xs::Vector{SVector{d, PeriodicNumber{T}}}, Rs::Vector{T}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, images::Vector{SVector{d, T}}; zero_force::T=default_tol_zero_forces) where {d, T<:AbstractFloat}
+    
+    N = length(Xs) ; 
+
+    particles_dual_contact = Vector{Vector{Int64}}(undef, N)  # particles linked by dual variables
+    forces_dual = Vector{Vector{Float64}}(undef, N) # values of forces magnitudes, from dual variables
+
+    all_contacts = Vector{Vector{SVector{d, T}}}(undef, N)
+
+    # In this first loop we construct the set of contact forces, neighbours, etc. as ordered pairs ([i,j] with i<j)
+    for i in 1:N-1::Int
+        neighs=neighbours_list[i]; #list of particles in neighbourhood of 'i'; the particles in this array are only *possible* neighbours
+        real_contacts = findall(x-> x>zero_force, shadow_price.(constraints[i])) # indices of non-zero dual variables of the respective list of constraints of particle i
+        m=length(real_contacts); #N_contacts[i] = m # number of dual contacts (storing it)
+    
+        particles_dual_contact[i] = neighs[real_contacts] # storing the indices of real contacts
+        λs_i = shadow_price.(constraints[i])[real_contacts]
+
+        contact_vecs = Vector{SVector{d, T}}(undef, m)
+
+        for (ind, j) in enumerate(particles_dual_contact[i])
+            contact_vec, img_ind = MIC_vector(Xs[i], Xs[j], images)
+            contact_vecs[ind] = normalize(contact_vec)
+            λs_i[ind] *= (Rs[i]+Rs[j])
+        end
+        all_contacts[i] = contact_vecs
+        forces_dual[i] = λs_i
+    end
+    # This ends the process of obtaining  the list of contacts (as ordered pairs [i,j], for i<j). This means 'reaction' forces are NOT counted
+    # Create the (empty) lists of contact vectors, forces,etc. of particle N,  so they can be referenced to, in the next loop
+    all_contacts[N] = SVector{d, T}[] ; particles_dual_contact[N] = Vector{Int64}[] ;  forces_dual[N] = Vector{Float64}[]
+
+    # Here we also obtain the contacts of particles for which i>j; i.e. counting reaction forces
+    for i in 1:N
+        for j in (1:i-1)
+            f_ind = findfirst(isequal(i), particles_dual_contact[j])
+            if f_ind !== nothing
+                push!(particles_dual_contact[i], j) 
+                push!(forces_dual[i], forces_dual[j][f_ind]) 
+
+                contact_vec, img_ind = MIC_vector(Xs[i], Xs[j], images)
+                push!(all_contacts[i], normalize(contact_vec))
+            end
+        end
+    end
+    return all_contacts, forces_dual, particles_dual_contact
+end
+
 
 @doc raw"""
-    MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, R::T, images::Vector{SVector{d, T}}, jammed::Bool=false; <keyword arguments>) where {d, T<:Float64}
+    MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, R::T, images::Vector{SVector{d, T}}, jammed::Bool=false; <keyword arguments>) where {d, T<:AbstractFloat}
 
 Construct a `MonoPacking` from the set of particles' position ('Xs'), set of all constraints defined in the LP model ('constraints'), list of *possible* neighbours ('neighbours_list'), and virtual images ('images') needed for the MIC contact vectors. "
 """
 MonoPacking(Xs::Vector, constraints::Vector, neighbours::Vector, R::Real)
-function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, R::T, images::Vector{SVector{d, T}}, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces, verbose::Bool=true) where {d, T<:Float64}
+function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, R::T, images::Vector{SVector{d, T}}, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces, verbose::Bool=true) where {d, T<:AbstractFloat}
     
-    N = length(Xs); # System's size 
+    # N = length(Xs); # System's size 
     all_contacts, forces_dual, particles_dual_contact = network_of_contacts(Xs, constraints, neighbours_list, images, zero_force=zero_force)
 
-    particles = Vector{MonoParticle{d,Float64}}(undef, N)
-    for i in 1:N
-        particles[i] = MonoParticle(Xs[i], all_contacts[i], forces_dual[i], particles_dual_contact[i])
-    end
+    # particles = Vector{MonoParticle{d,Float64}}(undef, N)
+    # for i in eachindex(Xs)
+    #     particles[i] = MonoParticle(Xs[i], all_contacts[i], forces_dual[i], particles_dual_contact[i])
+    # end
+    particles = [MonoParticle(Xs[i], all_contacts[i], forces_dual[i], particles_dual_contact[i]) for i in eachindex(Xs)]
 
     return MonoPacking(particles, R, jammed; tol_mechanical_equilibrium=tol_mechanical_equilibrium, verbose=verbose)
 end
 
+@doc raw"""
+    PolyPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, Rs::Vector{T}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, R::T, images::Vector{SVector{d, T}}, jammed::Bool=false; <keyword arguments>) where {d, T<:AbstractFloat}
+
+Construct a `PolyPacking` from the set of particles' position ('Xs'), radii ('Rs'), set of all constraints defined in the LP model ('constraints'), list of *possible* neighbours ('neighbours_list'), and virtual images ('images') needed for the MIC contact vectors. "
+"""
+function PolyPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, Rs::Vector{T}, images::Vector{SVector{d, T}}, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces, verbose::Bool=true) where {d, T<:AbstractFloat}
+    
+    # N = length(Xs); # System's size 
+    all_contacts, forces_dual, particles_dual_contact = network_of_contacts(Xs, Rs, constraints, neighbours_list, images, zero_force=zero_force)
+
+    # particles = Vector{Particle{d,Float64}}(undef, N)
+    # for i in eachindex(Xs)
+    #     particles[i] = Particle(Xs[i], Rs[i], all_contacts[i], forces_dual[i], particles_dual_contact[i])
+    # end
+    particles = [Particle(Xs[i], Rs[i], all_contacts[i], forces_dual[i], particles_dual_contact[i]) for i in eachindex(Xs)]
+
+    return PolyPacking(particles, jammed; tol_mechanical_equilibrium=tol_mechanical_equilibrium, verbose=verbose)
+end
 
 """
     update_packing_forces!(Packing::MonoPacking{d,T}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, images::Vector{SVector{d, T}}; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium) where {d, T<:Float64}
+    update_packing_forces!(Packing::PolyPacking{d,T}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, images::Vector{SVector{d, T}}; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium) where {d, T<:Float64}
 
-Update the `forces` field of each `MonoParticle` in 'Packing', from a new set of 'constraints'.
+Update the `forces` field of each `MonoParticle` in 'Packing',  (or the analogous field of 
+each `Particle` in case of a polydispersity) from a new set of 'constraints'.
 
 The arguments needed are the ones needed to call `network_of_contacts`, which is the main 
 function used here. The kwarg 'tol_mechanical_equilibrium' defines the tolerance to assess 
 whether the force balance condition is satisfied in each particle, and consequently update 
 the `mechanical_equilibrium` field of 'Packing'.
 
-See also [`network_of_contacts`](@ref), [`MonoPacking`](@ref), [`total_force`](@ref),
+See also [`network_of_contacts`](@ref), [`MonoPacking`](@ref), [`PolyPacking`](@ref), [`total_force`](@ref),
 [`fine_tune_forces!`](@ref).
 """
 function update_packing_forces!(Packing::MonoPacking{d,T}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, images::Vector{SVector{d, T}}; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::Float64= default_tol_zero_forces) where {d, T<:Float64}
@@ -668,6 +895,29 @@ function update_packing_forces!(Packing::MonoPacking{d,T}, constraints::Vector{V
     Xs = get_positions(Packing)
 
     all_contacts, all_forces, all_neighbours = network_of_contacts(Xs, constraints, neighbours_list, images; zero_force=zero_force)
+    for (i, particle) in enumerate(particles)
+        particle.contact_vecs = all_contacts[i]
+        particle.forces = all_forces[i]
+        particle.neighbours = all_neighbours[i]
+    end
+
+    # test whether the mechanical equilibrium condition is satisfied for all particles, at least within a 'tol_mechanical_equilibrium' precision
+    f_mismatch = maximum(norm.(total_force(Packing)))
+    (f_mismatch>tol_mechanical_equilibrium) ? (mech_eq=false) : (mech_eq=true)
+    # if this is not the case throw a warning,
+    mech_eq || ( @warn "Force balance condition is NOT satisfied! Max force mismatch = $f_mismatch.")
+
+    Packing.mechanical_equilibrium = mech_eq # update the field assessing the force balance
+end
+
+
+function update_packing_forces!(Packing::PolyPacking{d,T}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, images::Vector{SVector{d, T}}; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::Float64= default_tol_zero_forces) where {d, T<:Float64}
+
+    particles = Packing.Particles
+    Xs = get_positions(Packing)
+    Rs = get_radii(Packing)
+
+    all_contacts, all_forces, all_neighbours = network_of_contacts(Xs, Rs, constraints, neighbours_list, images; zero_force=zero_force)
     for (i, particle) in enumerate(particles)
         particle.contact_vecs = all_contacts[i]
         particle.forces = all_forces[i]
@@ -765,7 +1015,77 @@ function fine_tune_forces!(Packing::MonoPacking{d, T}, force_mismatch::T, ℓ::T
     
     println("LP instance generated with (ℓ, ℓ/R) = ", [ℓ, ℓ/R], "\t and UNbounded displacements")
     
-    t_solve = @elapsed optimize!(LP_model)
+    optimize!(LP_model)
+    t_solve = solve_time(LP_model) #store the  time required for the optimization
+    status = termination_status(LP_model)
+    #NB: We're NOT updating the positions nor the size. This is just to fine tune the value of the dual variables so a better estimation of the forces is achieved
+    update_packing_forces!(Packing, constraints, possible_neighs, images; tol_mechanical_equilibrium=tol_mechanical_equilibrium, zero_force=zero_force)
+
+    printstyled("Max optimal displacement = ", maximum(abs.(JuMP.value.(S[:, get_non_rattlers(Packing)]))), "\t √Γ-1 = ", sqrt(JuMP.value(inflation_factor))-1, "\n", bold=true)
+    println("Status of last LP optimization: ", status)
+
+    isostatic, Nc, Nnr = is_isostatic(Packing)
+    if !isostatic
+        printstyled("Obtained a NON-isostatic packing...\t", color=:yellow)
+        rattlers = get_rattlers(Packing)
+        zs = get_coordination_number(Packing)
+        println("Total z in rattlers = ", sum(zs[rattlers]) )
+    end
+    
+    printstyled("Force mismatch after final optimization = ", maximum(norm.(total_force(Packing))), "\n\n", bold=true)
+
+    return t_solve, isostatic, Nc, Nnr, status
+end
+
+
+function fine_tune_forces!(Packing::PolyPacking{d, T}, force_mismatch::T, ℓ::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}};
+    solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
+    tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T = default_tol_zero_forces) where {d, T<:Float64}
+    
+    Xs = get_positions(Packing) ; N = length(Xs)        
+    Rs = get_radii(Packing)
+    rattlers = get_rattlers(Packing)
+
+    printstyled("\nForce balance condition not met yet; max force mismatch = ", force_mismatch, "\n", color=:yellow, bold=true)
+    println("Performing a last LP optimization to improve force balance.")
+
+    #= The optimizer of the model is constructed, using the Optimizer of the solver chosen
+     and (possibly) other parameters needed to control the precision, turn-off verbose output, etc.
+     These parameters cannot be fixed by using the 'set_optimizer_attributes' function of JuMP, 
+     but are instead determined as arguments passed when calling the optimizer.
+     Now, the problem is that different solvers have different ways of passing such arguments; 
+     we thus end up with the following rather ugly implementation.
+     *** Note that you'll might need to add/modify the instance of the solver of your choice ***
+     (and recall to do the same in `solve_LP_instance`) =#
+    if solver_args === nothing
+        optimizer = solver.Optimizer()
+    else
+        if Symbol(solver) == :Gurobi # calling the solver with Gurobi.Env() to avoid that the license is retrieved every time a model is created
+            optimizer = solver.Optimizer(solver_args)
+        elseif Symbol(solver)==:GLPK || Symbol(solver)==:Hypatia # for these solvers, some parameters are fixed as keyword args of Optimizer
+            optimizer = solver.Optimizer(;solver_args...)
+        else # for any other solver, no argument passing has been implemented, so they should be called with 'solver_args=nothing'a
+            error("Passing arguments to the Optimizer of : ", Symbol(solver), " is not defined!\n Try using 'solver_args=nothing' when calling `fine_tune_forces!` or `produce_jammed_configuration!`.")
+        end
+    end
+    #### Once the optimizer has been chosen, the model is finally created
+    # LP_model = direct_model(optimizer) # this way of creating models is more efficient but does *not* work with HiGHS (but it does with Gurobi)
+    # LP_model = Model(() -> optimizer; bridge_constraints = false) # create a model with the solver defined by 'optimizer'; also fails with HiGHS
+    LP_model = Model(() -> optimizer) # create a model with the solver defined by 'optimizer'
+    set_optimizer_attributes(LP_model, solver_attributes...) # pass the optimizer attributes to the model
+    
+    @variable(LP_model, inflation_factor, base_name="Γ") # Declare growth factor design variable
+    @variable(LP_model, S[μ=1:d, i=1:N], base_name="S⃗"); # Declare displacements design variables (UNbounded)
+    fix.(S[:, N], 0.0; force=true) # Fix one displacement vector so the center of mass remains constant
+    
+    constraints, possible_neighs  = add_non_overlapping_constraints!(LP_model, Xs, Rs, ℓ, images, distances)
+    
+    @objective(LP_model, Max, inflation_factor)
+    
+    println("LP instance generated with (ℓ, ℓ/Rₘₐₓ) = ", [ℓ, ℓ/maximum(Rs)], "\t and UNbounded displacements")
+    
+    optimize!(LP_model)
+    t_solve = solve_time(LP_model) #store the  time required for the optimization
     status = termination_status(LP_model)
     #NB: We're NOT updating the positions nor the size. This is just to fine tune the value of the dual variables so a better estimation of the forces is achieved
     update_packing_forces!(Packing, constraints, possible_neighs, images; tol_mechanical_equilibrium=tol_mechanical_equilibrium, zero_force=zero_force)
@@ -1020,9 +1340,8 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
 
         iter+=1
         if iter>max_iters 
-            #=if the maximal number of iterations has been reached, print the current status of inflation factor (sqrΓ)
-                and maximum displacement (max_Si).
-                Then terminate the main loop. No errors are thrown. =#
+            #=if the maximal number of iterations has been reached, print the current status of inflation factor (sqrΓ) and maximum displacement (max_Si).
+            Then terminate the main loop. No errors are thrown. =#
             print_failed_max_iters(max_iters, sqrΓ, tol_Γ_convergence, max_Si, tol_S_convergence)
             converged = false
             break
@@ -1159,19 +1478,194 @@ function produce_jammed_configuration!(Xs::Matrix{T}, R::T, L::T=1.0; kwargs...)
     produce_jammed_configuration!(PeriodicVectors(Xs, L), R; kwargs...)
 end
 
+function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}, Rs::Vector{T};
+    ℓ0::T=4.0*maximum(Rs), sqrΓ0::Real=1.01, thresholds_bounds::Tuple{T, T}=(5e-4, 1e-5), sbound::T=0.01,
+    solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
+    max_iters::I=default_max_iterations, tol_Γ_convergence::T=default_tol_Γ_convergence, tol_S_convergence::T=default_tol_displacements_convergence, tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces,
+    tol_overlap::T=default_tol_overlap, non_iso_break::I=max_iters, 
+    ratio_sℓ_update::T=0.1,
+    verbose::Bool=true, monitor_step::I=10, initial_monitor::I=monitor_step, interval_overlaps_check::I=10, initial_overlaps_check::I=initial_monitor) where {d, T<:Float64, I<:Int}
+
+    N = length(Xs)
+    L = Xs[1][1].L
+    Rmax, i_max = findmax(Rs) # initial value of the largest radius, and its respective index. Note that 'i_max' should remain unchanged
+
+    #Sanity check that no overlaps are present in the initial configuration
+    overlap, message, particles = check_for_overlaps(Xs, Rs, tol_overlap)
+    overlap && error("Overlap found in the initial configuration!!\n"*message) 
+
+    verbose && printstyled("\n Producing a jammed configuration of $N particles inside a $d-dimensional box of size $L:\n\n", bold=true)
+    config_images = generate_system_images(d, L)
+    #Initialization values
+    sqrΓ=sqrΓ0; iter=0;  max_Si=1.0;  non_iso_count = 0; converged = true
+    Nnr_iter = 0; 
+    update_distances= false; S⃗_cum = svectors(zeros(d, N-1), Val(d))
+    distances = distances_between_centers(Xs)
+    #Arrays to store the output
+    constraints = Vector{Vector{ConstraintRef}}(undef, N-1); possible_neighs = Vector{Vector{Int64}}(undef, N-1)
+    Γs_vs_t = zeros(max_iters+1); smax_vs_t = L*ones(max_iters+1); iso_vs_t = falses(max_iters+1); solve_ts = similar(Γs_vs_t); # +1 because it could be that an additional LP step might be needed after convergence to guarantee force balance
+
+    #######################################################################################
+    # **** Here CALiPPSO begins, in order to obtain the jammed configuration ****
+    # We're timing the full mainloop process and also storing the allocated memory using '@timed'.
+    #######################################################################################
+    exec_stats = @timed while (sqrΓ-1>tol_Γ_convergence || max_Si>tol_S_convergence)
+
+        iter+=1
+        if iter>max_iters 
+            #=if the maximal number of iterations has been reached, print the current status of inflation factor (sqrΓ) and maximum displacement (max_Si).
+            Then terminate the main loop. No errors are thrown. =#
+            print_failed_max_iters(max_iters, sqrΓ, tol_Γ_convergence, max_Si, tol_S_convergence)
+            converged = false
+            break
+        end
+
+        # when to show info about the current LP instance, solution, and other variables to monitor the progress of CALiPPSO
+        if verbose && any([iter<=initial_monitor,  iter%monitor_step==0, iter%interval_overlaps_check==0, iter<=initial_overlaps_check])
+            verbose_LP_info = true
+            println("Iteration: ", iter)
+        else
+            verbose_LP_info = false
+        end
+
+        ℓ, s_bound = bounds_and_cutoff(sqrΓ, Rs[i_max], ℓ0, d; thresholds=thresholds_bounds, sbound=sbound)
+        s_update = ratio_sℓ_update*ℓ/sqrt(d)
+
+        # obtain the optimal value of displacements, inflation factor, relevant constraints, and other quantities from the LP optimization
+        S⃗, Γ, constraints, possible_neighs, t_solve, status = solve_LP_instance(Xs, Rs, ℓ, s_bound, config_images, distances; verbose_LP_info=verbose_LP_info, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args)
+        
+        # track the force balance in the current iteration or not 
+        if verbose  && (iter<=initial_monitor || iter%monitor_step==0)
+            f_mismatch, small_fs = monitor_force_balance(Xs, constraints, possible_neighs, config_images; zero_force=zero_force)
+        end
+
+        ### **** UPDATE CONFIGURATION WITH THE VALUES FROM LP OPTIMIZATION ****
+        sqrΓ = sqrt(Γ); Rs.*=sqrΓ; # update particles' size
+
+        # update particles' position with optimal displacements
+        for i in 1:N-1 #Since S⃗[:, N] = 0
+            # Xs[i] += SVector{d}(S⃗[:, i]) 
+            # It seems  that converting each column of S⃗ to an SVector takes more allocations than simply summing the elements without conversion
+            Xs[i] += S⃗[:, i]
+            S⃗_cum[i] += S⃗[:, i] # To monitor the total displacement of each particle
+        end
+
+        Γs_vs_t[iter] = sqrΓ; solve_ts[iter] = t_solve # store the optimal √Γ and solving time
+        
+        # obtain non-rattlers (important so only the displacements of these particles are considered)
+        non_rattlers_iter, Nnr_iter, zs_iter = obtain_non_rattlers(constraints, possible_neighs, d; zero_force=zero_force)
+        (Nnr_iter>0) && (max_Si = maximum(abs.(S⃗[:, non_rattlers_iter])); smax_vs_t[iter] = max_Si ); # update and store value of maximum displacement (max_Si) 
+
+        # What follows are just checks for overlaps, verifying isostaticity, printing some output at given steps, etc.
+        iso_cond = 0.5*sum(zs_iter[non_rattlers_iter]) == (d*(Nnr_iter-1)+1) # test whether the configuration is isostatic 
+        iso_vs_t[iter] = iso_cond; # store such info 
+    
+        if verbose && (iter<=initial_monitor || iter%monitor_step==0)
+            print_monitor_progress(max_Si, Rs, L, d, zs_iter, non_rattlers_iter, length.(constraints), iso_cond, f_mismatch, small_fs)
+        end
+
+        # determine whether distances between centers should be updated
+        update_distances!(S⃗_cum, s_update, Xs, distances, verbose=verbose_LP_info)
+
+        # count how many NON-isostatic *consecutive* solutions have been produced and print info if currently NON-isostatic
+        if iso_cond
+            non_iso_count = 0
+        else
+            non_iso_count +=1
+            
+            if !verbose || !(iter<=initial_monitor || iter%monitor_step==0) # in case the non-isostatic package was obtained in an iteration for which no printed output was expected
+                f_mismatch, small_fs = monitor_force_balance(Xs, constraints, possible_neighs, config_images; zero_force=zero_force)
+                bound_si = bounds_and_cutoff(sqrΓ, Rs[i_max], ℓ0, d; thresholds=thresholds_bounds, sbound=sbound)[2]
+
+                print_non_isostatic(d, zs_iter, non_rattlers_iter, iter, max_Si, bound_si, f_mismatch, small_fs)
+
+            else
+                print_non_isostatic(d, zs_iter, non_rattlers_iter)
+            end
+        end
+        
+
+        if non_iso_count>=non_iso_break
+            printstyled("Aborting the jamming process because too many iterations (=$non_iso_break) yield NON-isostatic configurations!!\n", color=:red, bold=true)
+            converged = false
+            break
+        end
+
+        # Check for overlaps during initial iterations, which might be the ones causing some troubles, or after a given interval
+        # Note that these are temporary configurations.
+        if iter%interval_overlaps_check==0 || iter<=initial_overlaps_check
+            check_for_overlaps(Xs, Rs, S⃗, iter, possible_neighs; tol_overlap=tol_overlap)
+        end
+    
+    end 
+    ###################
+    # THIS ENDS THE MAIN LOOP OF CALiPPSO
+    ###################
+    t_exec = exec_stats.time # running time of the main loop
+    bytes = exec_stats.bytes # memory allocated in the main loop
+
+    # The rest of the function analyses and stores the output of the CALiPPSO process, construct the final packing, and performs some last checks.
+    if non_iso_count<non_iso_break && iter<=max_iters # Check whether the final configuration corresponds to a jammed stated (i.e. convergence was achieved)
+        jammed = true
+        print_converged(iter, status, sqrΓ, max_Si, Rs, N, L, d, length.(constraints), Nnr_iter)
+    else # or CALiPPSO was terminated because 'max_iters' was reached, or too many consecutive non-isostatic solutions were obtained.
+        iter-=1
+        jammed = false
+    end
+
+    # CONSTRUCT THE FINAL PACKING
+    final_packing = PolyPacking(Xs, constraints, possible_neighs, Rs, config_images, jammed, tol_mechanical_equilibrium = tol_mechanical_equilibrium, verbose=verbose) 
+
+    isostatic, Nc, Nnr = is_isostatic(final_packing) # test whether such final packing is isostatic
+    force_mismatch = maximum(norm.(total_force(final_packing))) # test whether such final packing is in mechanical equilibrium
+
+    ## if there is a (relatively) large force mismatch, perform a last LP optimizations so the force balance condition is met more accurately
+    if force_mismatch>tol_mechanical_equilibrium 
+        ℓ, s_bound = bounds_and_cutoff(sqrΓ, Rs[i_max], ℓ0, d; thresholds=thresholds_bounds, sbound=sbound)
+        fine_tune_stats = @timed begin
+
+            iter+=1
+            
+            t_solve, isostatic, Nc, Nnr, status = fine_tune_forces!(final_packing, force_mismatch, ℓ, config_images, distances; tol_mechanical_equilibrium=tol_mechanical_equilibrium, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, zero_force=zero_force)
+
+            solve_ts[iter] = t_solve; Γs_vs_t[iter] = 1.0; smax_vs_t[iter] = 0.0; iso_vs_t[iter] = isostatic # store time, √Γ, and if isostatic of this last iteration.
+        end
+        t_exec += fine_tune_stats.time
+        bytes += fine_tune_stats.bytes
+    end
+
+    memory = bytes/(1024^3); # allocated memory in GB
+    conv_info = convergence_info(converged, iter, t_exec, memory, solve_ts[1:iter]) # store info about the CALiPPSO process and termination status
+
+    # when verbose output is on, print some extra info about the final packing.
+    verbose && print_info_convergence(final_packing, isostatic, t_exec, memory)
+
+    # check for overlaps in the FINAL packing
+    check_for_overlaps(final_packing, iter, possible_neighs, jammed; tolerance=tol_overlap)
+
+    return final_packing, conv_info, Γs_vs_t[1:iter], smax_vs_t[1:iter], iso_vs_t[1:iter]
+end
+
+
+function produce_jammed_configuration!(Xs::Matrix{T}, Rs::Vector{T}, L::T=1.0; kwargs...) where {T<:Float64}
+    produce_jammed_configuration!(PeriodicVectors(Xs, L), Rs; kwargs...)
+end
+
+
+
 """
-    network_of_contacts(packing::MonoPacking{d, T}, normalized::Bool=true) where {d, T<:Float64}
+    network_of_contacts(packing::AbstractPacking{d, T}, normalized::Bool=true) where {d, T<:Float64}
 
 Obtain the list of contact indices (as ordered pairs, i.e. [i, j] with j>i), the corresponding contact vectors, and magnitudes of contact forces, from a given 'packing'.
 
 This function is not used in the main CALiPPSO function (i.e. [`produce_jammed_configuration!`](@ref)), but 
 is useful for extracting the system's micro-structural information once the jammed packings have been generated.
 """
-function network_of_contacts(packing::MonoPacking{d, T}, normalized::Bool=true) where {d, T<:Float64}
+function network_of_contacts(packing::AbstractPacking{d, T}, normalized::Bool=true; only_stable::Bool=true) where {d, T<:AbstractFloat}
     particles = packing.Particles
     N = length(particles)
 
-    isostatic, Nc, Nnr = is_isostatic(packing)
+    isostatic, Nc, Nnr = is_isostatic(packing; only_stable=only_stable)
     non_rattlers = get_non_rattlers(packing);
     (length(non_rattlers) == Nnr) || @warn "Error occurred identifying non_rattlers, and hence also isostaticity"
 
@@ -1196,6 +1690,8 @@ function network_of_contacts(packing::MonoPacking{d, T}, normalized::Bool=true) 
 
     #=  Note that given that forces are obtained as the dual variables, in general, mechanical equilibrium is *only guaranteed if using the UNORMALIZED contact vectors*.
     However, by rescaling the magnitudes and vectors consistently the condition should hold, even for polydisperse packings and *away* from jamming.
+    However, the constructor defined for PolyPacking in terms of the constraints, already takes care of normalizing the contact vectors.
+    So in general, with such type of packings, this function should be called with normalized=false; at least with packings for which the convergence criteria were met.
     =#
     if normalized
         norm_cvecs = norm.(contact_vectors)
@@ -1205,6 +1701,7 @@ function network_of_contacts(packing::MonoPacking{d, T}, normalized::Bool=true) 
 
     return contact_indices, contact_vectors, forces_magnitudes
 end
+
 
 
 function precompile_main_function(solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args)
@@ -1252,8 +1749,7 @@ function precompile_main_function(solver::Module=default_solver, solver_attribut
     3.896005446471116	3.1189426973423595	3.607500484893032320
     3.653047120545878	0.25044725175167404	3.9730036860708076
     0.6334501855938681	1.1831285025320382	3.1868918476405756]))
-    cen_comp = PeriodicVectors(Xs_comp, Lt)
-
+    cen_comp = PeriodicVectors(Xs_comp, Lt);
     printstyled("\nThe usual output of the tested optimizers has been disabled by default. Change the value of OutputFlag (or verbose, or the corresponding field of the solver of your choice) if you want such information to be printed out.\n\n", color=:magenta)
 
     dists_comp = distances_between_centers(cen_comp)
@@ -1263,12 +1759,20 @@ function precompile_main_function(solver::Module=default_solver, solver_attribut
     MonoPacking(cen_comp, cons_comp, neighs_comp, rt, images_comp)
 
     Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration!(cen_comp, rt, ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= 1e-3, tol_S_convergence=1e-2, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=20 );
+    
+    network_of_contacts(Jpack_comp)
+
+    # Function for polydisperse packings. I'm using the same configuration, with 'Rs' a vector of equal elements
+    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration!(cen_comp, rt*ones(Nt), ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= 1e-3, tol_S_convergence=1e-2, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=20)
 
     network_of_contacts(Jpack_comp)
+
 
     printstyled("\n\n Calling the main function once again, to compile the second method.\n\n", color=:cyan)
     produce_jammed_configuration!(Xs_comp, rt, Lt; ℓ0=Lt, initial_monitor=0, monitor_step=0, verbose=false, tol_Γ_convergence=1e-3,tol_S_convergence=1e-2,
     solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=20 )
+
+    produce_jammed_configuration!(Xs_comp, rt*ones(Nt), Lt; ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= 1e-3, tol_S_convergence=1e-2, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=20)
 
     printstyled("\n________________________________________________________\n\tCompilation process finished! \t (with solver: ", Symbol(solver), ")\n________________________________________________________\n\n\n\n\n", color=:cyan, bold=true)
 end
