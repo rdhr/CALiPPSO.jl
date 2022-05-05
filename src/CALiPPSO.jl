@@ -638,7 +638,8 @@ end
 Construct a `MonoPacking` from the set of particles' position ('Xs'), set of all constraints defined in the LP model ('constraints'), list of *possible* neighbours ('neighbours_list'), and virtual images ('images') needed for the MIC contact vectors. "
 """
 MonoPacking(Xs::Vector, constraints::Vector, neighbours::Vector, R::Real)
-function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, R::T, images::Vector{SVector{d, T}}, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces, verbose::Bool=true) where {d, T<:AbstractFloat}
+function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, R::T, images::Vector{SVector{d, T}}, jammed::Bool=false; tol_mechanical_equilibrium::T=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces, verbose::Bool=true) where {d, T<:AbstractFloat}
+    
     all_contacts, forces_dual, particles_dual_contact = network_of_contacts(Xs, constraints, neighbours_list, images, zero_force=zero_force)
         
     particles = [MonoParticle(Xs[i], all_contacts[i], forces_dual[i], particles_dual_contact[i]) for i in eachindex(Xs)]
@@ -651,7 +652,8 @@ end
 
 Construct a `PolyPacking` from the set of particles' position ('Xs'), radii ('Rs'), set of all constraints defined in the LP model ('constraints'), list of *possible* neighbours ('neighbours_list'), and virtual images ('images') needed for the MIC contact vectors. "
 """
-function PolyPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, Rs::Vector{T}, images::Vector{SVector{d, T}}, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces, verbose::Bool=true) where {d, T<:AbstractFloat}
+function PolyPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, Rs::Vector{T}, images::Vector{SVector{d, T}}, jammed::Bool=false; tol_mechanical_equilibrium::T=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces, verbose::Bool=true) where {d, T<:AbstractFloat}
+    
     all_contacts, forces_dual, particles_dual_contact = network_of_contacts(Xs, Rs, constraints, neighbours_list, images, zero_force=zero_force)
 
     particles = [Particle(Xs[i], Rs[i], all_contacts[i], forces_dual[i], particles_dual_contact[i]) for i in eachindex(Xs)]
@@ -1096,7 +1098,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
         ℓ0::T=4*R, sqrΓ0::Real=1.01, thresholds_bounds::Tuple{T, T}=(5e-4, 1e-5), sbound::T=0.01,
         solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
         max_iters::I=default_max_iterations, tol_Γ_convergence::T=default_tol_Γ_convergence, tol_S_convergence::T=default_tol_displacements_convergence, tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces,
-        tol_overlap::T=default_tol_overlap, non_iso_break::I=max_iters, 
+        tol_overlap::T=default_tol_overlap, non_iso_break::I=2*max_iters, 
         ratio_sℓ_update::T=0.1,
         verbose::Bool=true, non_iso_warn::Bool=false, monitor_step::I=10, initial_monitor::I=monitor_step, interval_overlaps_check::I=10, initial_overlaps_check::I=initial_monitor) where {d, T<:Float64, I<:Int}
     
@@ -1229,7 +1231,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
     end
     
     # CONSTRUCT THE FINAL PACKING
-    final_packing = MonoPacking(Xs, constraints, possible_neighs, R, config_images, jammed, tol_mechanical_equilibrium = tol_mechanical_equilibrium, verbose=verbose) 
+    final_packing = MonoPacking(Xs, constraints, possible_neighs, R, config_images, jammed, tol_mechanical_equilibrium = tol_mechanical_equilibrium, zero_force=zero_force,verbose=verbose) 
 
     isostatic, Nc, Nnr = is_isostatic(final_packing) # test whether such final packing is isostatic
     force_mismatch = maximum(norm.(total_force(final_packing))) # test whether such final packing is in mechanical equilibrium
@@ -1404,7 +1406,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
     end
 
     # CONSTRUCT THE FINAL PACKING
-    final_packing = PolyPacking(Xs, constraints, possible_neighs, Rs, config_images, jammed, tol_mechanical_equilibrium = tol_mechanical_equilibrium, verbose=verbose) 
+    final_packing = PolyPacking(Xs, constraints, possible_neighs, Rs, config_images, jammed, tol_mechanical_equilibrium = tol_mechanical_equilibrium, zero_force=zero_force, verbose=verbose) 
 
     isostatic, Nc, Nnr = is_isostatic(final_packing) # test whether such final packing is isostatic
     force_mismatch = maximum(norm.(total_force(final_packing))) # test whether such final packing is in mechanical equilibrium
@@ -1507,6 +1509,7 @@ function precompile_main_function(solver::Module=default_solver, solver_attribut
     Nt=30; rt=0.52; dt=3; 
     Lt=4.0;
     images_comp = generate_system_images(dt, Lt)
+    tol_Γ = 1e-3; tol_S=1e-2; tol_f = 10*tol_S
 
     Xs_comp = Matrix(transpose([
     1.3022036173223075	3.100681668734574	2.650145868235529
@@ -1546,23 +1549,24 @@ function precompile_main_function(solver::Module=default_solver, solver_attribut
     Ds_comp, Γ_comp, cons_comp, neighs_comp, ts_comp, stat_comp = solve_LP_instance(cen_comp, rt, 1.5, 4*rt, images_comp, dists_comp)
     obtain_non_rattlers(cons_comp, neighs_comp, dt);
 
-    MonoPacking(cen_comp, cons_comp, neighs_comp, rt, images_comp)
+    MonoPacking(cen_comp, cons_comp, neighs_comp, rt, images_comp; verbose=false)
 
-    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration!(cen_comp, rt, ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= 1e-3, tol_S_convergence=1e-2, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=20 );
+    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration!(cen_comp, rt, ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=20 );
     
     network_of_contacts(Jpack_comp)
 
     # Function for polydisperse packings. I'm using the same configuration, with 'Rs' a vector of equal elements
-    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration!(cen_comp, rt*ones(Nt), ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= 1e-3, tol_S_convergence=1e-2, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=20)
+    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration!(cen_comp, rt*ones(Nt), ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=20)
 
     network_of_contacts(Jpack_comp)
 
 
-    printstyled("\n\n Calling the main function once again, to compile the second method.\n\n", color=:cyan)
-    produce_jammed_configuration!(Xs_comp, rt, Lt; ℓ0=Lt, initial_monitor=0, monitor_step=0, verbose=false, tol_Γ_convergence=1e-3,tol_S_convergence=1e-2,
+    printstyled("\n\n Calling the main functions once again, to compile the second method.\n\n", color=:cyan)
+    produce_jammed_configuration!(Xs_comp, rt, Lt; ℓ0=Lt, initial_monitor=0, monitor_step=0, verbose=false,
+     tol_Γ_convergence= tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f,
     solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=20 )
 
-    produce_jammed_configuration!(Xs_comp, rt*ones(Nt), Lt; ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= 1e-3, tol_S_convergence=1e-2, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=20)
+    produce_jammed_configuration!(Xs_comp, rt*ones(Nt), Lt; ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=20)
 
     printstyled("\n________________________________________________________\n\tCompilation process finished! \t (with solver: ", Symbol(solver), ")\n________________________________________________________\n\n\n\n\n", color=:cyan, bold=true)
 end

@@ -46,7 +46,7 @@ mutable struct MonoParticle{d, T}  <: AbstractParticle{d, T} # a struct defining
 end
 
 #### Format how a `MonoParticle` is shown in IO
-function Base.show(io::IO, particle::MonoParticle{d,T}) where {d, T<:Real}
+function Base.show(io::IO, particle::MonoParticle{d,T}) where {d, T<:AbstractFloat}
     x = value.(particle.X)
     neighs = particle.neighbours
     forces = particle.forces
@@ -68,7 +68,7 @@ end
 svectors(reshape(collect(1:6), (2,3)), Val(2))
 
 
-function MonoParticle(X::SVector{d, PeriodicNumber{T}}, contact_vecs::Matrix{T}, fs::Vector{T}, neighbours::Vector{Int64}) where {d, T<:Real}
+function MonoParticle(X::SVector{d, PeriodicNumber{T}}, contact_vecs::Matrix{T}, fs::Vector{T}, neighbours::Vector{Int64}) where {d, T<:AbstractFloat}
 
     dim, z = size(contact_vecs)
     (dim!=d) && error("There is a mismatch in the dimensionality!! Dimensions of particle's position: ", d, "\t dimensions of contact vectors: ", dim)
@@ -83,14 +83,14 @@ MonoParticle(SVector{3}(PeriodicNumber.(rand(3), 0.5)), rand(3,10), rand(10), ra
 
 # The following two methods are useful if one's being forgetful (or a bit lazy) about defining 'X' as a SVector of 'PeriodicNumber' elements
 
-function MonoParticle(X::Vector{PeriodicNumber{T}}, contact_vecs::Matrix{T}, fs::Vector{T}, neighbours::Vector{Int64}) where {T<:Real}
+function MonoParticle(X::Vector{PeriodicNumber{T}}, contact_vecs::Matrix{T}, fs::Vector{T}, neighbours::Vector{Int64}) where {T<:AbstractFloat}
     d = length(X)
     MonoParticle(SVector{d}(X), contact_vecs, fs, neighbours)
 end
 MonoParticle(PeriodicNumber.(rand(3), 0.5), rand(3,10), rand(10), rand(1:100,10))
 
 
-MonoParticle(X::Vector{T}, L::T, contact_vecs::Matrix{T}, fs::Vector{T}, neighbours::Vector{Int64}) where {T<:Real} = MonoParticle(PeriodicNumber.(X,L), contact_vecs, fs, neighbours)
+MonoParticle(X::Vector{T}, L::T, contact_vecs::Matrix{T}, fs::Vector{T}, neighbours::Vector{Int64}) where {T<:AbstractFloat} = MonoParticle(PeriodicNumber.(X,L), contact_vecs, fs, neighbours)
 
 
 #########################################################################################################
@@ -119,7 +119,7 @@ mutable struct Particle{d, T}  <: AbstractParticle{d, T} # a struct defining a p
 end
 
 #### Format how a `Particle` is shown in IO
-function Base.show(io::IO, particle::Particle{d,T}) where {d, T<:Real}
+function Base.show(io::IO, particle::Particle{d,T}) where {d, T<:AbstractFloat}
     x = value.(particle.X)
     neighs = particle.neighbours
     forces = particle.forces
@@ -131,7 +131,7 @@ end
 
 
 
-function Particle(X::SVector{d, PeriodicNumber{T}}, R::T, contact_vecs::Matrix{T}, fs::Vector{T}, neighbours::Vector{Int64}) where {d, T<:Real}
+function Particle(X::SVector{d, PeriodicNumber{T}}, R::T, contact_vecs::Matrix{T}, fs::Vector{T}, neighbours::Vector{Int64}) where {d, T<:AbstractFloat}
 
     z = size(contact_vecs, 2)
 
@@ -149,7 +149,7 @@ end
 
 
 # The following two methods are useful if one's being forgetful (or a bit lazy) about defining 'X' as a SVector of 'PeriodicNumber' elements
-function Particle(X::Vector{PeriodicNumber{T}}, R::T, contact_vecs::Matrix{T}, fs::Vector{T}, neighbours::Vector{Int64}) where {T<:Real}
+function Particle(X::Vector{PeriodicNumber{T}}, R::T, contact_vecs::Matrix{T}, fs::Vector{T}, neighbours::Vector{Int64}) where {T<:AbstractFloat}
 
     d, z = size(contact_vecs)
 
@@ -169,7 +169,7 @@ end
 Particle(PeriodicNumber.(rand(3), 0.5), rand(), rand(3,10), rand(10), rand(1:100,10))
 
 
-Particle(X::Vector{T}, R::T, L::T, contact_vecs::Matrix{T}, fs::Vector{T}, neighbours::Vector{Int64}) where {T<:Real} = Particle(PeriodicNumber.(X,L), R, contact_vecs, fs, neighbours)
+Particle(X::Vector{T}, R::T, L::T, contact_vecs::Matrix{T}, fs::Vector{T}, neighbours::Vector{Int64}) where {T<:AbstractFloat} = Particle(PeriodicNumber.(X,L), R, contact_vecs, fs, neighbours)
 
 
 #########################################################################################################
@@ -183,7 +183,7 @@ Particle(X::Vector{T}, R::T, L::T, contact_vecs::Matrix{T}, fs::Vector{T}, neigh
 
 Compute the volume of a d-dimensional sphere of radius R (that defaults to 1)
 """
-function volume_d_ball(d::Int64, R::Real=1)::Float64
+function volume_d_ball(d::Int64, R::Real=1)
     ((sqrt(π)*R)^d)/gamma(1.0 + 0.5d)
 end
 
@@ -244,7 +244,7 @@ Return whether 'P' is a rattler or not; that is, if it has less than d+1 contact
 
 See also: [`is_stable_particle`](@ref).
 """
-function is_a_rattler(P::AbstractParticle{d, T}) where {d, T<:Real}
+function is_a_rattler(P::AbstractParticle{d, T}) where {d, T<:AbstractFloat}
     z = get_coordination_number(P)
     if z<=d
         return true
@@ -259,12 +259,12 @@ Return whether 'P' is a stable particle or not; that is, if it has more than d c
 
 See also: [`is_a_rattler`](@ref).
 """
-is_stable_particle(P::AbstractParticle{d, T}) where {d, T<:Real} = !is_a_rattler(P)
+is_stable_particle(P::AbstractParticle{d, T}) where {d, T<:AbstractFloat} = !is_a_rattler(P)
 is_stable_particle(Particle(rand(3), rand(), 0.4, rand(3,3), rand(3), collect(1:3))); 
 
 
 "Compute the sum of forces acting on a given particle. The output is a `StaticVector`"
-function total_force(P::AbstractParticle{d, T}) where {d, T<:Real}
+function total_force(P::AbstractParticle{d, T}) where {d, T<:AbstractFloat}
     fs = P.forces
     ctc_vecs = P.contact_vecs
     # tot_f = @SVector zeros(size(P.X, 1))

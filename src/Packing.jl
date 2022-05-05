@@ -12,7 +12,7 @@ abstract type AbstractPacking{d, T} end
 
 get_positions(packing::AbstractPacking) = getfield.(packing.Particles, :X)
 length(packing::AbstractPacking) = length(packing.Particles)
-size(packing::AbstractPacking{d, T}) where {d, T<:Real} = (d, length(packing))
+size(packing::AbstractPacking{d, T}) where {d, T<:AbstractFloat} = (d, length(packing))
 
 "Obtain the set of stable particles in a packing."
 function get_non_rattlers(packing::AbstractPacking)
@@ -36,7 +36,7 @@ function get_coordination_number(packing::AbstractPacking; only_stable::Bool=fal
 end
 
 "Test whether a given packing is isostatic or not. The output is a boolean"
-function is_isostatic(packing::AbstractPacking{d, T}; only_stable::Bool=true)::Tuple{Bool, Int64, Int64} where {d, T<:Real}
+function is_isostatic(packing::AbstractPacking{d, T}; only_stable::Bool=true)::Tuple{Bool, Int64, Int64} where {d, T<:AbstractFloat}
     Nnr = length(get_non_rattlers(packing)); # amount of non-rattlers (i.e. stable particles)
     N_dof = d*(Nnr-1)+1 # number of degrees of freedom
     Nc = 0.5*sum(get_coordination_number(packing; only_stable=only_stable)) # number of contacts; if 'only_stable=true' only non-rattlers are considered
@@ -44,7 +44,7 @@ function is_isostatic(packing::AbstractPacking{d, T}; only_stable::Bool=true)::T
 end
 
 "Output an array of `StaticVector`s corresponding to the sum of forces acting on each particle of the packing."
-function total_force(packing::AbstractPacking{d, T})::Vector{SVector{d, T}} where {d, T<:Real}
+function total_force(packing::AbstractPacking{d, T})::Vector{SVector{d, T}} where {d, T<:AbstractFloat}
     total_force.(packing.Particles)
 end
 
@@ -98,7 +98,7 @@ end
 MonoPacking([MonoParticle(rand(3), rand(), rand(3,3), rand(3), collect(1:3)), MonoParticle(rand(3), rand(), rand(3,3), rand(3), collect(1:3))], rand(), false, false)
 
 #### Format how a `MonoPacking` is shown in IO
-function Base.show(io::IO, packing::MonoPacking{d,T}) where {d, T<:Real}
+function Base.show(io::IO, packing::MonoPacking{d,T}) where {d, T<:AbstractFloat}
     N = length(packing)
     iso, Nc, Nnr = is_isostatic(packing)
     fr = (N-Nnr)/Nnr
@@ -134,7 +134,7 @@ When this condition is not met, it throws a warning, but the packing is created.
 """
 MonoPacking()
 
-function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Vector{Vector{SVector{d,T}}}, fs::Vector{Vector{T}}, neighbours::Vector{Vector{Int64}}, R::T, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, verbose::Bool=true) where {d, T<:Real}
+function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Vector{Vector{SVector{d,T}}}, fs::Vector{Vector{T}}, neighbours::Vector{Vector{Int64}}, R::T, jammed::Bool=false; tol_mechanical_equilibrium::T=default_tol_force_equilibrium, verbose::Bool=true) where {d, T<:AbstractFloat}
     N = length(Xs) # number of particles
     # th construct the packing all the input arrays should have the same length
     if N==length(fs) && N==length(contact_vecs) && N==length(neighbours) 
@@ -162,12 +162,12 @@ function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Ve
     end
 end
 
-function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Vector{Matrix{T}}, fs::Vector{Vector{T}}, neighbours::Vector{Vector{Int64}}, R::T, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, verbose::Bool=true) where {d, T<:Real}
+function MonoPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Vector{Matrix{T}}, fs::Vector{Vector{T}}, neighbours::Vector{Vector{Int64}}, R::T, jammed::Bool=false; tol_mechanical_equilibrium::T=default_tol_force_equilibrium, verbose::Bool=true) where {d, T<:AbstractFloat}
     MonoPacking(Xs, svectors.(contact_vecs, Val(d)), fs, neighbours, R, jammed; tol_mechanical_equilibrium=tol_mechanical_equilibrium, verbose=verbose)
 end
 
 
-function MonoPacking(particles::Vector{MonoParticle{d, T}}, R::T, jammed::Bool=false;  tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, verbose::Bool=true) where {d, T<:Real}
+function MonoPacking(particles::Vector{MonoParticle{d, T}}, R::T, jammed::Bool=false;  tol_mechanical_equilibrium::T=default_tol_force_equilibrium, verbose::Bool=true) where {d, T<:AbstractFloat}
     force_balance = force_equilibrium(particles; tol_mechanical_equilibrium=tol_mechanical_equilibrium)
     if !force_balance && verbose
         fmismatch = maximum(norm.(total_force.(particles)))
@@ -186,7 +186,7 @@ Compute the distance between the *borders* of all pairs of particles in 'packing
 
 For a given pair, the distance between the centers of the two particles is computed, by calling 
 `distances_between_centers`, and then the diameter is subtracted. In this way, the result is 
-really the distance between the border of each pair of particles.
+AbstractFloatly the distance between the border of each pair of particles.
 
 See also [`distances_between_centers`](@ref)
 """
@@ -195,7 +195,7 @@ function distances_between_particles(packing::MonoPacking)
 end
 
 """
-    check_for_overlaps(packing::MonoPacking, tolerance::Float64)
+    check_for_overlaps(packing::MonoPacking, tolerance::AbstractFloat)
 
 Apply `check_for_overlaps` to all the particles in 'packing'.
 """
@@ -210,14 +210,14 @@ end
 ################################################
 
 """
-    packing_fraction(d::Int64, R::Real, N::Int64, L::Real=1.0)
+    packing_fraction(d::Int64, R::AbstractFloat, N::Int64, L=1.0)
 
 Compute the packing fraction of N d-dimensional hyperspheres of the same radius, 'R', inside
  a box of size 'L'.
 
 See also [`volume`](@ref), [`volume_d_ball`](@ref)
  """
-function packing_fraction(d::Int64, R::Real, N::Int64, L::Real=1.0)::Float64
+function packing_fraction(d::Int64, R::T, N::Int64, L::T=1.0) where T<:AbstractFloat
     return N*volume_d_ball(d, R)/L^d
 end
 packing_fraction(3, 0.5, 2, 1.0)
@@ -229,7 +229,7 @@ Compute the packing fraction of a monodisperse packing.
 
 See also [`volume`](@ref), [`volume_d_ball`](@ref)
 """
-function packing_fraction(packing::MonoPacking{d, T})::Float64 where {d, T}
+function packing_fraction(packing::MonoPacking{d, T}) where {d, T<:AbstractFloat}
     R = packing.R
     N = length(packing.Particles)
     L = packing.Particles[1].X[1].L
@@ -272,7 +272,7 @@ end
 get_radii(PolyPacking([Particle(rand(3), 0.1, rand(), rand(3,3), rand(3), collect(1:3)), Particle(rand(3), 0.5, rand(), rand(3,3), rand(3), collect(1:3))],  false, false))
 
 #### Format how a `PolyPacking` is shown in IO
-function Base.show(io::IO, packing::PolyPacking{d,T}) where {d, T<:Real}
+function Base.show(io::IO, packing::PolyPacking{d,T}) where {d, T<:AbstractFloat}
     N = length(packing)
     iso, Nc, Nnr = is_isostatic(packing)
     fr = (N-Nnr)/Nnr
@@ -308,7 +308,7 @@ When this condition is not met, it throws a warning, but the packing is created.
 """
 PolyPacking()
 
-function PolyPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Vector{Vector{SVector{d,T}}}, fs::Vector{Vector{T}}, neighbours::Vector{Vector{Int64}}, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, verbose::Bool=true) where {d, T<:Real}
+function PolyPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Vector{Vector{SVector{d,T}}}, fs::Vector{Vector{T}}, neighbours::Vector{Vector{Int64}}, jammed::Bool=false; tol_mechanical_equilibrium::T=default_tol_force_equilibrium, verbose::Bool=true) where {d, T<:AbstractFloat}
     N = length(Xs) # number of particles
     # th construct the packing all the input arrays should have the same length
     if N==length(fs) && N==length(contact_vecs) && N==length(neighbours) 
@@ -336,12 +336,12 @@ function PolyPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Ve
     end
 end
 
-function PolyPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Vector{Matrix{T}}, fs::Vector{Vector{T}}, neighbours::Vector{Vector{Int64}}, jammed::Bool=false; tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, verbose::Bool=true) where {d, T<:Real}
+function PolyPacking(Xs::Vector{SVector{d, PeriodicNumber{T}}}, contact_vecs::Vector{Matrix{T}}, fs::Vector{Vector{T}}, neighbours::Vector{Vector{Int64}}, jammed::Bool=false; tol_mechanical_equilibrium::T=default_tol_force_equilibrium, verbose::Bool=true) where {d, T<:AbstractFloat}
     PolyPacking(Xs, svectors.(contact_vecs, Val(d)), fs, neighbours, jammed; tol_mechanical_equilibrium=tol_mechanical_equilibrium, verbose=verbose)
 end
 
 
-function PolyPacking(particles::Vector{Particle{d, T}}, jammed::Bool=false;  tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, verbose::Bool=true) where {d, T<:Real}
+function PolyPacking(particles::Vector{Particle{d, T}}, jammed::Bool=false;  tol_mechanical_equilibrium::T=default_tol_force_equilibrium, verbose::Bool=true) where {d, T<:AbstractFloat}
     force_balance = force_equilibrium(particles; tol_mechanical_equilibrium=tol_mechanical_equilibrium)
     if !force_balance && verbose
         fmismatch = maximum(norm.(total_force.(particles)))
@@ -407,7 +407,7 @@ end
 # Other useful functions
 ################################################
 """
-    packing_fraction(d::Int64, R1::Float64, N1::Int64, R2::Float64, N2::Int64, L::Float64=1.0)
+    packing_fraction(d::Int64, R1::T, N1::Int64, R2::T, N2::Int64, L::T=1.0) where T<:AbstractFloat
 
 Compute the packing fraction of a configuration of d-dimensional hyperspheres, of which 'N1' have radius 'R1', and 'N2' have radius 'R2'. The configuration is assumed to be inside  a box of size 'L'.
 
@@ -420,14 +420,14 @@ packing_fraction(3, 0.1, 5, 0.3, 8, 1.0)
 
 
 """
-    packing_fraction(d::Int64, Rs::Vector{Float64}, L::Real=1.0)
+    packing_fraction(d::Int64, Rs::Vector{T}, L::T=1.0) where T<:AbstractFloat
 
 Compute the packing fraction of N d-dimensional hyperspheres with radii 'Rs', inside
  a box of size 'L'.
 
 See also [`volume`](@ref), [`volume_d_ball`](@ref)
  """
-function packing_fraction(d::Int64, Rs::Vector{Float64}, L::Real=1.0)::Float64
+function packing_fraction(d::Int64, Rs::Vector{T}, L::T=1.0) where T<:AbstractFloat
     return sum(volume_d_ball.(d, Rs))/L^d
 end
 packing_fraction(3, rand(5), 1.0)
@@ -439,7 +439,7 @@ Compute the packing fraction of a monodisperse packing.
 
 See also [`volume`](@ref), [`volume_d_ball`](@ref)
 """
-function packing_fraction(packing::PolyPacking{d, T})::Float64 where {d, T<:AbstractFloat}
+function packing_fraction(packing::PolyPacking{d, T}) where {d, T<:AbstractFloat}
     Rs = get_radii(packing)
     L = packing.Particles[1].X[1].L
     packing_fraction(d, Rs, L)

@@ -5,7 +5,7 @@ using Distributions
 ################################################
 
 "Compute the radius from a given packing fraction 'ϕ', in arbitrary dimensions, 'd'."
-function radius_from_phi(d::Int64, ϕ::Real, N::Int64, L::Real=1.0)::Float64
+function radius_from_phi(d::Int64, ϕ::Real, N::Int64, L::Real=1.0)
     #d: dimension; ϕ: packing fraction; N: number of particles; L: size of box
     Vd = volume_d_ball(d)
     return L*(ϕ/(N*Vd))^(1/d)
@@ -13,7 +13,7 @@ end
 radius_from_phi(3, 0.64, 1000)
 
 "Compute the radii of a *bi*disperse configuration of (N1, N2) particles with radii (R1, R2), from a given packing fraction 'ϕ', in arbitrary dimensions, 'd'. It is assumed that R2/R1=c."
-function radii_from_phi(d::Int64, ϕ::Real, N1::Int64, N2::Int64=N1, c::T=1.4, L::T=1.0) where T<:AbstractFloat
+function radii_from_phi(d::Int64, ϕ::T, N1::Int64, N2::Int64=N1, c::T=1.4, L::T=1.0) where T<:AbstractFloat
     #d: dimension; ϕ: packing fraction; N: number of particles; L: size of box
     Vd = volume_d_ball(d)
     den = Vd*(N1 + N2*c^d)

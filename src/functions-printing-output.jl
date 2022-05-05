@@ -13,7 +13,7 @@ end
 
 
 "Print information about CALiPPSO progress and current status of the system whenever a non-isostatic configuration is created."
-function print_non_isostatic(d::Int64, zs::Vector{Int64}, non_rattlers::Vector{Int64}, t::Int64, max_Si::Float64, bound_s::Float64, f_mismatch::Float64, small_fs::Vector{Float64})
+function print_non_isostatic(d::Int64, zs::Vector{Int64}, non_rattlers::Vector{Int64}, t::Int64, max_Si::T, bound_s::T, f_mismatch::T, small_fs::Vector{T}) where T<:AbstractFloat
     
     println("Iteration: ", t)
     printstyled("Non-isostatic packing!!!\n", color=:yellow, bold=true)

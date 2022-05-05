@@ -89,7 +89,7 @@ The association rule is the following:
 In Julia 0.7 and later transforming a number to a different base outputs a string, that's why
 it is useful to assume that x is type 'Char'
 """
-function trit_to_shift(x::Char, L::Float64=1.0)
+function trit_to_shift(x::Char, L::Real=1.0)
     if x=='0'
         return 0.0
     elseif x=='1'
@@ -112,7 +112,7 @@ The value of the shift, 'L', defaults to 1.0.
 
 See also: [`trit_to_shift`](@ref)
 """
-function trit_to_shift_vector(s::String, L::Float64=1.0) 
+function trit_to_shift_vector(s::String, L::Real=1.0) 
     trit_to_shift.(collect(s), L)
 end
 
@@ -129,8 +129,8 @@ single number to which a shift vector is associated.
 
 See also: [`trit_to_shift`](@ref), [`trit_to_shift_vector`](@ref)
 """
-function generate_system_images(d::Int64, L::Float64=1.0)
-    images = Vector{SVector{d, Float64}}(undef, 3^d-1)
+function generate_system_images(d::Int64, L::T=1.0) where T<:AbstractFloat
+    images = Vector{SVector{d, T}}(undef, 3^d-1)
     # Note that i does not begin in '0'; so we're excluding the case of no shift (the most common one for big systems)
     for i in 1:3^d-1::Int
         str = string(i, base=3, pad=d)
