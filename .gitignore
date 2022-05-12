@@ -1,0 +1,14 @@
+docs/build
+*txt
+*log
+Examples/*txt
+*json
+.vscode
+docs/src/snippets-removed.md
+*-bak
+Manifest.toml
+scratch.jl
+*ipynb
+*log
+src/Figures
+*jld2
