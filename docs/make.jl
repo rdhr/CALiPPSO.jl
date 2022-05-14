@@ -19,4 +19,5 @@ makedocs(sitename="CALiPPSO",
 
 deploydocs(
     repo = "github.com/rdhr/CALiPPSO.jl.git",
+    devbranch = "master"
 )
