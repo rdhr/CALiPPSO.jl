@@ -1,4 +1,10 @@
-# CALiPPSO: A Linear Programming Algorithm for Jamming Hard Spheres
+# CALiPPSO.jl: A Linear Programming Algorithm for Jamming Hard Spheres
+
+[![CI](https://github.com/rdhr/CALiPPSO.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/rdhr/CALiPPSO.jl/actions/workflows/CI.yml)
+[![codecov](https://codecov.io/gh/rdhr/CALiPPSO.jl/branch/master/graph/badge.svg?token=JQLR0F1ESV)](https://codecov.io/gh/rdhr/CALiPPSO.jl)
+
+
+[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://rdhr.github.io/CALiPPSO.jl/dev/)
 
 This package is a pure [Julia](https://julialang.org/) implementation of the CALiPPSO algorithm for generating jammed packings of hard spheres in arbitrary dimensions. It works for both, *mono*disperse and *poly*disperse configurations. The algorithm was introduced in [this article](https://arxiv.org/abs/2203.05654) by *Artiaco, Díaz, Parisi, and Ricci-Tersenghi*. As explained there, CALiPPSO consists of a **C**hain of **A**pproximate **Li**near **P**rogramming for **P**acking **S**pherical **O**bjects.
 
