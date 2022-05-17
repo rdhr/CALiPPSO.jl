@@ -1,9 +1,14 @@
 # [Installation](@id Installation)
 
-Naturally, the first thing is to have [Julia installed in your system](https://julialang.org/downloads/). Afterwards, you can add [CALiPPSO.jl package](https://github.com/rdhr/CALiPPSO.jl) using the Julia's package manager. However, CALiPPSO is not yet registered in Julia Registries (but we are working to make it so). Therefore, you'll need to add it from the GitHub repo:
+Naturally, the first thing is to have [Julia installed in your system](https://julialang.org/downloads/). Afterwards, you can add [CALiPPSO.jl package](https://github.com/rdhr/CALiPPSO.jl) using the Julia's package manager. From a Julia REPL, Jupyter notebook, etc.  simply do
+
 ```julia
-using Pkg
-Pkg.add(url="https://github.com/rdhr/CALiPPSO.jl.git")
+]add CALiPPSO
+```
+Or, if you prefer to import the Package manager (`Pkg`), do:
+```julia
+import Pkg
+Pkg.add("CALiPPSO")
 ```
 
 This should also install the required dependencies, of which a very important one is [`GLPK`](https://github.com/jump-dev/GLPK.jl), because it is the default solver of CALiPPSO. In any case, once added, you can simply import CALiPPSO into your current working space (*i.e.* the REPL, a Jupyter notebook, script, etc) as any other package, namely `using CALiPPSO`. 

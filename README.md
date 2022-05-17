@@ -33,10 +33,15 @@ You can read the full documentation of our code [here](https://rdhr.github.io/CA
 ## Basic usage
 
 ### Installation
-Our package is not yet registered in Julia Registries (but we are working to make it so). Therefore, you'll need to add it from this GitHub repo:
+From a Julia REPL, Jupyter notebook, etc.  simply do
+
+```julia
+]add CALiPPSO
+```
+Or, if you prefer to import the Package manager (`Pkg`), do:
 ```julia
 import Pkg
-Pkg.add(url="https://github.com/rdhr/CALiPPSO.jl.git")
+Pkg.add("CALiPPSO")
 ```
 
 This will also automatically install the required dependencies; the main ones are [JuMP.jl](https://jump.dev/JuMP.jl/stable/), [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) and [GLPK.jl](https://github.com/jump-dev/GLPK.jl). The latter is needed because [`GLPK`](https://www.gnu.org/software/glpk/) is the default solver of CALiPPSO. In any case, once CALiPPSO is added, you can simply import it into your current working space (*i.e.* the REPL, a Jupyter notebook, script, etc) as any other package, namely `using CALiPPSO`. 
@@ -126,7 +131,7 @@ For other features, advanced usage, and more details of how `produce_jammed_conf
 
 1. Add documentation of functions for polydisperse packings (although they are very similar to their monodisperse counterpart).
 2. Implement functions for closed boundary conditions.
-3. Register CALiPPSO in Julia's packages registry.
+3. Register CALiPPSO in Julia's packages registry. :heavy_check_mark:
 
 ## Acknowledgements
 
