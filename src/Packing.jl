@@ -101,7 +101,7 @@ MonoPacking([MonoParticle(rand(3), rand(), rand(3,3), rand(3), collect(1:3)), Mo
 function Base.show(io::IO, packing::MonoPacking{d,T}) where {d, T<:AbstractFloat}
     N = length(packing)
     iso, Nc, Nnr = is_isostatic(packing)
-    fr = (N-Nnr)/Nnr
+    fr = (N-Nnr)/N
     println(io, d, "d Monodisperse packing\t of N= ", N, " particles \t of radius R= ", packing.R)
     println(io, Nnr, " stable particles; \t fraction of rattlers = ", round(fr, digits=3))
     println(io, "jammed: ", packing.jammed, "\t isostatic: ", iso ,"\t and in mechanical equilibrium: ", packing.mechanical_equilibrium)
@@ -275,7 +275,7 @@ get_radii(PolyPacking([Particle(rand(3), 0.1, rand(), rand(3,3), rand(3), collec
 function Base.show(io::IO, packing::PolyPacking{d,T}) where {d, T<:AbstractFloat}
     N = length(packing)
     iso, Nc, Nnr = is_isostatic(packing)
-    fr = (N-Nnr)/Nnr
+    fr = (N-Nnr)/N
     println(io, d, "d Polydisperse packing\t of N= ", N, " particles \t of radii = ", get_radii(packing))
     println(io, Nnr, " stable particles; \t fraction of rattlers = ", round(fr, digits=3))
     println(io, "jammed: ", packing.jammed, "\t isostatic: ", iso ,"\t and in mechanical equilibrium: ", packing.mechanical_equilibrium)
