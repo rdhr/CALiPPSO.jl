@@ -398,7 +398,7 @@ See also [`add_non_overlapping_constraints!`](@ref), [`@constraint`](https://jum
 [`produce_jammed_configuration!`](@ref), [`fine_tune_forces!`](@ref).
 """
 function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, ℓ::T, s_bound::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}};
-    solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
+    solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args, add_bridges::Bool=false,
     verbose_LP_info::Bool=false, dig_S::Int=13) where {d, T<:Float64}
         
     N = length(Xs); # number of particles
@@ -423,19 +423,25 @@ function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, ℓ:
         end
     end
     #### Once the optimizer has been chosen, the model is finally created
-    # LP_model = direct_model(optimizer) # this way of creating models is more efficient but does *not* work with HiGHS (but it does with Gurobi)
-    # LP_model = Model(() -> optimizer; bridge_constraints = false) # create a model with the solver defined by 'optimizer'; also fails with HiGHS
-    LP_model = Model(() -> optimizer) # create a model with the solver defined by 'optimizer'
+    if add_bridges
+        LP_model = Model(() -> optimizer) # create a model with the solver defined by 'optimizer'
+    else # this is the choice by default
+        LP_model = Model(() -> optimizer; add_bridges = false) # create a model with the solver defined by 'optimizer' without bridges to improve performance; it doesn't work with COSMO
+        # LP_model = direct_model(optimizer) # this way of creating models is more efficient but does *not* Clp
+    end
+
     set_optimizer_attributes(LP_model, solver_attributes...) # pass the optimizer attributes to the model
     
-    @variable(LP_model, inflation_factor>=1, base_name="Γ") # Declare inflation factor design variable
-    @variable(LP_model, -s_bound <= S[μ=1:d, i=1:N] <= s_bound, base_name="S⃗"); # Declare displacements design variables (BOUNDED)
+    set_string_names_on_creation(LP_model, false) # disable string names for better performance
+    
+    @variable(LP_model, inflation_factor>=1) # Declare inflation factor design variable
+    @variable(LP_model, -s_bound <= S[μ=1:d, i=1:N] <= s_bound); # Declare displacements design variables (BOUNDED)
     fix.(S[:, N], 0.0; force=true) # Fix one displacement vector so the center of mass remains constant
     
     # add the full list of non-overlapping to the model
     constraints, possible_neighs  = add_non_overlapping_constraints!(LP_model, Xs, R, ℓ, images, distances) 
     
-    @objective(LP_model, Max, inflation_factor) # define the objective of the model (i.e. maximize the inflation factor)
+    @objective(LP_model, Max, 1*inflation_factor) # define the objective of the model (i.e. maximize the inflation factor)
     optimize!(LP_model) # solve the LP instance, i.e. find the optimal solution (consistent with the constraints imposed above)
     t_solve = solve_time(LP_model) #store the  time required for the optimization
     
@@ -455,7 +461,7 @@ function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, ℓ:
 end
 
 function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, Rs::Vector{T}, ℓ::T, s_bound::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}};
-    solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
+    solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args, add_bridges::Bool=false,
     verbose_LP_info::Bool=false, dig_S::Int=13) where {d, T<:Float64}
         
     N = length(Xs); # number of particles
@@ -480,19 +486,25 @@ function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, Rs::Vector
         end
     end
     #### Once the optimizer has been chosen, the model is finally created
-    # LP_model = direct_model(optimizer) # this way of creating models is more efficient but does *not* work with HiGHS (but it does with Gurobi)
-    # LP_model = Model(() -> optimizer; bridge_constraints = false) # create a model with the solver defined by 'optimizer'; also fails with HiGHS
-    LP_model = Model(() -> optimizer) # create a model with the solver defined by 'optimizer'
+    if add_bridges
+        LP_model = Model(() -> optimizer) # create a model with the solver defined by 'optimizer'
+    else # this is the choice by default
+        LP_model = Model(() -> optimizer; add_bridges = false) # create a model with the solver defined by 'optimizer' without bridges to improve performance; it doesn't work with COSMO
+        # LP_model = direct_model(optimizer) # this way of creating models is more efficient but does *not* Clp
+    end
+
     set_optimizer_attributes(LP_model, solver_attributes...) # pass the optimizer attributes to the model
     
-    @variable(LP_model, inflation_factor>=1, base_name="Γ") # Declare inflation factor design variable
-    @variable(LP_model, -s_bound <= S[μ=1:d, i=1:N] <= s_bound, base_name="S⃗"); # Declare displacements design variables (BOUNDED)
+    set_string_names_on_creation(LP_model, false) # disable string names for better performance
+    
+    @variable(LP_model, inflation_factor>=1) # Declare inflation factor design variable
+    @variable(LP_model, -s_bound <= S[μ=1:d, i=1:N] <= s_bound); # Declare displacements design variables (BOUNDED)
     fix.(S[:, N], 0.0; force=true) # Fix one displacement vector so the center of mass remains constant
     
     # add the full list of non-overlapping to the model
     constraints, possible_neighs  = add_non_overlapping_constraints!(LP_model, Xs, Rs, ℓ, images, distances) 
     
-    @objective(LP_model, Max, inflation_factor) # define the objective of the model (i.e. maximize the inflation factor)
+    @objective(LP_model, Max, 1*inflation_factor) # define the objective of the model (i.e. maximize the inflation factor)
     optimize!(LP_model) # solve the LP instance, i.e. find the optimal solution (consistent with the constraints imposed above)
     t_solve = solve_time(LP_model) #store the  time required for the optimization
     
@@ -758,6 +770,7 @@ See also [`add_non_overlapping_constraints!`](@ref), [`optimize!`](https://jump.
 """
 function fine_tune_forces!(Packing::MonoPacking{d, T}, force_mismatch::T, ℓ::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}};
     solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
+    add_bridges::Bool=false,
     tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T = default_tol_zero_forces) where {d, T<:Float64}
     
     Xs = get_positions(Packing) ; N = length(Xs)        
@@ -787,18 +800,24 @@ function fine_tune_forces!(Packing::MonoPacking{d, T}, force_mismatch::T, ℓ::T
         end
     end
     #### Once the optimizer has been chosen, the model is finally created
-    # LP_model = direct_model(optimizer) # this way of creating models is more efficient but does *not* work with HiGHS (but it does with Gurobi)
-    # LP_model = Model(() -> optimizer; bridge_constraints = false) # create a model with the solver defined by 'optimizer'; also fails with HiGHS
-    LP_model = Model(() -> optimizer) # create a model with the solver defined by 'optimizer'
+    if add_bridges
+        LP_model = Model(() -> optimizer) # create a model with the solver defined by 'optimizer'
+    else # this is the choice by default
+        LP_model = Model(() -> optimizer; add_bridges = false) # create a model with the solver defined by 'optimizer' without bridges to improve performance; it doesn't work with COSMO
+        # LP_model = direct_model(optimizer) # this way of creating models is more efficient but does *not* Clp
+    end
+
     set_optimizer_attributes(LP_model, solver_attributes...) # pass the optimizer attributes to the model
     
-    @variable(LP_model, inflation_factor, base_name="Γ") # Declare growth factor design variable
-    @variable(LP_model, S[μ=1:d, i=1:N], base_name="S⃗"); # Declare displacements design variables (UNbounded)
+    set_string_names_on_creation(LP_model, false) # disable string names for better performance
+    
+    @variable(LP_model, inflation_factor) # Declare growth factor design variable
+    @variable(LP_model, S[μ=1:d, i=1:N]); # Declare displacements design variables (UNbounded)
     fix.(S[:, N], 0.0; force=true) # Fix one displacement vector so the center of mass remains constant
     
     constraints, possible_neighs  = add_non_overlapping_constraints!(LP_model, Xs, R, ℓ, images, distances)
     
-    @objective(LP_model, Max, inflation_factor)
+    @objective(LP_model, Max, 1*inflation_factor)
     
     println("LP instance generated with (ℓ, ℓ/R) = ", [ℓ, ℓ/R], "\t and UNbounded displacements")
     
@@ -827,6 +846,7 @@ end
 
 function fine_tune_forces!(Packing::PolyPacking{d, T}, force_mismatch::T, ℓ::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}};
     solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
+    add_bridges::Bool=false,
     tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T = default_tol_zero_forces) where {d, T<:Float64}
     
     Xs = get_positions(Packing) ; N = length(Xs)        
@@ -856,18 +876,24 @@ function fine_tune_forces!(Packing::PolyPacking{d, T}, force_mismatch::T, ℓ::T
         end
     end
     #### Once the optimizer has been chosen, the model is finally created
-    # LP_model = direct_model(optimizer) # this way of creating models is more efficient but does *not* work with HiGHS (but it does with Gurobi)
-    # LP_model = Model(() -> optimizer; bridge_constraints = false) # create a model with the solver defined by 'optimizer'; also fails with HiGHS
-    LP_model = Model(() -> optimizer) # create a model with the solver defined by 'optimizer'
+    if add_bridges
+        LP_model = Model(() -> optimizer) # create a model with the solver defined by 'optimizer'
+    else # this is the choice by default
+        LP_model = Model(() -> optimizer; add_bridges = false) # create a model with the solver defined by 'optimizer' without bridges to improve performance; it doesn't work with COSMO
+        # LP_model = direct_model(optimizer) # this way of creating models is more efficient but does *not* Clp
+    end
+
     set_optimizer_attributes(LP_model, solver_attributes...) # pass the optimizer attributes to the model
     
-    @variable(LP_model, inflation_factor, base_name="Γ") # Declare growth factor design variable
-    @variable(LP_model, S[μ=1:d, i=1:N], base_name="S⃗"); # Declare displacements design variables (UNbounded)
+    set_string_names_on_creation(LP_model, false) # disable string names for better performance
+    
+    @variable(LP_model, inflation_factor) # Declare growth factor design variable
+    @variable(LP_model, S[μ=1:d, i=1:N]); # Declare displacements design variables (UNbounded)
     fix.(S[:, N], 0.0; force=true) # Fix one displacement vector so the center of mass remains constant
     
     constraints, possible_neighs  = add_non_overlapping_constraints!(LP_model, Xs, Rs, ℓ, images, distances)
     
-    @objective(LP_model, Max, inflation_factor)
+    @objective(LP_model, Max, 1*inflation_factor)
     
     println("LP instance generated with (ℓ, ℓ/Rₘₐₓ) = ", [ℓ, ℓ/maximum(Rs)], "\t and UNbounded displacements")
     
@@ -1096,7 +1122,7 @@ See [`check_for_overlaps`](@ref) and [`update_distances!`](@ref) for more inform
 """
 function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T;
         ℓ0::T=4*R, sqrΓ0::Real=1.01, thresholds_bounds::Tuple{T, T}=(5e-4, 1e-5), sbound::T=0.01,
-        solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
+        solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args, add_bridges::Bool=false,
         max_iters::I=default_max_iterations, tol_Γ_convergence::T=default_tol_Γ_convergence, tol_S_convergence::T=default_tol_displacements_convergence, tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces,
         tol_overlap::T=default_tol_overlap, non_iso_break::I=2*max_iters, 
         ratio_sℓ_update::T=0.1,
@@ -1147,7 +1173,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
         s_update = ratio_sℓ_update*ℓ/sqrt(d)
 
         # obtain the optimal value of displacements, inflation factor, relevant constraints, and other quantities from the LP optimization
-        S⃗, Γ, constraints, possible_neighs, t_solve, status = solve_LP_instance(Xs, R, ℓ, s_bound, config_images, distances; verbose_LP_info=verbose_LP_info, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args)
+        S⃗, Γ, constraints, possible_neighs, t_solve, status = solve_LP_instance(Xs, R, ℓ, s_bound, config_images, distances; verbose_LP_info=verbose_LP_info, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, add_bridges=add_bridges)
         
         # track the force balance in the current iteration or not 
         if verbose  && (iter<=initial_monitor || iter%monitor_step==0)
@@ -1243,7 +1269,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
 
             iter+=1
             
-            t_solve, isostatic, Nc, Nnr, status = fine_tune_forces!(final_packing, force_mismatch, ℓ, config_images, distances; tol_mechanical_equilibrium=tol_mechanical_equilibrium, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, zero_force=zero_force)
+            t_solve, isostatic, Nc, Nnr, status = fine_tune_forces!(final_packing, force_mismatch, ℓ, config_images, distances; tol_mechanical_equilibrium=tol_mechanical_equilibrium, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, add_bridges=add_bridges, zero_force=zero_force)
 
             solve_ts[iter] = t_solve; Γs_vs_t[iter] = 1.0; smax_vs_t[iter] = 0.0; iso_vs_t[iter] = isostatic # store time, √Γ, and if isostatic of this last iteration.
         end
@@ -1270,7 +1296,7 @@ end
 
 function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}, Rs::Vector{T};
     ℓ0::T=4.0*maximum(Rs), sqrΓ0::Real=1.01, thresholds_bounds::Tuple{T, T}=(5e-4, 1e-5), sbound::T=0.01,
-    solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
+    solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args, add_bridges::Bool=false,
     max_iters::I=default_max_iterations, tol_Γ_convergence::T=default_tol_Γ_convergence, tol_S_convergence::T=default_tol_displacements_convergence, tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces,
     tol_overlap::T=default_tol_overlap, non_iso_break::I=max_iters, 
     ratio_sℓ_update::T=0.1,
@@ -1322,7 +1348,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
         s_update = ratio_sℓ_update*ℓ/sqrt(d)
 
         # obtain the optimal value of displacements, inflation factor, relevant constraints, and other quantities from the LP optimization
-        S⃗, Γ, constraints, possible_neighs, t_solve, status = solve_LP_instance(Xs, Rs, ℓ, s_bound, config_images, distances; verbose_LP_info=verbose_LP_info, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args)
+        S⃗, Γ, constraints, possible_neighs, t_solve, status = solve_LP_instance(Xs, Rs, ℓ, s_bound, config_images, distances; verbose_LP_info=verbose_LP_info, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, add_bridges=add_bridges)
         
         # track the force balance in the current iteration or not 
         if verbose  && (iter<=initial_monitor || iter%monitor_step==0)
@@ -1418,7 +1444,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
 
             iter+=1
             
-            t_solve, isostatic, Nc, Nnr, status = fine_tune_forces!(final_packing, force_mismatch, ℓ, config_images, distances; tol_mechanical_equilibrium=tol_mechanical_equilibrium, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, zero_force=zero_force)
+            t_solve, isostatic, Nc, Nnr, status = fine_tune_forces!(final_packing, force_mismatch, ℓ, config_images, distances; tol_mechanical_equilibrium=tol_mechanical_equilibrium, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, add_bridges=add_bridges, zero_force=zero_force)
 
             solve_ts[iter] = t_solve; Γs_vs_t[iter] = 1.0; smax_vs_t[iter] = 0.0; iso_vs_t[iter] = isostatic # store time, √Γ, and if isostatic of this last iteration.
         end
@@ -1496,7 +1522,7 @@ end
 
 
 
-function precompile_main_function(solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args)
+function precompile_main_function(solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args, add_bridges::Bool=false)
     #= =====================================================================
     =====================================================================
     USING MAIN FUNCTIONS ON SMALL SYSTEM FOR COMPILATION/FIRST CALL PURPOSES
@@ -1509,7 +1535,8 @@ function precompile_main_function(solver::Module=default_solver, solver_attribut
     Nt=30; rt=0.52; dt=3; 
     Lt=4.0;
     images_comp = generate_system_images(dt, Lt)
-    tol_Γ = 1e-3; tol_S=1e-2; tol_f = 10*tol_S
+    tol_Γ = 1e-3; tol_S=1e-2; tol_f = 10*tol_S; 
+    tol_ovlp = 1e-5 # I know, this is a huge value, but it's used only to make precompilation work with ANY solver (e.g. COSMO)
 
     Xs_comp = Matrix(transpose([
     1.3022036173223075	3.100681668734574	2.650145868235529
@@ -1546,27 +1573,27 @@ function precompile_main_function(solver::Module=default_solver, solver_attribut
     printstyled("\nThe usual output of the tested optimizers has been disabled by default. Change the value of OutputFlag (or verbose, or the corresponding field of the solver of your choice) if you want such information to be printed out.\n\n", color=:magenta)
 
     dists_comp = distances_between_centers(cen_comp)
-    Ds_comp, Γ_comp, cons_comp, neighs_comp, ts_comp, stat_comp = solve_LP_instance(cen_comp, rt, 1.5, 4*rt, images_comp, dists_comp)
+    Ds_comp, Γ_comp, cons_comp, neighs_comp, ts_comp, stat_comp = solve_LP_instance(cen_comp, rt, 1.5, 4*rt, images_comp, dists_comp, add_bridges=add_bridges)
     obtain_non_rattlers(cons_comp, neighs_comp, dt);
 
     MonoPacking(cen_comp, cons_comp, neighs_comp, rt, images_comp; verbose=false)
 
-    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration!(cen_comp, rt, ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=20 );
+    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration!(cen_comp, rt, ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, tol_overlap=tol_ovlp, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, add_bridges=add_bridges, max_iters=20 );
     
     network_of_contacts(Jpack_comp)
 
     # Function for polydisperse packings. I'm using the same configuration, with 'Rs' a vector of equal elements
-    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration!(cen_comp, rt*ones(Nt), ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=20)
+    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration!(cen_comp, rt*ones(Nt), ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, tol_overlap=tol_ovlp, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=20, add_bridges=add_bridges)
 
     network_of_contacts(Jpack_comp)
 
 
     printstyled("\n\n Calling the main functions once again, to compile the second method.\n\n", color=:cyan)
     produce_jammed_configuration!(Xs_comp, rt, Lt; ℓ0=Lt, initial_monitor=0, monitor_step=0, verbose=false,
-     tol_Γ_convergence= tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f,
-    solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=20 )
+     tol_Γ_convergence= tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, tol_overlap=tol_ovlp,
+    solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, add_bridges=add_bridges, max_iters=20 )
 
-    produce_jammed_configuration!(Xs_comp, rt*ones(Nt), Lt; ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=20)
+    produce_jammed_configuration!(Xs_comp, rt*ones(Nt), Lt; ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, tol_overlap=tol_ovlp, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, add_bridges=add_bridges, max_iters=20)
 
     printstyled("\n________________________________________________________\n\tCompilation process finished! \t (with solver: ", Symbol(solver), ")\n________________________________________________________\n\n\n\n\n", color=:cyan, bold=true)
 end

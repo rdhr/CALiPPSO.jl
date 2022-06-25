@@ -59,7 +59,7 @@ precompile_main_function()
 const cosmo_args = nothing
 const cosmo_attributes = Dict("verbose"=>false, "max_iter"=>30000, "eps_abs"=>1e3*tol_optimality, "adaptive_rho"=>false, "eps_prim_inf"=>1e3*tol_optimality, "eps_dual_inf"=>1e3tol_optimality)
 printstyled("\n______________________________________________________________________________________\n", color=:yellow)
-precompile_main_function(COSMO, cosmo_attributes, cosmo_args)
+precompile_main_function(COSMO, cosmo_attributes, cosmo_args, true)
 
 
 # # Hypatia
@@ -99,16 +99,19 @@ for (ns, solver) in enumerate(solvers)
         overlap_tolerance = 1e3*tol_overlap
         zero_force = 1e-5
         Γ_conv = tol_Γ_convergence
+        add_bridges = true
     elseif Symbol(solver)==:Hypatia
         # continue
         overlap_tolerance = tol_overlap
         zero_force = 1e-5
         Γ_conv = 1e-10
+        add_bridges = false
     else
         # continue
         overlap_tolerance = tol_overlap
         zero_force = tol_zero_forces
         Γ_conv = tol_Γ_convergence
+        add_bridges = false
     end
     S_conv = default_tol_displacements
 
@@ -121,7 +124,7 @@ for (ns, solver) in enumerate(solvers)
 
     @time jammed_packing, info_convergence, Γs_vs_t, smax_vs_t, iso_vs_t = produce_jammed_configuration!(Xs0, r0; verbose=true, 
     solver=eval(solver), solver_args=solver_args, solver_attributes=solver_attrs, tol_Γ_convergence=Γ_conv, tol_S_convergence = S_conv,
-    tol_overlap=overlap_tolerance, initial_monitor=30, zero_force=zero_force, max_iters=25) 
+    tol_overlap=overlap_tolerance, initial_monitor=30, zero_force=zero_force, max_iters=25, add_bridges=add_bridges) 
 
     println("_______________________________________________________________________________________\n\n")
     times = info_convergence.times_LP_optim
