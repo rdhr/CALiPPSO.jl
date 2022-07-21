@@ -1,7 +1,7 @@
 name = "CALiPPSO"
 uuid = "06591efd-5e2b-42e5-a742-7087027635df"
 authors = ["Rafael Diaz <rafael.diaz.hr@gmail.com>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
@@ -14,9 +14,9 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
-Distributions = "0.25.57"
+Distributions = "0.25.65"
 GLPK = "1.0.1"
-JuMP = "1.0.0"
-SpecialFunctions = "2.1.4"
-StaticArrays = "1.4.4"
+JuMP = "1.1.1"
+SpecialFunctions = "2.1.7"
+StaticArrays = "1.5.1"
 julia = "1.6"
