@@ -8,10 +8,12 @@
 
 This package is a pure [Julia](https://julialang.org/) implementation of the CALiPPSO algorithm for generating jammed packings of hard spheres. The algorithm itself was introduced in [this article](https://arxiv.org/abs/2203.05654) by *Artiaco, Díaz, Parisi, and Ricci-Tersenghi*. As explained there, *CALiPPSO* consists of a _**C**hain of **A**pproximate **Li**near **P**rogramming for **P**acking **S**pherical **O**bjects_. It works in arbitrary dimensions, and for both *mono*disperse and *poly*disperse configurations, as shown below: 
 
-<h3 align="center" margin=0px>
-  <img src="https://www.dropbox.com/s/u4718ftwoz1f99z/3dRCP.jpg?raw=1" width=48%>
-  <img src="https://www.dropbox.com/s/tdz3vc8vph66ozy/2d-N-1024-bidi-packing.jpg?raw=1" width=46%>
-</h3>
+<p align="center" margin=0px>
+  <img src="https://www.dropbox.com/s/u4718ftwoz1f99z/3dRCP.jpg?raw=1" alt="Monodisperse 3d" width=48%>
+  <img src="https://www.dropbox.com/s/1s2t7so2nyih502/isostatic-2d-polydisperse.png?raw=1" alt="Polydisperse 2d" width=46%>
+
+  <small> (Left: Monodisperse packing of 16k particles; coloured according to their number of contacts. Right: Polydisperse packing of 1024 disks, with radii from a log-normal distribution, and network of contacts drawn.</small>
+</p>
 
 
 This package is licensed under the MIT license, so please feel free to use/modify/improve this code as better suits you. We only ask you to cite our work if you find it useful.

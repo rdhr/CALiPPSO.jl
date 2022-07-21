@@ -5,10 +5,12 @@ The CALiPPSO algorithm was introduced in [our paper](https://arxiv.org/abs/2203.
 As we explain in our paper, CALiPPSO is an iterative Linear Programming algorithm to produce jammed packings of hard-spheres (HS) *in arbitrary* dimensions, $d$. Besides, it works for both *mono*- and *poly*disperse packings, as shown below
 
 ```@raw html
-<h3 align="center" margin=0px>
-  <img src="https://www.dropbox.com/s/u4718ftwoz1f99z/3dRCP.jpg?raw=1" width=48%>
-  <img src="https://www.dropbox.com/s/tdz3vc8vph66ozy/2d-N-1024-bidi-packing.jpg?raw=1" width=46%>
-</h3>
+<p align="center" margin=0px>
+  <img src="https://www.dropbox.com/s/u4718ftwoz1f99z/3dRCP.jpg?raw=1" alt="Monodisperse 3d" width=48%>
+  <img src="https://www.dropbox.com/s/1s2t7so2nyih502/isostatic-2d-polydisperse.png?raw=1" alt="Polydisperse 2d" width=46%>
+
+  <small> (Left: Monodisperse packing of 16k particles; coloured according to their number of contacts. Right: Polydisperse packing of 1024 disks, with radii from a log-normal distribution, and network of contacts drawn.</small>
+</p>
 ```
 
 
