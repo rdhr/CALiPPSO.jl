@@ -1,6 +1,8 @@
 using CALiPPSO
 using Test
 
+precompile_main_function()
+
 Lt = 4.0;
 Nt = 30;
 rt = 0.52;
