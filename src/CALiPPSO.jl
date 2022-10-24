@@ -1381,7 +1381,7 @@ function network_of_contacts(packing::AbstractPacking{d, T}, normalized::Bool=tr
 
     isostatic || @warn "Analysing a NON-isostatic packing"
 
-    contact_indices = zeros(Int64, 2, Nc)
+    contact_indices = Vector{Tuple{Int64,Int64}}(undef,Nc)
     contact_vectors = Vector{SVector{d, Float64}}(undef, Nc)
     forces_magnitudes = zeros(Nc)
     contact_count = 0
@@ -1392,7 +1392,7 @@ function network_of_contacts(packing::AbstractPacking{d, T}, normalized::Bool=tr
         cvecs = P.contact_vecs[P.neighbours .>i] # list of corresponding contact vectors
         for (index, j) in enumerate(neighs)
             contact_count +=1
-            contact_indices[:, contact_count] = [i, j]
+            contact_indices[contact_count] = (i, j)
             contact_vectors[contact_count] = cvecs[index]
             forces_magnitudes[contact_count] = forces[index]
         end
