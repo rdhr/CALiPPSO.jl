@@ -6,6 +6,18 @@
 
 [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://rdhr.github.io/CALiPPSO.jl/dev/)
 
+-------
+**Important!!** Breaking changes introduced in `v0.2.0` when changing the default optimizer or passing it arguments. See the [corresponding section](#Changing-the-solver) below.
+
+This might cause the following error message if the main function is interrupted.
+```
+ERROR: The provided `optimizer_constructor` returned a non-empty optimizer.
+```
+
+In [this section](#Changes-with-previous-versions) we give the instructions for solving it.
+
+-----
+
 This package is a pure [Julia](https://julialang.org/) implementation of the CALiPPSO algorithm for generating jammed packings of hard spheres. The algorithm itself was introduced in [this article](https://arxiv.org/abs/2203.05654) by *Artiaco, Díaz, Parisi, and Ricci-Tersenghi*. As explained there, *CALiPPSO* consists of a _**C**hain of **A**pproximate **Li**near **P**rogramming for **P**acking **S**pherical **O**bjects_. It works in arbitrary dimensions, and for both *mono*disperse and *poly*disperse configurations, as shown below: 
 
 <p align="center" margin=0px>
@@ -98,8 +110,9 @@ The output of `produce_jammed_configuration!` is the following:
 
 ### Changing the solver
 
-We used the fantastic [JuMP.jl](https://jump.dev/JuMP.jl/stable/) package for model creation within our algorithm. Thus, you should be able to use any of the available solvers (that are suited for Linear Optimization). Our implementation already includes working code for the following solvers: [Gurobi.jl](https://github.com/jump-dev/Gurobi.jl), [HiGHS.jl](https://github.com/jump-dev/HiGHS.jl), [GLPK.jl](https://github.com/jump-dev/GLPK.jl), [Clp.jl](https://github.com/jump-dev/Clp.jl), [Hypatia.jl](https://github.com/chriscoey/Hypatia.jl), and [COSMO.jl](https://github.com/oxfordcontrol/COSMO.jl).
-Importantly, you might need to change the source code to make other solvers work correctly.
+We used the fantastic [JuMP.jl](https://jump.dev/JuMP.jl/stable/) package for model creation within our algorithm. Thus, you should be able to use any of the available solvers (that are suited for Linear Optimization). Our implementation already includes working code for the following solvers: [Gurobi.jl](https://github.com/jump-dev/Gurobi.jl), [HiGHS.jl](https://github.com/jump-dev/HiGHS.jl), [GLPK.jl](https://github.com/jump-dev/GLPK.jl).
+We also tested it using [Mosek.jl](https://github.com/MOSEK/Mosek.jl), [Clp.jl](https://github.com/jump-dev/Clp.jl), [Hypatia.jl](https://github.com/chriscoey/Hypatia.jl), and [COSMO.jl](https://github.com/oxfordcontrol/COSMO.jl). But we were not able to obtain good configurations due to lack of precision. So if you know how to help [please let us know](mailto:rafael.diazhernandezrojas@uniroma1.it)!
+
 
 We strongly advice using [Gurobi.jl](https://github.com/jump-dev/Gurobi.jl) (a Julia wrapper of the [Gurobi Solver](https://www.gurobi.com/)) because it's the solver we tested the most when developing our package. 
 
@@ -111,20 +124,35 @@ Random.seed!(123) # optional, but just for reproducibility sake of this MWE
 # Choosing the seed of the Julia's RNG determines the random IC produces below with `generate_random_configuration`
 
 using Gurobi
-const grb_args = Gurobi.Env()
+const grb_env = Gurobi.Env()
+const grb_opt = Gurobi.Optimizer(grb_env)
 const grb_attributes = Dict("OutputFlag" => 0, "FeasibilityTol" => 1e-9, "OptimalityTol" => 1e-9, "Method" => 3, "Threads" => CALiPPSO.max_threads)
 
-precompile_main_function(Gurobi, grb_attributes, grb_args) #optional, but highly recommended. This will produce a colorful output that you can safely ignore
+precompile_main_function(grb_opt, grb_attributes) #optional, but highly recommended. This will produce a colorful output that you can safely ignore
 
 const d, N, φ0, L = 3, 512, 0.3, 1.0
 r0, Xs0 = generate_random_configuration(d, N, φ0, L) # if L is not passed, it's assumed that the systems is in a box of size 1
 
 packing, info, Γ_vs_t, Smax_vs_t, isostatic_vs_t = produce_jammed_configuration!(Xs0, r0; 
-        ℓ0=0.2*L, max_iters=500, solver=Gurobi, solver_args=grb_args, solver_attributes=grb_attributes)
+        ℓ0=0.2*L, max_iters=500, optimizer=grb_opt, solver_attributes=grb_attributes)
 ```
 
-Note that different solvers require different choices of attributes and/or arguments. Refer to the [documentation](https://rdhr.github.io/CALiPPSO.jl/dev/changing_default.html#changing_the_solver) for more options and advanced usage.
+Note that different solvers usually require different choices of attributes to tune their accuracy and performance. Refer to the [documentation](https://rdhr.github.io/CALiPPSO.jl/dev/changing_default.html#changing_the_solver) for more options and advanced usage.
 
+#### Changes with previous versions
+
+Note that in versions `v0.1.x` this was *not* the way to choose which optimizer to use for solving the LP instances. From `v0.2.0` onwards the user can declare the *optimizer* (i.e. `grb_opt` above), with all the needed arguments (i.e. `grb_env` above) and pass them as a single argument to `produce_jammed_configuration!`. This led to a cleaner implementation, since it is truly solver agnostic.
+
+However, it also introduced a *potential* problem. Every time `optimize!` is called, the optimizer is associated to a given instance of a (LP) model. If, for any reason, `produce_jammed_configuration!` is interrupted or its main loop exits it is very likely that if this function is called again (or any time a model is created with the same *optimizer*) an error like this will occur:
+```julia
+ERROR: The provided `optimizer_constructor` returned a non-empty optimizer.
+```
+This is caused by the way an optimizer gets linked to a model, once `optmize!` is called in JuMP. In any case, to solve it, simply do
+
+```
+CALiPPSO.empty!(<your chosen solver>)
+```
+So for instance, `CALiPPSO.empty!(grb_opt)` in the example above. Or, if you are using the default optimizer, do `CALiPPSO.empty!(CALiPPSO.default_optimizer)`.
 
 
 ### Other examples
