@@ -88,7 +88,7 @@ function print_monitor_progress(max_Si::T, R::T, N::I, L::T, d::I, zs::Vector{I}
      end
 
     printstyled("----------------------------------\n", color=color)
-    println("Mismatch in ∂ℒ/∂Γ = 0 constraint = ", Γ_mismatch)
+    println("Mismatch in ∂ℒ/∂Γ = 0 constraint: ", Γ_mismatch)
     println("Force mismatch = ", f_mismatch)
     println("Sample of smallest forces = \t", small_fs)
     
@@ -96,7 +96,7 @@ function print_monitor_progress(max_Si::T, R::T, N::I, L::T, d::I, zs::Vector{I}
 end
 
 "Print info about CALiPPSO progress, including new values of ``|s_i|``, density and some statistics of ``R``, statistics of constraints and contacts, forces, etc."
-function print_monitor_progress(max_Si::T, Rs::Vector{T}, L::T, d::I, zs::Vector{I}, non_rattlers::Vector{I}, n_constr::Vector{I}, iso_cond::Bool, f_mismatch::T, small_fs::Vector{T};
+function print_monitor_progress(max_Si::T, Rs::Vector{T}, L::T, d::I, zs::Vector{I}, non_rattlers::Vector{I}, n_constr::Vector{I}, iso_cond::Bool, Γ_mismatch::T, f_mismatch::T, small_fs::Vector{T};
      dig_R::I=9, dig_z::I = Int(ceil(log10(length(Rs)*d))), dig_S::I=13, color::Symbol=:cyan) where {I<:Int, T<:AbstractFloat}
      
      ϕ = packing_fraction(d, Rs, L)
@@ -131,6 +131,7 @@ function print_monitor_progress(max_Si::T, Rs::Vector{T}, L::T, d::I, zs::Vector
      end
 
     printstyled("----------------------------------\n", color=color)
+    println("Mismatch in ∂ℒ/∂Γ = 0 constraint: ", Γ_mismatch)
     println("Force mismatch = ", f_mismatch)
     println("Sample of smallest forces = \t", small_fs)
     

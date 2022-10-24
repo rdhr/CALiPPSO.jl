@@ -484,7 +484,7 @@ function network_of_contacts(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constrai
     for i in 1:N-1::Int
         neighs=neighbours_list[i]; #list of particles in neighbourhood of 'i'; the particles in this array are only *possible* neighbours
         real_contacts = findall(x-> x>zero_force, shadow_price.(constraints[i])) # indices of non-zero dual variables of the respective list of constraints of particle i
-        m=length(real_contacts); #N_contacts[i] = m # number of dual contacts (storing it)
+        m=length(real_contacts);  # number of contacts with finite dual variable 
     
         particles_dual_contact[i] = neighs[real_contacts] # storing the indices of real contacts
         forces_dual[i] = shadow_price.(constraints[i])[real_contacts]
@@ -845,19 +845,7 @@ function monitor_force_balance(contact_vectors::Vector{Vector{SVector{d,T}}}, fo
 end
 
 
-
 "For a given configuration, return the mismatch in the constraint imposed by ∂ℒ/∂Γ = 0 or, equivalently, ∑₍ᵢⱼ₎λᵢⱼ (σᵢⱼ)² = 1"
-# function monitor_Γ_constraint(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, images::Vector{SVector{d, T}}; zero_force::T=default_tol_zero_forces) where {d, T<:Float64}
-
-#     contacts, forces, neighs_lists= network_of_contacts(Xs, constraints, neighbours_list, images, zero_force=zero_force)
-#     sum_λs = 0.0
-#     for fs in forces
-#         sum_λs += sum(fs)
-#     end
-#     Γ_mismatch = 2-(4R^2)*sum_λs
-#     return Γ_mismatch
-# end
-
 function monitor_Γ_constraint(forces::Vector{Vector{T}}, R::T) where {T<:Float64}
     sum_λs = 0.0
     for fs in forces
@@ -866,6 +854,24 @@ function monitor_Γ_constraint(forces::Vector{Vector{T}}, R::T) where {T<:Float6
     Γ_mismatch = 2-(4R^2)*sum_λs
     return Γ_mismatch
 end
+
+
+function monitor_Γ_constraint(forces::Vector{Vector{T}}, Rs::Vector{T}, contacts_lists::Vector{Vector{Int64}}) where {T<:Float64}
+    sum_λs = 0.0
+    for (i, fs) in enumerate(forces)
+        neighs = contacts_lists[i]
+        for (ind, j) in enumerate(neighs)
+            if j>i
+                σij = Rs[i]+Rs[j]
+                sum_λs += fs[ind]*σij^2
+            end
+        end
+    end
+    Γ_mismatch = 1-sum_λs
+    return Γ_mismatch
+end
+
+
 
 """
     function update_distances!(S⃗_cum::Vector{SVector{d, T}}, s_update::T, Xs::Vector{SVector{d, PeriodicNumber{T}}}, distances::Symmetric{T, Matrix{T}}; verbose=Bool=true) where {d, T<:AbstractFloat}
@@ -1272,7 +1278,10 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
         
         # track the force balance in the current iteration or not 
         if verbose  && (iter<=initial_monitor || iter%monitor_step==0)
-            f_mismatch, small_fs = monitor_force_balance(Xs, constraints, possible_neighs, config_images; zero_force=zero_force)
+            contacts_vecs_iter, forces_iter, contacts_lists_iter= network_of_contacts(Xs, constraints, possible_neighs, config_images, zero_force=zero_force)
+            f_mismatch, small_fs = monitor_force_balance(contacts_vecs_iter, forces_iter)
+            Γ_mismatch = monitor_Γ_constraint(forces_iter, Rs, contacts_lists_iter)
+            # f_mismatch, small_fs = monitor_force_balance(Xs, constraints, possible_neighs, config_images; zero_force=zero_force)
         end
 
         ### **** UPDATE CONFIGURATION WITH THE VALUES FROM LP OPTIMIZATION ****
@@ -1299,7 +1308,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
         iso_vs_t[iter] = iso_cond; # store such info 
     
         if verbose && (iter<=initial_monitor || iter%monitor_step==0)
-            print_monitor_progress(max_Si, Rs, L, d, zs_iter, non_rattlers_iter, length.(constraints), iso_cond, f_mismatch, small_fs)
+            print_monitor_progress(max_Si, Rs, L, d, zs_iter, non_rattlers_iter, length.(constraints), iso_cond, Γ_mismatch, f_mismatch, small_fs)
         end
 
         # determine whether distances between centers should be updated
