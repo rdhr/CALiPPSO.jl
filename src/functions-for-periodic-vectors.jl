@@ -246,11 +246,9 @@ end
 
 function distances_between_centers!(distances::Symmetric{T, Matrix{T}}, Xs::Vector{SVector{d, PeriodicNumber{T}}}, is::Vector{Int64}) where {d, T<:AbstractFloat}
     N = length(Xs)
-    dists=distances.data
     @inbounds for i in is, j in i+1:N
-        dists[i,j]=norm(Xs[i] .- Xs[j])
+        distances.data[i,j]=norm(Xs[i] .- Xs[j])
     end
-    copy!(distances, Symmetric(dists))
 end
 
 
