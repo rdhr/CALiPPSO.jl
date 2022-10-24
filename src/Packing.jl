@@ -237,6 +237,30 @@ function packing_fraction(packing::MonoPacking{d, T}) where {d, T<:AbstractFloat
 end
 
 
+"""
+    monitor_Γ_constraint(packing::MonoPacking{d,T}) where {d, T<:AbstractFloat}
+
+For a given configuration, return the mismatch in the constraint imposed by ∂ℒ/∂Γ = 0 or, equivalently, ∑₍ᵢⱼ₎λᵢⱼ (σᵢⱼ)² = 1
+*Important*: This function assumes that the contact vectors of each particle are *NOT* normalized. This is the way `MonoPacking` is 
+constructed when calling `produce_jammed_configuration!`
+""" 
+function monitor_Γ_constraint(packing::MonoPacking{d,T}) where {d, T<:AbstractFloat}
+    σ = 2*packing.R
+    sum_λs = 0.0
+    parts = packing.Particles
+
+    for (i, P) in enumerate(parts)
+        neighs = P.neighbours
+        fs = P.forces
+        for (ind, j) in enumerate(neighs)
+            j>i && (sum_λs += fs[ind])
+        end
+    end
+
+    return 1 - (σ^2)*sum_λs
+end
+
+
 #########################################################################################################
 #########################################################################################################
 ### Polydisperse packing type and related constructors
@@ -443,4 +467,28 @@ function packing_fraction(packing::PolyPacking{d, T}) where {d, T<:AbstractFloat
     Rs = get_radii(packing)
     L = packing.Particles[1].X[1].L
     packing_fraction(d, Rs, L)
+end
+
+
+"""
+    monitor_Γ_constraint(packing::PolyPacking{d,T}) where {d, T<:AbstractFloat}
+
+For a given configuration, return the mismatch in the constraint imposed by ∂ℒ/∂Γ = 0 or, equivalently, ∑₍ᵢⱼ₎λᵢⱼ (σᵢⱼ)² = 1
+*Important*: This function assumes that the contact vectors of each particle *ARE* normalized. This is the way `PolyPacking` is 
+constructed when calling `produce_jammed_configuration!`
+""" 
+function monitor_Γ_constraint(packing::PolyPacking{d,T}) where {d, T<:AbstractFloat}
+    Rs = get_radii(packing)
+    sum_λs = 0.0
+    parts = packing.Particles
+
+    for (i, P) in enumerate(parts)
+        neighs = P.neighbours
+        fs = P.forces
+        for (ind, j) in enumerate(neighs)
+            j>i && (sum_λs += fs[ind]*(Rs[i]+Rs[j]))
+        end
+    end
+ 
+    return 1-sum_λs
 end

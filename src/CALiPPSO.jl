@@ -492,8 +492,7 @@ function network_of_contacts(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constrai
         contact_vecs = Vector{SVector{d, T}}(undef, m)
 
         for (ind, j) in enumerate(particles_dual_contact[i])
-            contact_vec, img_ind = MIC_vector(Xs[i], Xs[j], images)
-            contact_vecs[ind] = contact_vec
+            contact_vecs[ind], = MIC_vector(Xs[i], Xs[j], images)
         end
         all_contacts[i] = contact_vecs
     end
