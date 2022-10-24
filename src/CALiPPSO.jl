@@ -75,7 +75,7 @@ const max_threads = Int(round(Sys.CPU_THREADS/2)) # max number of processes to b
 using GLPK
 const default_tol_overlap=1e-8 # tolerance for identifying an Overlap.
 const default_tol_optimality = 0.1*default_tol_overlap
-const default_optimizer = GLPK.Optimizer(;want_infeasibility_certificates=false, method=GLPK.MethodEnum(0))
+const default_optimizer = GLPK.Optimizer(want_infeasibility_certificates=false, method=GLPK.MethodEnum(0))
 const default_solver_attributes = Dict("msg_lev"=>GLPK.GLP_MSG_OFF, "tol_bnd"=>default_tol_optimality, "tol_dj"=>default_tol_optimality)
 
 ### First calls for compilation of model creation

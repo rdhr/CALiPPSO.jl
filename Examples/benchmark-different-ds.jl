@@ -1,5 +1,4 @@
-include("../src/CALiPPSO.jl")
-using .CALiPPSO
+using CALiPPSO
 using DelimitedFiles, StatsBase, BenchmarkTools, HiGHS
 
 const tol_optimality = CALiPPSO.default_tol_optimality
@@ -44,7 +43,7 @@ for d in ds
 
     # io2 = open("Benchmarks--d-$d-after-LS--changing-solver.txt", "w")
     # io2 = open("Benchmarks--d-$d-after-LS--v0.1.1.txt", "w")
-    io2 = open("Benchmarks--d-$d-after-LS--rcv0.2.0.txt", "w")
+    io2 = open("Benchmarks--d-$d-after-LS--v0.2.0.txt", "w")
     show(io2, MIME("text/plain"), res_benchmark)
     close(io2)
 end
