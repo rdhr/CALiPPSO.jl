@@ -12,24 +12,25 @@ include("random_initial_conditions.jl")
 include("functions-printing-output.jl")
 
 using JuMP # Library for using high level interface for optimization and model creation/manipulation 
+import JuMP.MOI as MOI
 const max_threads = Int(round(Sys.CPU_THREADS/2)) # max number of processes to be used by any optimizer. By default, half the number of threads available in a computer
 
 ##############################################################################
 ##############################################################################
-## Now choose the solver
+## Some possibly useful parameters with the different solvers
 ##############################################################################
 ##############################################################################
 
 ################################################
-## By default, Gurobi is used; so Comment the following lines if you want to use another solver
+## We suggest to use Gurobi if you can get a license
 ################################################
 
 # ### Parameters for Gurobi
 # using Gurobi
 # const default_tol_overlap=1e-8 # tolerance for identifying an Overlap. Given that Gurobi's precision is 10^-9, a larger value is needed.
 # const default_tol_optimality = 1e-9; # optimality tolerances. This is the most precise value allowed by Gurobi
-# const default_solver = Gurobi
-# const default_args = Gurobi.Env() # to avoid printing license info every time a model is created or optimized 
+# const grb_env = Gurobi.Env() # to avoid printing license info every time a model is created or optimized 
+# const default_optimizer = Gurobi.Optimizer(grb_env)
 # #= 
 # We are omitting all the standard output of Gurobi by setting the 'OutputFlag' to 0.
 # The values of feasibility (FeasibilityTol) and optimality (OptimalityTol) chosen are the most stringent ones allowed by Gurobi.
@@ -38,63 +39,52 @@ const max_threads = Int(round(Sys.CPU_THREADS/2)) # max number of processes to b
 # =#
 # const default_solver_attributes = Dict("OutputFlag" => 0, "FeasibilityTol" => default_tol_optimality, "OptimalityTol" => default_tol_optimality, "Method" => 3, "Threads" => max_threads)
 
-# ### First calls for compilation of model creation
-# Model(()-> default_solver.Optimizer(default_args))
-
 
 
 ################################################
-## Uncomment the following lines if you want to use HiGHS solver
+## Suggested parameters if you want to use HiGHS solver
 ################################################
 
-# #### Parameters for HiGHS
+# # #### Parameters for HiGHS
 # using HiGHS
 # const default_tol_overlap=1e-8 # tolerance for identifying an Overlap.
 # const default_tol_optimality = 1e-9
-# const default_solver = HiGHS
-# const default_args = nothing
+# const default_optimizer = HiGHS.Optimizer()
 # const default_solver_attributes = Dict("small_matrix_value"=>0.1*default_tol_optimality, "primal_feasibility_tolerance" => default_tol_optimality, "dual_feasibility_tolerance" => default_tol_optimality, "solver" => "ipm", "ipm_optimality_tolerance"=>default_tol_optimality,  "highs_max_threads" => max_threads, "parallel"=>"on", "output_flag"=>false)
-
-# # ### First calls for compilation of model creation
-# Model(()-> default_solver.Optimizer())
 
 
 
 ###############################################
-# Uncomment the following lines if you want to use Clp solver
+# Suggested parameters if you want to use Clp solver
 ###############################################
 
 # #### Parameters for Clp
 # using Clp
 # const default_tol_overlap=1e-8 # tolerance for identifying an Overlap.
 # const default_tol_optimality = 1e-9
-# const default_solver = Clp
-# const default_args = nothing
+# const default_optimizer = Clp.Optimizer()
 # const default_solver_attributes = Dict("PrimalTolerance"=>default_tol_optimality, "DualTolerance" => default_tol_optimality, "LogLevel" => 0, "SolveType" => 5)
-
-# # ### First calls for compilation of model creation
-# Model(()-> default_solver.Optimizer())
+# Model(()-> default_optimizer)
 
 
 ################################################
-## Uncomment the following lines if you want to use GLPK solver
+## By default CALiPPSO uses the GLPK solver with the following parameters
 ################################################
 
 ### Parameters for GLPK
 using GLPK
 const default_tol_overlap=1e-8 # tolerance for identifying an Overlap.
 const default_tol_optimality = 0.1*default_tol_overlap
-const default_solver = GLPK
-const default_args = (want_infeasibility_certificates=false, method=GLPK.MethodEnum(0)) 
+const default_optimizer = GLPK.Optimizer(;want_infeasibility_certificates=false, method=GLPK.MethodEnum(0))
 const default_solver_attributes = Dict("msg_lev"=>GLPK.GLP_MSG_OFF, "tol_bnd"=>default_tol_optimality, "tol_dj"=>default_tol_optimality)
 
 ### First calls for compilation of model creation
-Model(()-> default_solver.Optimizer(;default_args...))
+empty!(Model(()-> default_optimizer))
 
 
 
 ################################################
-## Uncomment the following lines if you want to use COSMO solver
+## Suggested parameters if you want to use COSMO solver
 # (**NOT** recommended to use these due to poor precision in identifying active dual variables)
 ################################################
 
@@ -102,18 +92,11 @@ Model(()-> default_solver.Optimizer(;default_args...))
 # using COSMO
 # const default_tol_overlap=1e-5 # tolerance for identifying an Overlap.
 # const default_tol_optimality = 0.1*default_tol_overlap
-# const default_solver = COSMO
-# const default_args = nothing
 # const default_solver_attributes = Dict("verbose"=>false, "check_termination"=>500, "max_iter"=>10000, "eps_abs"=>default_tol_optimality, "eps_rel"=>default_tol_optimality, "adaptive_rho"=>false)
 
 
-# ### First calls for compilation of model creation
-# Model(()-> default_solver.Optimizer())
-
-
-
 ################################################
-## Uncomment the following lines if you want to use Hypatia solver 
+## Suggested parameters if you want to use Hypatia solver 
 ## (**NOT** recommended to use these due to poor precision in identifying active dual variables; although it passes the d=3 test)
 ################################################
 
@@ -122,14 +105,12 @@ Model(()-> default_solver.Optimizer(;default_args...))
 # using Hypatia
 # const default_tol_overlap=1e-8 # tolerance for identifying an Overlap.
 # const default_tol_optimality = 0.1*default_tol_overlap
-# const default_solver = Hypatia
-# const default_args = (verbose = false, tol_abs_opt = default_tol_optimality, tol_feas = 0.1*default_tol_overlap, tol_infeas = 0.1*default_tol_overlap)
+# const default_optimizer = Hypatia.Optimizer(;verbose = false, tol_abs_opt = default_tol_optimality, tol_feas = 0.1*default_tol_overlap, tol_infeas = 0.1*default_tol_overlap)
 # const default_solver_attributes = Dict()
 
-# ### First calls for compilation of model creation
-# Model(()-> default_solver.Optimizer(;default_args...))
 
-const dict_solver = Dict("default_solver"=> default_solver, "default_solver_args"=>default_args, "default_solver_attributes"=> default_solver_attributes)
+
+const dict_solver = Dict("default_optimizer"=> default_optimizer,  "default_solver_attributes"=> default_solver_attributes)
 ##############################################################################
 ##############################################################################
 ## Here we begin defining all the required functions and remaining constants
@@ -232,6 +213,10 @@ end
 norm_displacements(rand(4,50))
 
 
+"Empty an *optimizer* in case it still is associated with a model"
+CALiPPSO.empty!(optimizer::MOI.AbstractOptimizer) = MOI.empty!(optimizer)
+CALiPPSO.empty!(default_optimizer)
+
 #########################################################################################################
 #########################################################################################################
 ### Functions to generate and solve the jamming LOP instances
@@ -242,7 +227,8 @@ norm_displacements(rand(4,50))
     bounds_and_cutoff(sqrΓ::T, R::T, ℓ0::T, d::Int64; thresholds::Vector{T}=[5e-4, 1e-5], sbound::T=0.01)
 
 Obtain displacements' bound and radius of influence (or cutoff) for particles of radius 'R' 
-and after an inflation factor with square root 'sqrΓ'.
+and after an inflation factor with square root 'sqrΓ'. In case of a polydisperse packing
+the largest radius is used.
 
 # Output
 1. The cutoff for assigning constraints, i.e. the radius of influence, ℓ.
@@ -397,43 +383,11 @@ given as input.
 See also [`add_non_overlapping_constraints!`](@ref), [`@constraint`](https://jump.dev/JuMP.jl/stable/reference/constraints/#JuMP.@constraint), [`optimize!`](https://jump.dev/JuMP.jl/stable/reference/solutions/#JuMP.optimize!),
 [`produce_jammed_configuration!`](@ref), [`fine_tune_forces!`](@ref).
 """
-function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, ℓ::T, s_bound::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}};
-    solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args, add_bridges::Bool=false,
+function solve_LP_instance!(LP_model::Model, Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, ℓ::T, s_bound::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}};
     verbose_LP_info::Bool=false, dig_S::Int=13) where {d, T<:Float64}
         
     N = length(Xs); # number of particles
-    
-    #= The optimizer of the model is constructed, using the Optimizer of the solver chosen
-     and (possibly) other parameters needed to control the precision, turn-off verbose output, etc.
-     These parameters cannot be fixed by using the 'set_optimizer_attributes' function of JuMP, 
-     but are instead determined as arguments passed when calling the optimizer.
-     Now, the problem is that different solvers have different ways of passing such arguments; 
-     we thus end up with the following rather ugly implementation.
-     *** Note that you'll might need to add/modify the instance of the solver of your choice ***
-     (and recall to do the same in `fine_tune_forces!`) =#
-    if solver_args === nothing
-        optimizer = solver.Optimizer()
-    else
-        if Symbol(solver) == :Gurobi # calling the solver with Gurobi.Env() to avoid that the license is retrieved every time a model is created
-            optimizer = solver.Optimizer(solver_args)
-        elseif Symbol(solver)==:GLPK || Symbol(solver)==:Hypatia # for these solvers, some parameters are fixed as keyword args of Optimizer
-            optimizer = solver.Optimizer(;solver_args...)
-        else # for any other solver, no argument passing has been implemented, so they should be called with 'solver_args=nothing'a
-            error("Passing arguments to the Optimizer of : ", Symbol(solver), " is not defined!\n Try using 'solver_args=nothing' when calling `solve_LP_instance` or `produce_jammed_configuration!`.")
-        end
-    end
-    #### Once the optimizer has been chosen, the model is finally created
-    if add_bridges
-        LP_model = Model(() -> optimizer) # create a model with the solver defined by 'optimizer'
-    else # this is the choice by default
-        LP_model = Model(() -> optimizer; add_bridges = false) # create a model with the solver defined by 'optimizer' without bridges to improve performance; it doesn't work with COSMO
-        # LP_model = direct_model(optimizer) # this way of creating models is more efficient but does *not* Clp
-    end
-
-    set_optimizer_attributes(LP_model, solver_attributes...) # pass the optimizer attributes to the model
-    
-    set_string_names_on_creation(LP_model, false) # disable string names for better performance
-    
+   
     @variable(LP_model, inflation_factor>=1) # Declare inflation factor design variable
     @variable(LP_model, -s_bound <= S[μ=1:d, i=1:N] <= s_bound); # Declare displacements design variables (BOUNDED)
     fix.(S[:, N], 0.0; force=true) # Fix one displacement vector so the center of mass remains constant
@@ -449,7 +403,7 @@ function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, ℓ:
     status = termination_status(LP_model)
     S⃗ = JuMP.value.(S)
     max_Si_print = round(maximum(abs.(S⃗)), digits=dig_S)
-
+    
     # if verbose option is true, show info of the values of ℓ and bound on displacements used when creating the LP instance
     if verbose_LP_info
         println("LP instance generated with (ℓ, ℓ/R) = ", [ℓ, ℓ/R], "\t and bound on (|s_i|, |s_i|/R) = ", [s_bound, s_bound/R])
@@ -457,46 +411,14 @@ function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, ℓ:
         printstyled("\t Optimal values: \t √Γ-1 = ", sqrt(Γ)-1, ",\t max |sᵢ| (all particles) = ", max_Si_print, "\n", bold=true)
     end
     
-    return S⃗, Γ, constraints, possible_neighs, t_solve, status
+    return S⃗, Γ, constraints, possible_neighs, t_solve
 end
 
-function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, Rs::Vector{T}, ℓ::T, s_bound::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}};
-    solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args, add_bridges::Bool=false,
+function solve_LP_instance!(LP_model::Model, Xs::Vector{SVector{d, PeriodicNumber{T}}}, Rs::Vector{T}, ℓ::T, s_bound::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}};
     verbose_LP_info::Bool=false, dig_S::Int=13) where {d, T<:Float64}
-        
-    N = length(Xs); # number of particles
-    
-    #= The optimizer of the model is constructed, using the Optimizer of the solver chosen
-     and (possibly) other parameters needed to control the precision, turn-off verbose output, etc.
-     These parameters cannot be fixed by using the 'set_optimizer_attributes' function of JuMP, 
-     but are instead determined as arguments passed when calling the optimizer.
-     Now, the problem is that different solvers have different ways of passing such arguments; 
-     we thus end up with the following rather ugly implementation.
-     *** Note that you'll might need to add/modify the instance of the solver of your choice ***
-     (and recall to do the same in `fine_tune_forces!`) =#
-    if solver_args === nothing
-        optimizer = solver.Optimizer()
-    else
-        if Symbol(solver) == :Gurobi # calling the solver with Gurobi.Env() to avoid that the license is retrieved every time a model is created
-            optimizer = solver.Optimizer(solver_args)
-        elseif Symbol(solver)==:GLPK || Symbol(solver)==:Hypatia # for these solvers, some parameters are fixed as keyword args of Optimizer
-            optimizer = solver.Optimizer(;solver_args...)
-        else # for any other solver, no argument passing has been implemented, so they should be called with 'solver_args=nothing'a
-            error("Passing arguments to the Optimizer of : ", Symbol(solver), " is not defined!\n Try using 'solver_args=nothing' when calling `solve_LP_instance` or `produce_jammed_configuration!`.")
-        end
-    end
-    #### Once the optimizer has been chosen, the model is finally created
-    if add_bridges
-        LP_model = Model(() -> optimizer) # create a model with the solver defined by 'optimizer'
-    else # this is the choice by default
-        LP_model = Model(() -> optimizer; add_bridges = false) # create a model with the solver defined by 'optimizer' without bridges to improve performance; it doesn't work with COSMO
-        # LP_model = direct_model(optimizer) # this way of creating models is more efficient but does *not* Clp
-    end
 
-    set_optimizer_attributes(LP_model, solver_attributes...) # pass the optimizer attributes to the model
-    
-    set_string_names_on_creation(LP_model, false) # disable string names for better performance
-    
+    N = length(Xs); # number of particles
+        
     @variable(LP_model, inflation_factor>=1) # Declare inflation factor design variable
     @variable(LP_model, -s_bound <= S[μ=1:d, i=1:N] <= s_bound); # Declare displacements design variables (BOUNDED)
     fix.(S[:, N], 0.0; force=true) # Fix one displacement vector so the center of mass remains constant
@@ -521,7 +443,7 @@ function solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, Rs::Vector
         printstyled("\t Optimal values: \t √Γ-1 = ", sqrt(Γ)-1, ",\t max |sᵢ| (all particles) = ", max_Si_print, "\n", bold=true)
     end
     
-    return S⃗, Γ, constraints, possible_neighs, t_solve, status
+    return S⃗, Γ, constraints, possible_neighs, t_solve
 end
 
 
@@ -768,49 +690,16 @@ Besides updating the `forces` of each particle in 'Packing', this function produ
 See also [`add_non_overlapping_constraints!`](@ref), [`optimize!`](https://jump.dev/JuMP.jl/stable/reference/solutions/#JuMP.optimize!),
 [`produce_jammed_configuration!`](@ref), [`solve_LP_instance`](@ref).
 """
-function fine_tune_forces!(Packing::MonoPacking{d, T}, force_mismatch::T, ℓ::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}};
-    solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
-    add_bridges::Bool=false,
+function fine_tune_forces!(Packing::MonoPacking{d, T}, LP_model::Model, force_mismatch::T, ℓ::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}};
     tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T = default_tol_zero_forces) where {d, T<:Float64}
-    
+
     Xs = get_positions(Packing) ; N = length(Xs)        
     R = Packing.R
     rattlers = get_rattlers(Packing)
 
     printstyled("\nForce balance condition not met yet; max force mismatch = ", force_mismatch, "\n", color=:yellow, bold=true)
     println("Performing a last LP optimization to improve force balance.")
-
-    #= The optimizer of the model is constructed, using the Optimizer of the solver chosen
-     and (possibly) other parameters needed to control the precision, turn-off verbose output, etc.
-     These parameters cannot be fixed by using the 'set_optimizer_attributes' function of JuMP, 
-     but are instead determined as arguments passed when calling the optimizer.
-     Now, the problem is that different solvers have different ways of passing such arguments; 
-     we thus end up with the following rather ugly implementation.
-     *** Note that you'll might need to add/modify the instance of the solver of your choice ***
-     (and recall to do the same in `solve_LP_instance`) =#
-    if solver_args === nothing
-        optimizer = solver.Optimizer()
-    else
-        if Symbol(solver) == :Gurobi # calling the solver with Gurobi.Env() to avoid that the license is retrieved every time a model is created
-            optimizer = solver.Optimizer(solver_args)
-        elseif Symbol(solver)==:GLPK || Symbol(solver)==:Hypatia # for these solvers, some parameters are fixed as keyword args of Optimizer
-            optimizer = solver.Optimizer(;solver_args...)
-        else # for any other solver, no argument passing has been implemented, so they should be called with 'solver_args=nothing'a
-            error("Passing arguments to the Optimizer of : ", Symbol(solver), " is not defined!\n Try using 'solver_args=nothing' when calling `fine_tune_forces!` or `produce_jammed_configuration!`.")
-        end
-    end
-    #### Once the optimizer has been chosen, the model is finally created
-    if add_bridges
-        LP_model = Model(() -> optimizer) # create a model with the solver defined by 'optimizer'
-    else # this is the choice by default
-        LP_model = Model(() -> optimizer; add_bridges = false) # create a model with the solver defined by 'optimizer' without bridges to improve performance; it doesn't work with COSMO
-        # LP_model = direct_model(optimizer) # this way of creating models is more efficient but does *not* Clp
-    end
-
-    set_optimizer_attributes(LP_model, solver_attributes...) # pass the optimizer attributes to the model
-    
-    set_string_names_on_creation(LP_model, false) # disable string names for better performance
-    
+   
     @variable(LP_model, inflation_factor) # Declare growth factor design variable
     @variable(LP_model, S[μ=1:d, i=1:N]); # Declare displacements design variables (UNbounded)
     fix.(S[:, N], 0.0; force=true) # Fix one displacement vector so the center of mass remains constant
@@ -840,52 +729,19 @@ function fine_tune_forces!(Packing::MonoPacking{d, T}, force_mismatch::T, ℓ::T
     
     printstyled("Force mismatch after final optimization = ", maximum(norm.(total_force(Packing))), "\n\n", bold=true)
 
-    return t_solve, isostatic, Nc, Nnr, status
+    return t_solve, isostatic, Nc, Nnr
 end
 
 
-function fine_tune_forces!(Packing::PolyPacking{d, T}, force_mismatch::T, ℓ::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}};
-    solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args,
-    add_bridges::Bool=false,
+function fine_tune_forces!(Packing::PolyPacking{d, T}, LP_model::Model, force_mismatch::T, ℓ::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}};
     tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T = default_tol_zero_forces) where {d, T<:Float64}
-    
+
     Xs = get_positions(Packing) ; N = length(Xs)        
     Rs = get_radii(Packing)
     rattlers = get_rattlers(Packing)
 
     printstyled("\nForce balance condition not met yet; max force mismatch = ", force_mismatch, "\n", color=:yellow, bold=true)
     println("Performing a last LP optimization to improve force balance.")
-
-    #= The optimizer of the model is constructed, using the Optimizer of the solver chosen
-     and (possibly) other parameters needed to control the precision, turn-off verbose output, etc.
-     These parameters cannot be fixed by using the 'set_optimizer_attributes' function of JuMP, 
-     but are instead determined as arguments passed when calling the optimizer.
-     Now, the problem is that different solvers have different ways of passing such arguments; 
-     we thus end up with the following rather ugly implementation.
-     *** Note that you'll might need to add/modify the instance of the solver of your choice ***
-     (and recall to do the same in `solve_LP_instance`) =#
-    if solver_args === nothing
-        optimizer = solver.Optimizer()
-    else
-        if Symbol(solver) == :Gurobi # calling the solver with Gurobi.Env() to avoid that the license is retrieved every time a model is created
-            optimizer = solver.Optimizer(solver_args)
-        elseif Symbol(solver)==:GLPK || Symbol(solver)==:Hypatia # for these solvers, some parameters are fixed as keyword args of Optimizer
-            optimizer = solver.Optimizer(;solver_args...)
-        else # for any other solver, no argument passing has been implemented, so they should be called with 'solver_args=nothing'a
-            error("Passing arguments to the Optimizer of : ", Symbol(solver), " is not defined!\n Try using 'solver_args=nothing' when calling `fine_tune_forces!` or `produce_jammed_configuration!`.")
-        end
-    end
-    #### Once the optimizer has been chosen, the model is finally created
-    if add_bridges
-        LP_model = Model(() -> optimizer) # create a model with the solver defined by 'optimizer'
-    else # this is the choice by default
-        LP_model = Model(() -> optimizer; add_bridges = false) # create a model with the solver defined by 'optimizer' without bridges to improve performance; it doesn't work with COSMO
-        # LP_model = direct_model(optimizer) # this way of creating models is more efficient but does *not* Clp
-    end
-
-    set_optimizer_attributes(LP_model, solver_attributes...) # pass the optimizer attributes to the model
-    
-    set_string_names_on_creation(LP_model, false) # disable string names for better performance
     
     @variable(LP_model, inflation_factor) # Declare growth factor design variable
     @variable(LP_model, S[μ=1:d, i=1:N]); # Declare displacements design variables (UNbounded)
@@ -916,7 +772,7 @@ function fine_tune_forces!(Packing::PolyPacking{d, T}, force_mismatch::T, ℓ::T
     
     printstyled("Force mismatch after final optimization = ", maximum(norm.(total_force(Packing))), "\n\n", bold=true)
 
-    return t_solve, isostatic, Nc, Nnr, status
+    return t_solve, isostatic, Nc, Nnr
 end
 
 ## This function is required because the force balance condition is monitored throughout the CALiPPSO process.
@@ -1121,13 +977,13 @@ See [`check_for_overlaps`](@ref) and [`update_distances!`](@ref) for more inform
 
 """
 function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T;
-        ℓ0::T=4*R, sqrΓ0::Real=1.01, thresholds_bounds::Tuple{T, T}=(5e-4, 1e-5), sbound::T=0.01,
-        solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args, add_bridges::Bool=false,
-        max_iters::I=default_max_iterations, tol_Γ_convergence::T=default_tol_Γ_convergence, tol_S_convergence::T=default_tol_displacements_convergence, tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces,
-        tol_overlap::T=default_tol_overlap, non_iso_break::I=2*max_iters, 
-        ratio_sℓ_update::T=0.1,
-        verbose::Bool=true, non_iso_warn::Bool=false, monitor_step::I=10, initial_monitor::I=monitor_step, interval_overlaps_check::I=10, initial_overlaps_check::I=initial_monitor) where {d, T<:Float64, I<:Int}
-    
+    ℓ0::T=4*R, sqrΓ0::Real=1.01, thresholds_bounds::Tuple{T, T}=(5e-4, 1e-5), sbound::T=0.01,
+    optimizer::MOI.AbstractOptimizer=default_optimizer, solver_attributes::Dict=default_solver_attributes, add_bridges::Bool=false,
+    max_iters::I=default_max_iterations, tol_Γ_convergence::T=default_tol_Γ_convergence, tol_S_convergence::T=default_tol_displacements_convergence, tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces,
+    tol_overlap::T=default_tol_overlap, non_iso_break::I=2*max_iters, 
+    ratio_sℓ_update::T=0.1,
+    verbose::Bool=true, non_iso_warn::Bool=false, monitor_step::I=10, initial_monitor::I=monitor_step, interval_overlaps_check::I=10, initial_overlaps_check::I=initial_monitor) where {d, T<:Float64, I<:Int}
+
     N = length(Xs)
     L = Xs[1][1].L
 
@@ -1138,26 +994,37 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
     verbose && printstyled("\n Producing a jammed configuration of $N particles inside a $d-dimensional box of size $L:\n\n", bold=true)
     config_images = generate_system_images(d, L)
     #Initialization values
-    sqrΓ=sqrΓ0; iter=0;  max_Si=1.0;  non_iso_count = 0; converged = true
+    sqrΓ=sqrΓ0; iter=0;  max_Si=1.0;  non_iso_count = 0; converged = false
     Nnr_iter = 0; 
     S⃗_cum = svectors(zeros(d, N-1), Val(d))
     distances = distances_between_centers(Xs)
     #Arrays to store the output
     constraints = Vector{Vector{ConstraintRef}}(undef, N-1); possible_neighs = Vector{Vector{Int64}}(undef, N-1)
-    Γs_vs_t = zeros(max_iters+1); smax_vs_t = L*ones(max_iters+1); iso_vs_t = falses(max_iters+1); solve_ts = similar(Γs_vs_t); # +1 because it could be that an additional LP step might be needed after convergence to guarantee force balance
+    Γs_vs_t = zeros(max_iters+1); smax_vs_t = L*ones(max_iters+1); iso_vs_t = falses(max_iters+1); solve_ts = similar(Γs_vs_t); # +1 because it could be that an additional LP step might be needed after main loop to guarantee force balance
+
+    #### Initialize linear model, using the optimizer passed as kwarg, as well as the attributes
+    if add_bridges
+        LP_model = Model(() -> optimizer) # create a model with the solver defined by 'optimizer'
+    else # this is the choice by default
+        LP_model = Model(() -> optimizer; add_bridges = false) # create a model with the solver defined by 'optimizer' without bridges to improve performance; it doesn't work with COSMO
+        # LP_model = direct_model(optimizer) # this way of creating models is more efficient but does *not* Clp
+    end
+
+    set_optimizer_attributes(LP_model, solver_attributes...) # pass the optimizer attributes to the model
+    
+    set_string_names_on_creation(LP_model, false) # disable string names for better performance
    
     #######################################################################################
     # **** Here CALiPPSO begins, in order to obtain the jammed configuration ****
     # We're timing the full mainloop process and also storing the allocated memory using '@timed'.
     #######################################################################################
-    exec_stats = @timed while (sqrΓ-1>tol_Γ_convergence || max_Si>tol_S_convergence)
+    exec_stats = @timed while !converged
 
         iter+=1
         if iter>max_iters 
             #=if the maximal number of iterations has been reached, print the current status of inflation factor (sqrΓ) and maximum displacement (max_Si).
             Then terminate the main loop. No errors are thrown. =#
             print_failed_max_iters(max_iters, sqrΓ, tol_Γ_convergence, max_Si, tol_S_convergence)
-            converged = false
             break
         end
 
@@ -1173,10 +1040,10 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
         s_update = ratio_sℓ_update*ℓ/sqrt(d)
 
         # obtain the optimal value of displacements, inflation factor, relevant constraints, and other quantities from the LP optimization
-        S⃗, Γ, constraints, possible_neighs, t_solve, status = solve_LP_instance(Xs, R, ℓ, s_bound, config_images, distances; verbose_LP_info=verbose_LP_info, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, add_bridges=add_bridges)
+        S⃗, Γ, constraints, possible_neighs, t_solve = solve_LP_instance!(LP_model, Xs, R, ℓ, s_bound, config_images, distances; verbose_LP_info=verbose_LP_info)
         
         # track the force balance in the current iteration or not 
-        if verbose  && (iter<=initial_monitor || iter%monitor_step==0)
+        if verbose && (iter<=initial_monitor || iter%monitor_step==0)
             f_mismatch, small_fs = monitor_force_balance(Xs, constraints, possible_neighs, config_images; zero_force=zero_force)
         end
 
@@ -1230,7 +1097,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
 
         if non_iso_count>=non_iso_break
             printstyled("Aborting the jamming process because too many iterations (=$non_iso_break) yield NON-isostatic configurations!!\n", color=:red, bold=true)
-            converged = false
+            # converged = false
             break
         end
 
@@ -1239,7 +1106,12 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
         if iter%interval_overlaps_check==0 || iter<=initial_overlaps_check
             check_for_overlaps(Xs, R, S⃗, iter, possible_neighs; tol_overlap=tol_overlap)
         end
-        
+
+        if (sqrΓ-1>tol_Γ_convergence || max_Si>tol_S_convergence)
+            empty!(LP_model) # so the model can be created afresh in the next iteration
+        else
+            converged=true
+        end
     end 
     ###################
     # THIS ENDS THE MAIN LOOP OF CALiPPSO
@@ -1248,9 +1120,10 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
     bytes = exec_stats.bytes # memory allocated in the main loop
 
     # The rest of the function analyses and stores the output of the CALiPPSO process, construct the final packing, and performs some last checks.
-    if non_iso_count<non_iso_break && iter<=max_iters # Check whether the final configuration corresponds to a jammed stated (i.e. convergence was achieved)
+    if converged # Check whether the final configuration corresponds to a jammed stated (i.e. convergence was achieved)
         jammed = true
-        print_converged(iter, status, sqrΓ, max_Si, R, N, L, d, length.(constraints), Nnr_iter)
+        status_LP = termination_status(LP_model)
+        print_converged(iter, status_LP, sqrΓ, max_Si, R, N, L, d, length.(constraints), Nnr_iter)
     else # or CALiPPSO was terminated because 'max_iters' was reached, or too many consecutive non-isostatic solutions were obtained.
         iter-=1
         jammed = false
@@ -1263,19 +1136,20 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
     force_mismatch = maximum(norm.(total_force(final_packing))) # test whether such final packing is in mechanical equilibrium
 
     ## if there is a (relatively) large force mismatch, perform a last LP optimizations so the force balance condition is met more accurately
-    if force_mismatch>tol_mechanical_equilibrium 
+    if force_mismatch>tol_mechanical_equilibrium
+        empty!(LP_model) 
         ℓ, s_bound = bounds_and_cutoff(sqrΓ, R, ℓ0, d; thresholds=thresholds_bounds, sbound=sbound)
-        fine_tune_stats = @timed begin
 
+        fine_tune_stats = @timed begin
             iter+=1
-            
-            t_solve, isostatic, Nc, Nnr, status = fine_tune_forces!(final_packing, force_mismatch, ℓ, config_images, distances; tol_mechanical_equilibrium=tol_mechanical_equilibrium, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, add_bridges=add_bridges, zero_force=zero_force)
+            t_solve, isostatic, Nc, Nnr,  = fine_tune_forces!(final_packing, LP_model, force_mismatch, ℓ, config_images, distances; tol_mechanical_equilibrium=tol_mechanical_equilibrium, zero_force=zero_force)
 
             solve_ts[iter] = t_solve; Γs_vs_t[iter] = 1.0; smax_vs_t[iter] = 0.0; iso_vs_t[iter] = isostatic # store time, √Γ, and if isostatic of this last iteration.
         end
         t_exec += fine_tune_stats.time
         bytes += fine_tune_stats.bytes
     end
+    empty!(LP_model)
 
     memory = bytes/(1024^3); # allocated memory in GB
     conv_info = convergence_info(converged, iter, t_exec, memory, solve_ts[1:iter]) # store info about the CALiPPSO process and termination status
@@ -1296,8 +1170,7 @@ end
 
 function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}, Rs::Vector{T};
     ℓ0::T=4.0*maximum(Rs), sqrΓ0::Real=1.01, thresholds_bounds::Tuple{T, T}=(5e-4, 1e-5), sbound::T=0.01,
-    solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args, add_bridges::Bool=false,
-    max_iters::I=default_max_iterations, tol_Γ_convergence::T=default_tol_Γ_convergence, tol_S_convergence::T=default_tol_displacements_convergence, tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces,
+    optimizer::MOI.AbstractOptimizer=default_optimizer, solver_attributes::Dict=default_solver_attributes, add_bridges::Bool=false, max_iters::I=default_max_iterations, tol_Γ_convergence::T=default_tol_Γ_convergence, tol_S_convergence::T=default_tol_displacements_convergence, tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T=default_tol_zero_forces,
     tol_overlap::T=default_tol_overlap, non_iso_break::I=max_iters, 
     ratio_sℓ_update::T=0.1,
     verbose::Bool=true, non_iso_warn::Bool=false, monitor_step::I=10, initial_monitor::I=monitor_step, interval_overlaps_check::I=10, initial_overlaps_check::I=initial_monitor) where {d, T<:Float64, I<:Int}
@@ -1313,7 +1186,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
     verbose && printstyled("\n Producing a jammed configuration of $N particles inside a $d-dimensional box of size $L:\n\n", bold=true)
     config_images = generate_system_images(d, L)
     #Initialization values
-    sqrΓ=sqrΓ0; iter=0;  max_Si=1.0;  non_iso_count = 0; converged = true
+    sqrΓ=sqrΓ0; iter=0;  max_Si=1.0;  non_iso_count = 0; converged = false
     Nnr_iter = 0; 
     S⃗_cum = svectors(zeros(d, N-1), Val(d))
     distances = distances_between_centers(Xs)
@@ -1321,18 +1194,30 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
     constraints = Vector{Vector{ConstraintRef}}(undef, N-1); possible_neighs = Vector{Vector{Int64}}(undef, N-1)
     Γs_vs_t = zeros(max_iters+1); smax_vs_t = L*ones(max_iters+1); iso_vs_t = falses(max_iters+1); solve_ts = similar(Γs_vs_t); # +1 because it could be that an additional LP step might be needed after convergence to guarantee force balance
 
+     #### Initialize linear model, using the optimizer passed as kwarg, as well as the attributes
+     if add_bridges
+        LP_model = Model(() -> optimizer) # create a model with the solver defined by 'optimizer'
+    else # this is the choice by default
+        LP_model = Model(() -> optimizer; add_bridges = false) # create a model with the solver defined by 'optimizer' without bridges to improve performance; it doesn't work with COSMO
+        # LP_model = direct_model(optimizer) # this way of creating models is more efficient but does *not* Clp
+    end
+
+    set_optimizer_attributes(LP_model, solver_attributes...) # pass the optimizer attributes to the model
+    
+    set_string_names_on_creation(LP_model, false) # disable string names for better performance
+
     #######################################################################################
     # **** Here CALiPPSO begins, in order to obtain the jammed configuration ****
     # We're timing the full mainloop process and also storing the allocated memory using '@timed'.
     #######################################################################################
-    exec_stats = @timed while (sqrΓ-1>tol_Γ_convergence || max_Si>tol_S_convergence)
+    exec_stats = @timed while !converged
 
         iter+=1
         if iter>max_iters 
             #=if the maximal number of iterations has been reached, print the current status of inflation factor (sqrΓ) and maximum displacement (max_Si).
             Then terminate the main loop. No errors are thrown. =#
             print_failed_max_iters(max_iters, sqrΓ, tol_Γ_convergence, max_Si, tol_S_convergence)
-            converged = false
+            # converged = false
             break
         end
 
@@ -1348,7 +1233,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
         s_update = ratio_sℓ_update*ℓ/sqrt(d)
 
         # obtain the optimal value of displacements, inflation factor, relevant constraints, and other quantities from the LP optimization
-        S⃗, Γ, constraints, possible_neighs, t_solve, status = solve_LP_instance(Xs, Rs, ℓ, s_bound, config_images, distances; verbose_LP_info=verbose_LP_info, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, add_bridges=add_bridges)
+        S⃗, Γ, constraints, possible_neighs, t_solve = solve_LP_instance!(LP_model, Xs, Rs, ℓ, s_bound, config_images, distances; verbose_LP_info=verbose_LP_info)
         
         # track the force balance in the current iteration or not 
         if verbose  && (iter<=initial_monitor || iter%monitor_step==0)
@@ -1405,7 +1290,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
 
         if non_iso_count>=non_iso_break
             printstyled("Aborting the jamming process because too many iterations (=$non_iso_break) yield NON-isostatic configurations!!\n", color=:red, bold=true)
-            converged = false
+            # converged = false
             break
         end
 
@@ -1414,7 +1299,12 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
         if iter%interval_overlaps_check==0 || iter<=initial_overlaps_check
             check_for_overlaps(Xs, Rs, S⃗, iter, possible_neighs; tol_overlap=tol_overlap)
         end
-    
+
+        if (sqrΓ-1>tol_Γ_convergence || max_Si>tol_S_convergence)
+            empty!(LP_model) # so the model can be created afresh in the next iteration
+        else
+            converged=true
+        end
     end 
     ###################
     # THIS ENDS THE MAIN LOOP OF CALiPPSO
@@ -1423,9 +1313,10 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
     bytes = exec_stats.bytes # memory allocated in the main loop
 
     # The rest of the function analyses and stores the output of the CALiPPSO process, construct the final packing, and performs some last checks.
-    if non_iso_count<non_iso_break && iter<=max_iters # Check whether the final configuration corresponds to a jammed stated (i.e. convergence was achieved)
+    if converged # Check whether the final configuration corresponds to a jammed stated (i.e. convergence was achieved)
         jammed = true
-        print_converged(iter, status, sqrΓ, max_Si, Rs, N, L, d, length.(constraints), Nnr_iter)
+        status_LP = termination_status(LP_model)
+        print_converged(iter, status_LP, sqrΓ, max_Si, Rs, N, L, d, length.(constraints), Nnr_iter)
     else # or CALiPPSO was terminated because 'max_iters' was reached, or too many consecutive non-isostatic solutions were obtained.
         iter-=1
         jammed = false
@@ -1439,18 +1330,19 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
 
     ## if there is a (relatively) large force mismatch, perform a last LP optimizations so the force balance condition is met more accurately
     if force_mismatch>tol_mechanical_equilibrium 
+        empty!(LP_model)
         ℓ, s_bound = bounds_and_cutoff(sqrΓ, Rs[i_max], ℓ0, d; thresholds=thresholds_bounds, sbound=sbound)
+        
         fine_tune_stats = @timed begin
-
-            iter+=1
-            
-            t_solve, isostatic, Nc, Nnr, status = fine_tune_forces!(final_packing, force_mismatch, ℓ, config_images, distances; tol_mechanical_equilibrium=tol_mechanical_equilibrium, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, add_bridges=add_bridges, zero_force=zero_force)
+            iter+=1          
+            t_solve, isostatic, Nc, Nnr  = fine_tune_forces!(final_packing, LP_model,force_mismatch, ℓ, config_images, distances; tol_mechanical_equilibrium=tol_mechanical_equilibrium,zero_force=zero_force)
 
             solve_ts[iter] = t_solve; Γs_vs_t[iter] = 1.0; smax_vs_t[iter] = 0.0; iso_vs_t[iter] = isostatic # store time, √Γ, and if isostatic of this last iteration.
         end
         t_exec += fine_tune_stats.time
         bytes += fine_tune_stats.bytes
     end
+    empty!(LP_model)
 
     memory = bytes/(1024^3); # allocated memory in GB
     conv_info = convergence_info(converged, iter, t_exec, memory, solve_ts[1:iter]) # store info about the CALiPPSO process and termination status
@@ -1522,16 +1414,20 @@ end
 
 
 
-function precompile_main_function(solver::Module=default_solver, solver_attributes::Dict=default_solver_attributes, solver_args=default_args, add_bridges::Bool=false)
+function precompile_main_function(optimizer::MOI.AbstractOptimizer=default_optimizer, solver_attributes::Dict=default_solver_attributes; add_bridges::Bool=false)
     #= =====================================================================
     =====================================================================
     USING MAIN FUNCTIONS ON SMALL SYSTEM FOR COMPILATION/FIRST CALL PURPOSES
     =====================================================================
     ===================================================================== =#
+    test_model = Model(() -> optimizer) # create a model with the solver defined by 'optimizer' without bridges to improve 
+    set_optimizer_attributes(test_model, solver_attributes...)
+    optim_name = solver_name(test_model); 
+    
     printstyled("\t The following output just refers to simple first calls for precompiling needed functions\n\n", bold=true, color=:cyan)
 
     printstyled("\n\nUsing CALiPPSO (with *low accuracy*) on a small, predefined system in order to compile the needed functions.\n
-    \t\t Solver used: ", Symbol(solver), "\n\n", color=:cyan)
+    \t\t Solver used: ", optim_name, "\n\n", color=:cyan)
     Nt=30; rt=0.52; dt=3; 
     Lt=4.0;
     images_comp = generate_system_images(dt, Lt)
@@ -1573,17 +1469,18 @@ function precompile_main_function(solver::Module=default_solver, solver_attribut
     printstyled("\nThe usual output of the tested optimizers has been disabled by default. Change the value of OutputFlag (or verbose, or the corresponding field of the solver of your choice) if you want such information to be printed out.\n\n", color=:magenta)
 
     dists_comp = distances_between_centers(cen_comp)
-    Ds_comp, Γ_comp, cons_comp, neighs_comp, ts_comp, stat_comp = solve_LP_instance(cen_comp, rt, 1.5, 4*rt, images_comp, dists_comp, add_bridges=add_bridges)
-    obtain_non_rattlers(cons_comp, neighs_comp, dt);
+    Ds_comp, Γ_comp, cons_comp, neighs_comp, = solve_LP_instance!(test_model, cen_comp, rt, 1.5, 4*rt, images_comp, dists_comp)
+    obtain_non_rattlers(cons_comp, neighs_comp, dt)
 
     MonoPacking(cen_comp, cons_comp, neighs_comp, rt, images_comp; verbose=false)
-
-    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration!(cen_comp, rt, ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, tol_overlap=tol_ovlp, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, add_bridges=add_bridges, max_iters=20 );
+    empty!(test_model)
+    
+    Jpack_comp, =  produce_jammed_configuration!(cen_comp, rt, ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, tol_overlap=tol_ovlp, verbose=false, optimizer=optimizer, solver_attributes=solver_attributes, add_bridges=add_bridges, max_iters=20 )
     
     network_of_contacts(Jpack_comp)
 
-    # Function for polydisperse packings. I'm using the same configuration, with 'Rs' a vector of equal elements
-    Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration!(cen_comp, rt*ones(Nt), ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, tol_overlap=tol_ovlp, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, max_iters=20, add_bridges=add_bridges)
+    # # Function for polydisperse packings. I'm using the same configuration, with 'Rs' a vector of equal elements
+    Jpack_comp,  =  produce_jammed_configuration!(cen_comp, rt*ones(Nt), ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, tol_overlap=tol_ovlp, verbose=false, optimizer=optimizer, solver_attributes=solver_attributes, max_iters=20, add_bridges=add_bridges)
 
     network_of_contacts(Jpack_comp)
 
@@ -1591,11 +1488,11 @@ function precompile_main_function(solver::Module=default_solver, solver_attribut
     printstyled("\n\n Calling the main functions once again, to compile the second method.\n\n", color=:cyan)
     produce_jammed_configuration!(Xs_comp, rt, Lt; ℓ0=Lt, initial_monitor=0, monitor_step=0, verbose=false,
      tol_Γ_convergence= tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, tol_overlap=tol_ovlp,
-    solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, add_bridges=add_bridges, max_iters=20 )
+     optimizer=optimizer, solver_attributes=solver_attributes, add_bridges=add_bridges, max_iters=20 )
 
-    produce_jammed_configuration!(Xs_comp, rt*ones(Nt), Lt; ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, tol_overlap=tol_ovlp, verbose=false, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args, add_bridges=add_bridges, max_iters=20)
+    produce_jammed_configuration!(Xs_comp, rt*ones(Nt), Lt; ℓ0=Lt, initial_monitor=0, tol_Γ_convergence= tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, tol_overlap=tol_ovlp, verbose=false, optimizer=optimizer, solver_attributes=solver_attributes, add_bridges=add_bridges, max_iters=20)
 
-    printstyled("\n________________________________________________________\n\tCompilation process finished! \t (with solver: ", Symbol(solver), ")\n________________________________________________________\n\n\n\n\n", color=:cyan, bold=true)
+    printstyled("\n________________________________________________________\n\tCompilation process finished! \t (with optimizer: ", optim_name, ")\n________________________________________________________\n\n\n\n\n", color=:cyan, bold=true)
 end
 
 end
