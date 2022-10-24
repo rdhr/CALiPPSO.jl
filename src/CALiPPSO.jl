@@ -283,7 +283,7 @@ to 'i' if j>i; or to 'j' otherwise). Thus the i-th entry of the output arrays on
 constraints and indices associated to particles of index greater than 'i'.
 
 See also [`MIC_distance`](@ref), [`MIC_vector`](@ref), [`@constraint`](https://jump.dev/JuMP.jl/stable/reference/constraints/#JuMP.@constraint), 
-[`solve_LP_instance`](@ref), [`fine_tune_forces!`](@ref).
+[`solve_LP_instance!`](@ref), [`fine_tune_forces!`](@ref).
 """
 function add_non_overlapping_constraints!(model::JuMP.Model, Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, ℓ::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}}) where {d, T<:AbstractFloat}
     #TODO: check if the method of distances_between_centers(centers, images) yields a more efficient function. In such case, the indices of images are also computed from the beginning
@@ -351,18 +351,19 @@ end
 
 
 """
-    solve_LP_instance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, sqrΓ::T, ℓ0::T, images::Vector{SVector{d, T}}; <keyword arguments>)
+    solve_LP_instance!(LP_model::Model, Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, ℓ::T, s_bound::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}}; verbose_LP_info::Bool=false, dig_S::Int=13) where {d, T<:Float64}
+    solve_LP_instance!(LP_model::Model, Xs::Vector{SVector{d, PeriodicNumber{T}}}, Rs::Vector{T}, ℓ::T, s_bound::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}}; verbose_LP_info::Bool=false, dig_S::Int=4) where {d, T<:Float64}
     
-Optimize a LP instance defined by the particles positions 'Xs' and radius 'R' (or radii 'Rs' in polydisperse systems).
+Optimize a LP instance defined by the particles positions `Xs` and radius `R` (or radii `Rs` in polydisperse systems).
 
-The function creates the necessary JuMP model (using `direct_model`), defines the associated 
-design variables, assigns all the non-overlapping constraints, the bounds on the 
-displacements, and performs the optimization.
+The function needs as input a JuMP model (`LP_model`), then it defines the required variables (`S⃗` and `Γ`), 
+assigns all the non-overlapping constraints, the bounds on the displacements, and performs the optimization.
 The constraints are assigned through `add_non_overlapping_constraints!`, so only ordered 
 pairs are considered when assigning constraints. This implies that each constraint (and the 
-associated indices of particles) is contained only once in the output arrays. This also 
-implies that an initial value of √Γ and ℓ0, along with the set of virtual images should be 
-given as input.
+associated indices of particles) is contained only once in the output arrays. It also 
+implies that the cutoff distance, `ℓ`, along with the set of virtual `images` should be given as input.
+For performance reasons, this function works assuming `distances` is a matrix whose entries are the *updated*
+distances between all particles pairs.
 
 # Output
 1. The value of the optimal displacements.
@@ -371,20 +372,19 @@ given as input.
 4. A vector containing the list of particles' indices that induce constraints on each particle.
 5. The time required to perform the LP optimization.
 
+# Other Arguments
+1. 
+
 # Keyword arguments
-- `solver::Symbol=:Gurobi`: the solver used to call the optimizer when creating the JuMP model.
-- `solver_attributes::Dict=default_solver_attributes`: The attributes (i.e. parameters) passed to the solver after creating model, using `set_optimizer_attributes`.
-- `solver_args=default_args`: The arguments passed to `Optimizer` of the chosen solver. It should be either `nothing` or a `NamedTuple`. Choose the former if testing a solver other than Gurobi, GLPK, or Hypatia.
-- `thresholds::Tuple{T, T}=(5e-4, 1e-5)`: thresholds that define the different criteria to determine the radius of influence, ℓ, and the displacements' bound when calling `bounds_and_cutoff`.
-- `sbound::T=0.01`: fraction of 'R' to be used for bounding the displacements. It is a kwarg of `bounds_and_cutoff`.
 - `verbose_LP_info::Bool=false`: a boolean to control whether or not to print info of ℓ and `sbound`
+- `dig_S::Int=5`: Number of significant digits to use when printing info about the LP optimization
 
 
 See also [`add_non_overlapping_constraints!`](@ref), [`@constraint`](https://jump.dev/JuMP.jl/stable/reference/constraints/#JuMP.@constraint), [`optimize!`](https://jump.dev/JuMP.jl/stable/reference/solutions/#JuMP.optimize!),
 [`produce_jammed_configuration!`](@ref), [`fine_tune_forces!`](@ref).
 """
 function solve_LP_instance!(LP_model::Model, Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, ℓ::T, s_bound::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}};
-    verbose_LP_info::Bool=false, dig_S::Int=13) where {d, T<:Float64}
+    verbose_LP_info::Bool=false, dig_S::Int=4) where {d, T<:Float64}
         
     N = length(Xs); # number of particles
    
@@ -402,11 +402,11 @@ function solve_LP_instance!(LP_model::Model, Xs::Vector{SVector{d, PeriodicNumbe
     Γ = JuMP.value(inflation_factor)
     status = termination_status(LP_model)
     S⃗ = JuMP.value.(S)
-    max_Si_print = round(maximum(abs.(S⃗)), digits=dig_S)
+    max_Si_print = round(maximum(abs.(S⃗)), sigdigits=dig_S)
     
     # if verbose option is true, show info of the values of ℓ and bound on displacements used when creating the LP instance
     if verbose_LP_info
-        println("LP instance generated with (ℓ, ℓ/R) = ", [ℓ, ℓ/R], "\t and bound on (|s_i|, |s_i|/R) = ", [s_bound, s_bound/R])
+        println("LP instance generated with (ℓ, ℓ/R) = ", round.([ℓ, ℓ/R], sigdigits=dig_S), "\t and bound on (|s_i|, |s_i|/R) = ", round.([s_bound, s_bound/R], sigdigits=dig_S))
         println("Status: ", status, "; \t time solve LP instance (s) = ", round(t_solve, digits=4) )
         printstyled("\t Optimal values: \t √Γ-1 = ", sqrt(Γ)-1, ",\t max |sᵢ| (all particles) = ", max_Si_print, "\n", bold=true)
     end
@@ -415,7 +415,7 @@ function solve_LP_instance!(LP_model::Model, Xs::Vector{SVector{d, PeriodicNumbe
 end
 
 function solve_LP_instance!(LP_model::Model, Xs::Vector{SVector{d, PeriodicNumber{T}}}, Rs::Vector{T}, ℓ::T, s_bound::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}};
-    verbose_LP_info::Bool=false, dig_S::Int=13) where {d, T<:Float64}
+    verbose_LP_info::Bool=false, dig_S::Int=4) where {d, T<:Float64}
 
     N = length(Xs); # number of particles
         
@@ -433,12 +433,12 @@ function solve_LP_instance!(LP_model::Model, Xs::Vector{SVector{d, PeriodicNumbe
     Γ = JuMP.value(inflation_factor)
     status = termination_status(LP_model)
     S⃗ = JuMP.value.(S)
-    max_Si_print = round(maximum(abs.(S⃗)), digits=dig_S)
+    max_Si_print = round(maximum(abs.(S⃗)), sigdigits=dig_S)
 
     # if verbose option is true, show info of the values of ℓ and bound on displacements used when creating the LP instance
     if verbose_LP_info
         R_max = maximum(Rs)
-        println("LP instance generated with (ℓ, ℓ/Rₘₐₓ) = ", [ℓ, ℓ/R_max], "\t and bound on (|s_i|, |s_i|/Rₘₐₓ) = ", [s_bound, s_bound/R_max])
+        println("LP instance generated with (ℓ, ℓ/Rₘₐₓ) = ", round.([ℓ, ℓ/R_max], sigdigits=dig_S), "\t and bound on (|s_i|, |s_i|/Rₘₐₓ) = ", round.([s_bound, s_bound/R_max], sigdigits=dig_S))
         println("Status: ", status, "; \t time solve LP instance (s) = ", round(t_solve, digits=4) )
         printstyled("\t Optimal values: \t √Γ-1 = ", sqrt(Γ)-1, ",\t max |sᵢ| (all particles) = ", max_Si_print, "\n", bold=true)
     end
@@ -469,7 +469,7 @@ we assume i>j.
 - `forces_dual`: A Vector{Vector{Float64}} containing the forces magnitudes acting on each particle. So its i-th element is the list of the magnitude of the forces acting on particle i.
 - `particles_dual_contact`: A Vector{Vector{Int64}} containing the indices of particles in contact with each particle. So its i-th element is the list of indices of particles in contact with the i-th particle.
 
-See also [`add_non_overlapping_constraints!`](@ref), [`@constraint`](https://jump.dev/JuMP.jl/stable/reference/constraints/#JuMP.@constraint), [`optimize!`](https://jump.dev/JuMP.jl/stable/reference/solutions/#JuMP.optimize!), [`solve_LP_instance`](@ref).
+See also [`add_non_overlapping_constraints!`](@ref), [`@constraint`](https://jump.dev/JuMP.jl/stable/reference/constraints/#JuMP.@constraint), [`optimize!`](https://jump.dev/JuMP.jl/stable/reference/solutions/#JuMP.optimize!), [`solve_LP_instance!`](@ref).
 """
 function network_of_contacts(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, images::Vector{SVector{d, T}}; zero_force::T=default_tol_zero_forces) where {d, T<:AbstractFloat}
     
@@ -688,7 +688,7 @@ Besides updating the `forces` of each particle in 'Packing', this function produ
 
 
 See also [`add_non_overlapping_constraints!`](@ref), [`optimize!`](https://jump.dev/JuMP.jl/stable/reference/solutions/#JuMP.optimize!),
-[`produce_jammed_configuration!`](@ref), [`solve_LP_instance`](@ref).
+[`produce_jammed_configuration!`](@ref), [`solve_LP_instance!`](@ref).
 """
 function fine_tune_forces!(Packing::MonoPacking{d, T}, LP_model::Model, force_mismatch::T, ℓ::T, images::Vector{SVector{d, T}}, distances::Symmetric{T, Matrix{T}};
     tol_mechanical_equilibrium::Float64=default_tol_force_equilibrium, zero_force::T = default_tol_zero_forces) where {d, T<:Float64}
@@ -906,7 +906,7 @@ The dimensionality of the system, 'd', is automatically inferred from the size o
 taken into account given that each `SVector` contains elements of type [`PeriodicNumber`](@ref). (If 
 the input is of type `Matrix{T}`, it is converted to `Vector{SVector{d,T}}` before CALiPPSO begins.)
 
-The core of this function is the so called [main loop](@ref mainloop), whose essential step consists in using [`solve_LP_instance`](@ref)
+The core of this function is the so called [main loop](@ref mainloop), whose essential step consists in using [`solve_LP_instance!`](@ref)
 to obtain the maximal inflation factor (``\Gamma``) and set of optimal particles' displacements 
 (``\vec{\mathbf{s}}^\star = \{\mathbf{s}_i^\star\}_{i=1}^N`` --denoted as S⃗ in our scripts.) 
 from a given configuration. The particles' size and position are updated, and a new LP instance is 
