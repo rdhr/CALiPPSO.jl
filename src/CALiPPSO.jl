@@ -726,6 +726,7 @@ function fine_tune_forces!(Packing::MonoPacking{d, T}, LP_model::Model, force_mi
         println("Total z in rattlers = ", sum(zs[rattlers]) )
     end
     
+    printstyled("Mismatch in ∂ℒ/∂Γ = 0 constraint: ", monitor_Γ_constraint(Packing), "\n", bold=true)
     printstyled("Force mismatch after final optimization = ", maximum(norm.(total_force(Packing))), "\n\n", bold=true)
 
     return t_solve, isostatic, Nc, Nnr
@@ -769,6 +770,7 @@ function fine_tune_forces!(Packing::PolyPacking{d, T}, LP_model::Model, force_mi
         println("Total z in rattlers = ", sum(zs[rattlers]) )
     end
     
+    printstyled("Mismatch in ∂ℒ/∂Γ = 0 constraint: ", monitor_Γ_constraint(Packing), "\n", bold=true)
     printstyled("Force mismatch after final optimization = ", maximum(norm.(total_force(Packing))), "\n\n", bold=true)
 
     return t_solve, isostatic, Nc, Nnr
