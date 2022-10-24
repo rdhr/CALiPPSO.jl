@@ -800,12 +800,12 @@ a very small displacements should only be applied to stable particles (i.e. to n
 =#
 "Return the set of stable particles, its amount, and the coordination number of *all* particles."
 function obtain_non_rattlers(constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, d::Int64; zero_force::Float64=default_tol_zero_forces)
-    n=length(neighbours_list); N = n+1  # we need to add an extra component since only the first (N-1) particles have reference to constraints
+    N = length(neighbours_list) + 1  # we need to add an extra component since only the first (N-1) particles have reference to constraints
     particles_in_contact = Vector{Vector{Int64}}(undef, N)
     coord_nums=zeros(Int64, N);  #list of coordination numbers
 
-    for i in 1:n::Int
-        neighs=neighbours_list[i]; # list of particles in neighbourhood of 'i';
+    for (i, neighs) in enumerate(neighbours_list)
+        # neighs=neighbours_list[i]; # list of particles in neighbourhood of 'i';
         real_contacts = findall(x-> x>zero_force, shadow_price.(constraints[i])) # indices of non-zero dual variables of the respective list of constraints of particle i
         m=length(real_contacts); coord_nums[i] = m
         particles_in_contact[i] = neighs[real_contacts] # indices of particles in (linear) contact with particle i
@@ -833,6 +833,38 @@ function monitor_force_balance(Xs::Vector{SVector{d, PeriodicNumber{T}}}, constr
     small_fs = all_f_mags[1:min(sample_size, length(all_f_mags))]
     f_mismatch = maximum(norm.(total_force(contacts, forces)))
     return f_mismatch, small_fs
+end
+
+function monitor_force_balance(contact_vectors::Vector{Vector{SVector{d,T}}}, forces::Vector{Vector{T}}; sample_size::Int64=10) where {d, T<:Float64}
+    
+    all_f_mags = reduce(vcat, forces); 
+    (sort!(all_f_mags); unique!(all_f_mags)); 
+    small_fs = all_f_mags[1:min(sample_size, length(all_f_mags))]
+    f_mismatch = maximum(norm.(total_force(contact_vectors, forces)))
+    return f_mismatch, small_fs
+end
+
+
+
+"For a given configuration, return the mismatch in the constraint imposed by ∂ℒ/∂Γ = 0 or, equivalently, ∑₍ᵢⱼ₎λᵢⱼ (σᵢⱼ)² = 1"
+# function monitor_Γ_constraint(Xs::Vector{SVector{d, PeriodicNumber{T}}}, R::T, constraints::Vector{Vector{ConstraintRef}}, neighbours_list::Vector{Vector{Int64}}, images::Vector{SVector{d, T}}; zero_force::T=default_tol_zero_forces) where {d, T<:Float64}
+
+#     contacts, forces, neighs_lists= network_of_contacts(Xs, constraints, neighbours_list, images, zero_force=zero_force)
+#     sum_λs = 0.0
+#     for fs in forces
+#         sum_λs += sum(fs)
+#     end
+#     Γ_mismatch = 2-(4R^2)*sum_λs
+#     return Γ_mismatch
+# end
+
+function monitor_Γ_constraint(forces::Vector{Vector{T}}, R::T) where {T<:Float64}
+    sum_λs = 0.0
+    for fs in forces
+        sum_λs += sum(fs)
+    end
+    Γ_mismatch = 2-(4R^2)*sum_λs
+    return Γ_mismatch
 end
 
 """
@@ -1044,7 +1076,11 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
         
         # track the force balance in the current iteration or not 
         if verbose && (iter<=initial_monitor || iter%monitor_step==0)
-            f_mismatch, small_fs = monitor_force_balance(Xs, constraints, possible_neighs, config_images; zero_force=zero_force)
+            contacts_vecs_iter, forces_iter, neighs_lists= network_of_contacts(Xs, constraints, possible_neighs, config_images, zero_force=zero_force)
+            f_mismatch, small_fs = monitor_force_balance(contacts_vecs_iter, forces_iter)
+            Γ_mismatch = monitor_Γ_constraint(forces_iter, R)
+            # f_mismatch, small_fs = monitor_force_balance(Xs, constraints, possible_neighs, config_images; zero_force=zero_force)
+            # Γ_mismatch = monitor_Γ_constraint(Xs, R, constraints, possible_neighs, config_images, zero_force=zero_force)
         end
 
         ### **** UPDATE CONFIGURATION WITH THE VALUES FROM LP OPTIMIZATION ****
@@ -1071,7 +1107,7 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
         iso_vs_t[iter] = iso_cond; # store such info 
        
         if verbose && (iter<=initial_monitor || iter%monitor_step==0)
-            print_monitor_progress(max_Si, R, N, L, d, zs_iter, non_rattlers_iter, length.(constraints), iso_cond, f_mismatch, small_fs)
+            print_monitor_progress(max_Si, R, N, L, d, zs_iter, non_rattlers_iter, length.(constraints), iso_cond, Γ_mismatch, f_mismatch, small_fs)
         end
 
         # determine whether distances between centers should be updated
@@ -1217,7 +1253,6 @@ function produce_jammed_configuration!(Xs::Vector{SVector{d, PeriodicNumber{T}}}
             #=if the maximal number of iterations has been reached, print the current status of inflation factor (sqrΓ) and maximum displacement (max_Si).
             Then terminate the main loop. No errors are thrown. =#
             print_failed_max_iters(max_iters, sqrΓ, tol_Γ_convergence, max_Si, tol_S_convergence)
-            # converged = false
             break
         end
 
