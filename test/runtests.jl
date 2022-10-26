@@ -51,6 +51,9 @@ cen_comp = PeriodicVectors(Xs_comp, Lt);
     @test abs(PeriodicNumber(2.5, 2.0).value - 0.5) <= eps()
     @test abs(PeriodicNumber(1.3).value - 0.3)<=eps()
     @test CALiPPSO.value(cen_comp) == Xs_comp
+    @test eltype(cen_comp) <: CALiPPSO.SVector
+    @test length(cen_comp) == Nt
+    @test all(≥(0), CALiPPSO.distances_between_centers(cen_comp))
 end
 
 
@@ -60,20 +63,24 @@ Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp = produce_jammed_conf
 
 
 @testset "Packing compilation configuration (monodisperse method)" begin
+    @test conv_info_comp.converged
     @test Jpack_comp.jammed
     @test Jpack_comp.mechanical_equilibrium
     @test length(Jpack_comp.Particles) == Nt
     @test Γs_comp[end] - 1 <= tol_Γ
     @test smax_comp[end] <= tol_S
+    @test Jpack_comp.R ≥ rt
 end
 
-cen_comp = PeriodicVectors(Xs_comp, Lt);
-Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration!(cen_comp, rt*ones(Nt), ℓ0=Lt, initial_monitor=0, tol_Γ_convergence=tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, verbose=false, optimizer=optimizer)
+cen_comp = PeriodicVectors(Xs_comp, Lt); Rs_comp = rt*ones(Nt)
+Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration!(cen_comp, Rs_comp, ℓ0=Lt, initial_monitor=0, tol_Γ_convergence=tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, verbose=false, optimizer=optimizer)
 
 @testset "Packing compilation configuration (polydisperse method)" begin
+    @test conv_info_comp.converged
     @test Jpack_comp.jammed
     @test Jpack_comp.mechanical_equilibrium
     @test length(Jpack_comp.Particles) == Nt
     @test Γs_comp[end] - 1 <= tol_Γ
     @test smax_comp[end] <= tol_S
+    @test CALiPPSO.get_radii(Jpack_comp) == Rs_comp
 end
