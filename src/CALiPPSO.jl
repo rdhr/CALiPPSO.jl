@@ -27,6 +27,7 @@ const max_threads = Int(round(Sys.CPU_THREADS/2)) # max number of processes to b
 
 # ### Parameters for Gurobi
 # using Gurobi
+# const default_solver = Gurobi
 # const default_tol_overlap=1e-8 # tolerance for identifying an Overlap. Given that Gurobi's precision is 10^-9, a larger value is needed.
 # const default_tol_optimality = 1e-9; # optimality tolerances. This is the most precise value allowed by Gurobi
 # const grb_env = Gurobi.Env() # to avoid printing license info every time a model is created or optimized 
@@ -41,16 +42,17 @@ const max_threads = Int(round(Sys.CPU_THREADS/2)) # max number of processes to b
 
 
 
-################################################
-## Suggested parameters if you want to use HiGHS solver
-################################################
+###############################################
+# Suggested parameters if you want to use HiGHS solver
+###############################################
 
-# # #### Parameters for HiGHS
+# #### Parameters for HiGHS
 # using HiGHS
+# const default_solver = HiGHS
 # const default_tol_overlap=1e-8 # tolerance for identifying an Overlap.
 # const default_tol_optimality = 1e-9
 # const default_optimizer = HiGHS.Optimizer()
-# const default_solver_attributes = Dict("small_matrix_value"=>0.1*default_tol_optimality, "primal_feasibility_tolerance" => default_tol_optimality, "dual_feasibility_tolerance" => default_tol_optimality, "solver" => "ipm", "ipm_optimality_tolerance"=>default_tol_optimality,  "highs_max_threads" => max_threads, "parallel"=>"on", "output_flag"=>false)
+# const default_solver_attributes = Dict("small_matrix_value"=>0.1*default_tol_optimality, "primal_feasibility_tolerance" => default_tol_optimality, "dual_feasibility_tolerance" => default_tol_optimality, "solver" => "ipm", "ipm_optimality_tolerance"=>default_tol_optimality,  "threads" => max_threads, "parallel"=>"on", "output_flag"=>false)
 
 
 
@@ -60,6 +62,7 @@ const max_threads = Int(round(Sys.CPU_THREADS/2)) # max number of processes to b
 
 # #### Parameters for Clp
 # using Clp
+# const default_solver = Clp
 # const default_tol_overlap=1e-8 # tolerance for identifying an Overlap.
 # const default_tol_optimality = 1e-9
 # const default_optimizer = Clp.Optimizer()
@@ -73,10 +76,12 @@ const max_threads = Int(round(Sys.CPU_THREADS/2)) # max number of processes to b
 
 ### Parameters for GLPK
 using GLPK
+const default_solver = GLPK
 const default_tol_overlap=1e-8 # tolerance for identifying an Overlap.
 const default_tol_optimality = 0.1*default_tol_overlap
 const default_optimizer = GLPK.Optimizer(want_infeasibility_certificates=false, method=GLPK.MethodEnum(0))
 const default_solver_attributes = Dict("msg_lev"=>GLPK.GLP_MSG_OFF, "tol_bnd"=>default_tol_optimality, "tol_dj"=>default_tol_optimality)
+
 
 ### First calls for compilation of model creation
 empty!(Model(()-> default_optimizer))
@@ -1459,7 +1464,7 @@ end
 
 
 
-function precompile_main_function(optimizer::MOI.AbstractOptimizer=default_optimizer, solver_attributes::Dict=default_solver_attributes; add_bridges::Bool=false)
+function precompile_main_function(optimizer::MOI.AbstractOptimizer=default_solver.Optimizer(), solver_attributes::Dict=default_solver_attributes; add_bridges::Bool=false)
     #= =====================================================================
     =====================================================================
     USING MAIN FUNCTIONS ON SMALL SYSTEM FOR COMPILATION/FIRST CALL PURPOSES

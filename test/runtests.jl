@@ -1,7 +1,7 @@
 using CALiPPSO
 using Test
 
-precompile_main_function()
+# precompile_main_function()
 
 Lt = 4.0;
 Nt = 30;
@@ -10,6 +10,9 @@ dt = 3;
 tol_Γ = 1e-3;
 tol_S = 1e-2;
 tol_f = 10 * tol_S;
+
+optimizer = CALiPPSO.GLPK.Optimizer(want_infeasibility_certificates=false)
+
 
 Xs_comp = Matrix(transpose([
     1.3022036173223075 3.100681668734574 2.650145868235529
@@ -52,7 +55,7 @@ end
 
 
 
-Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp = produce_jammed_configuration!(cen_comp, rt, ℓ0=Lt, initial_monitor=0, tol_Γ_convergence=tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, verbose=false)
+Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp = produce_jammed_configuration!(cen_comp, rt, ℓ0=Lt, initial_monitor=0, tol_Γ_convergence=tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, verbose=false, add_bridges=true, optimizer=optimizer)
 
 
 
@@ -65,7 +68,7 @@ Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp = produce_jammed_conf
 end
 
 cen_comp = PeriodicVectors(Xs_comp, Lt);
-Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration!(cen_comp, rt*ones(Nt), ℓ0=Lt, initial_monitor=0, tol_Γ_convergence=tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, verbose=false)
+Jpack_comp, conv_info_comp, Γs_comp, smax_comp, isos_comp =  produce_jammed_configuration!(cen_comp, rt*ones(Nt), ℓ0=Lt, initial_monitor=0, tol_Γ_convergence=tol_Γ, tol_S_convergence=tol_S, tol_mechanical_equilibrium=tol_f, verbose=false, optimizer=optimizer)
 
 @testset "Packing compilation configuration (polydisperse method)" begin
     @test Jpack_comp.jammed
