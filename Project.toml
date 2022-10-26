@@ -1,7 +1,7 @@
 name = "CALiPPSO"
 uuid = "06591efd-5e2b-42e5-a742-7087027635df"
 authors = ["Rafael Diaz <rafael.diaz.hr@gmail.com>"]
-version = "0.2.1"
+version = "0.2.2"
 
 [deps]
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
