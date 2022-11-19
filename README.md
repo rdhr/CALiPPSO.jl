@@ -31,17 +31,18 @@ This package is a pure [Julia](https://julialang.org/) implementation of the CAL
 This package is licensed under the MIT license, so please feel free to use/modify/improve this code as better suits you. We only ask you to cite our work if you find it useful.
 
 ```
-@article{calippso,
-  title = {{{CALiPPSO}}: {{A Linear Programming Algorithm}} for {{Jamming Hard Spheres}}},
-  author = {Artiaco, Claudia and {D{\'i}az Hern{\'a}ndez Rojas}, Rafael and Parisi, Giorgio and {Ricci-Tersenghi}, Federico},
+@article{CALiPPSO,
+  title = {Hard-Sphere Jamming through the Lens of Linear Optimization},
+  author = {Artiaco, Claudia and D{\'i}az Hern{\'a}ndez Rojas, Rafael and Parisi, Giorgio and {Ricci-Tersenghi}, Federico},
   year = {2022},
-  month = mar,
-  journal = {arXiv},
-  eprint = {2203.05654},
-  eprinttype = {arxiv},
-  primaryclass = {cond-mat, physics:physics},
-  url = {http://arxiv.org/abs/2203.05654},
-  archiveprefix = {arXiv}
+  month = nov,
+  journal = {Physical Review E},
+  volume = {106},
+  number = {5},
+  pages = {055310},
+  publisher = {{American Physical Society}},
+  doi = {10.1103/PhysRevE.106.055310},
+  url = {https://link.aps.org/doi/10.1103/PhysRevE.106.055310}
 }
 ```
 
