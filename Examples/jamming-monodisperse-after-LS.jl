@@ -5,22 +5,21 @@ using DelimitedFiles, Statistics
     Or adjust them to the solver of your choice
 =#
 # using Gurobi
-# const solver = Gurobi
 # const tol_overlap=1e-8 # tolerance for identifying an Overlap. Given that Gurobi's precision is 10^-9, a larger value is needed.
 # const tol_optimality = 1e-9; # optimality tolerances. This is the most precise value allowed by Gurobi
-# const solver_args = Gurobi.Env()
+# const grb_env = Gurobi.Env()
+# const optimizer = Gurobi.Optimizer(grb_env)
 # const solver_attributes = Dict("OutputFlag" => 0, "FeasibilityTol" => tol_optimality, "OptimalityTol" => tol_optimality, "Method" => 3, "Threads" =>  CALiPPSO.max_threads)
 
 
 #= Comment the following lines if you want to use CALiPPSO with a different solver than GLPK; e.g., Gurobi (see above)=#
-const solver = CALiPPSO.default_solver
+const optimizer = CALiPPSO.default_solver.Optimizer()
 const tol_overlap = CALiPPSO.default_tol_overlap
 const tol_optimality = CALiPPSO.default_tol_optimality
-const solver_args = CALiPPSO.default_args
 const solver_attributes = CALiPPSO.default_solver_attributes    
 
 
-precompile_main_function(solver, solver_attributes, solver_args)
+precompile_main_function(optimizer, solver_attributes)
 
 const N_LS = 1024 # size of configurations obtained after LS compression
 const ds = [3, 4, 5] # dimensions to use
@@ -38,7 +37,7 @@ for d in ds
     printstyled("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n", color=:blue)
 
 
-    @time jammed_packing, info_convergence, Γs_vs_t, smax_vs_t, iso_vs_t = produce_jammed_configuration!(Xs0, r0; verbose=true, tol_Γ_convergence=1e-12, solver=solver, solver_attributes=solver_attributes, solver_args=solver_args)
+    @time jammed_packing, info_convergence, Γs_vs_t, smax_vs_t, iso_vs_t = produce_jammed_configuration!(Xs0, r0; verbose=true, tol_Γ_convergence=1e-12, optimizer=optimizer, solver_attributes=solver_attributes)
     println("Evolution of convergence criteria:")
     sqrt_gms = max.(Γs_vs_t, 1) .-1
     println("\t √Γ-1 = \t", sqrt_gms)

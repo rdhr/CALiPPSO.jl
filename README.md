@@ -67,7 +67,7 @@ Pkg.add("CALiPPSO")
 
 This will also automatically install the required dependencies; the main ones are [JuMP.jl](https://jump.dev/JuMP.jl/stable/), [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) and [GLPK.jl](https://github.com/jump-dev/GLPK.jl). The latter is needed because [`GLPK`](https://www.gnu.org/software/glpk/) is the default solver of CALiPPSO. In any case, once CALiPPSO is added, you can simply import it into your current working space (*i.e.* the REPL, a Jupyter notebook, script, etc) as any other package, namely `using CALiPPSO`. 
 
-Below we show a minimal working example (MWE) and show how to [change the solver](#Changing-the-solver) used by CALiPPSO.
+Below we show a minimal working example (MWE) and show how to [change the solver](#Changing-the-solver) used by CALiPPSO. See also the scripts in the `Examples` folder of this repo for more usage examples.
 
 
 ### Minimal example
@@ -158,7 +158,7 @@ So for instance, `CALiPPSO.empty!(grb_opt)` in the example above. Or, if you are
 
 ### Other examples
 
-You can find other examples of how CALiPPSO is used in dimensions d=3,4,5, and other features in the [Examples section](https://rdhr.github.io/CALiPPSO.jl/dev/tests.html) of the documentation.
+You can find other examples of how CALiPPSO is used in dimensions d=3,4,5, and other features in the [Examples section](https://rdhr.github.io/CALiPPSO.jl/dev/tests.html) of the documentation. We refer to the `Examples` folder of this repo for the scripts of some other usage cases.
 
 ### Advanced usage
 
