@@ -172,7 +172,7 @@ For other features, advanced usage, and more details of how `produce_jammed_conf
 
 ## Acknowledgements
 
-This work was supported by the Simons Collaboration on Cracking the Glass Problem, Grant No. 454949 (G.P. and R.D.H.R.); and by the he European Research Council (ERC) under the European Union’s Horizon 2020 Grant No. 101001902 (C.A.).
+This work was supported by the Simons Collaboration on Cracking the Glass Problem, Grant No. 454949 (G.P.); and by the European Research Council (ERC) under the European Union’s Horizon 2020 Grant No. 101001902 (C.A.) and No. 694925 (G.P.).
 
 
 
